@@ -119,14 +119,22 @@ The frontend starts at **http://localhost:3000**.
 
 ## 生产部署 / Production
 
-```bash
-# Build Strapi admin
-npm run build
-npm run start
+No nginx required. The Strapi backend serves both the API and the built Vue SPA on the same port.
 
-# Build frontend
-cd Web
-npm run build   # outputs to Web/dist/
+```bash
+# 1. Build the Vue frontend (outputs to public/app/)
+npm run build:frontend
+
+# 2. Build the Strapi admin panel
+npm run build
+
+# 3. Start the production server (serves API + frontend on http://localhost:1337)
+npm run start
 ```
+
+The single server at **http://localhost:1337** now handles:
+- `http://localhost:1337/` → Vue SPA (frontend)
+- `http://localhost:1337/api/...` → Strapi REST API
+- `http://localhost:1337/admin` → Strapi admin panel
 
 Set `FRONTEND_URL` in `.env` to your production domain for CORS.
