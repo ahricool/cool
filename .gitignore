@@ -22,3 +22,6 @@ exports/
 *.njsproj
 *.sln
 *.sw?
+
+# Frontend build output
+Web/dist/
