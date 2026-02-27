@@ -1,0 +1,34 @@
+{
+  "kind": "singleType",
+  "collectionName": "site_configs",
+  "info": {
+    "singularName": "site-config",
+    "pluralName": "site-configs",
+    "displayName": "Site Config",
+    "description": "Global site configuration"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "title": {
+      "type": "string",
+      "default": "My Blog"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    },
+    "logo": {
+      "type": "string"
+    },
+    "favicon": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string"
+    }
+  }
+}
