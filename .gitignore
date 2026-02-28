@@ -25,3 +25,4 @@ exports/
 
 # Frontend build output
 Web/dist/
+public/app/

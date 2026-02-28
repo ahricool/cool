@@ -10,11 +10,16 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
+  build: {
+    // Output directly into Strapi's public/app so the backend can serve it
+    outDir: resolve(__dirname, '../public/app'),
+    emptyOutDir: true,
+  },
   server: {
     port: 3000,
     proxy: {
       '/api': {
-        // Proxy API calls to the Strapi backend
+        // Proxy API calls to the Strapi backend during development
         target: 'http://localhost:1337',
         changeOrigin: true,
       },
