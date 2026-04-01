@@ -1,8 +1,8 @@
 # CMS – Strapi Backend + Vue 3 Frontend
 
 A complete CMS system consisting of:
-- **Strapi 4** backend (this directory) — provides content APIs for posts, pages, tags, categories and site configuration
-- **Vue 3 frontend** (`Web/` directory) — a blog-style SPA that consumes the Strapi APIs
+- **Strapi 5** backend (this directory) — provides content APIs for posts, pages, tags, categories and site configuration
+- **Vue 3 frontend** (`web/` directory) — a blog-style SPA that consumes the Strapi APIs
 
 ---
 
@@ -22,13 +22,13 @@ A complete CMS system consisting of:
 │       ├── tag/              # Tag collection type
 │       ├── category/         # Category collection type
 │       └── site-config/      # Site configuration single type
-├── Web/                      # Vue 3 frontend (SPA)
+├── web/                      # Vue 3 frontend (SPA)
 │   ├── src/
 │   │   ├── services/api.ts   # API client (Strapi adapter)
 │   │   ├── stores/           # Pinia stores
 │   │   ├── pages/            # Home, Post, Page, Tag, Category, Archive
 │   │   └── components/       # Layout, Header, Footer, Sidebar
-│   ├── vite.config.ts        # Dev proxy: /api → http://localhost:1337
+│   ├── vite.config.ts        # Dev proxy: /api → http://localhost:8080
 │   └── package.json
 ├── .env.example
 └── package.json
@@ -52,30 +52,31 @@ cp .env.example .env
 npm run develop
 ```
 
-The Strapi server starts at **http://localhost:1337**.
+The Strapi server starts at **http://localhost:8080**.
 
-- Admin panel: http://localhost:1337/admin
-- API: http://localhost:1337/api/...
+- Admin panel: http://localhost:8080/admin
+- API: http://localhost:8080/api/...
 
 #### First-time setup (Strapi Admin)
 
-1. Open http://localhost:1337/admin and create an admin account.
+1. Open http://localhost:8080/admin and create an admin account.
 2. Go to **Settings → Users & Permissions → Roles → Public** and enable the following permissions so the frontend can read data without authentication:
-   - `Post`: `find`, `findOne`, `findBySlug`
-   - `Page`: `find`, `findOne`, `findBySlug`
-   - `Tag`: `find`, `findOne`, `findBySlug`
-   - `Category`: `find`, `findOne`, `findBySlug`
+   - `Post`: `find`, `findBySlug`
+   - `Page`: `find`, `findBySlug`
+   - `Tag`: `find`, `findBySlug`
+   - `Category`: `find`, `findBySlug`
    - `Site-config`: `find`
 3. (Optional) Go to **Content Manager** to create sample Posts, Tags, Categories, Pages, and Site Config.
+4. (Optional) Create pages with slugs like `about` or `links` if you want them to appear in the frontend navigation.
 
 ### 2. Vue 3 前端 / Frontend
 
 ```bash
-cd Web
+cd web
 npm install
 cp .env.example .env
 
-# Start dev server (proxies /api to http://localhost:1337)
+# Start dev server (proxies /api to http://localhost:8080)
 npm run dev
 ```
 
@@ -88,15 +89,15 @@ The frontend starts at **http://localhost:3000**.
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/posts` | List published posts (supports pagination, sorting, populate) |
-| GET | `/api/posts/:id` | Get post by ID |
+| GET | `/api/posts/:slug` | Get post by slug-compatible document |
 | GET | `/api/posts/slug/:slug` | Get post by slug |
 | GET | `/api/pages` | List published pages |
-| GET | `/api/pages/:id` | Get page by ID |
+| GET | `/api/pages/:slug` | Get page by slug-compatible document |
 | GET | `/api/pages/slug/:slug` | Get page by slug |
 | GET | `/api/tags` | List all tags |
-| GET | `/api/tags/:slug` | Get tag by slug |
+| GET | `/api/tags/by-slug/:slug` | Get tag by slug |
 | GET | `/api/categories` | List all categories |
-| GET | `/api/categories/:slug` | Get category by slug |
+| GET | `/api/categories/by-slug/:slug` | Get category by slug |
 | GET | `/api/site-config` | Get global site configuration |
 
 > Filter posts by tag: `GET /api/posts?filters[tags][slug][$eq]=vue-js&populate=tags,categories,author`
@@ -128,13 +129,20 @@ npm run build:frontend
 # 2. Build the Strapi admin panel
 npm run build
 
-# 3. Start the production server (serves API + frontend on http://localhost:1337)
+# 3. Start the production server (serves API + frontend on http://localhost:8080)
 npm run start
 ```
 
-The single server at **http://localhost:1337** now handles:
-- `http://localhost:1337/` → Vue SPA (frontend)
-- `http://localhost:1337/api/...` → Strapi REST API
-- `http://localhost:1337/admin` → Strapi admin panel
+The single server at **http://localhost:8080** now handles:
+- `http://localhost:8080/` → Vue SPA (frontend)
+- `http://localhost:8080/api/...` → Strapi REST API
+- `http://localhost:8080/admin` → Strapi admin panel
 
 Set `FRONTEND_URL` in `.env` to your production domain for CORS.
+
+For Docker builds, use `npm run build:all` so the frontend SPA is generated before the Strapi image is built.
+
+## Runtime requirements
+
+- Node.js `>=24`
+- npm `>=6`

@@ -18,7 +18,7 @@
 
         <div id="content" class="main-inner site-content">
           <slot></slot>
-          <aside v-if="showSidebar" class="sidebar">
+          <aside v-if="shouldShowSidebar" class="sidebar">
             <Sidebar />
           </aside>
         </div>
@@ -35,6 +35,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useThemeStore } from '../stores/theme';
 import Header from './Header.vue';
 import Footer from './Footer.vue';
 import Sidebar from './Sidebar.vue';
@@ -46,6 +48,9 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   showSidebar: true,
 });
+
+const themeStore = useThemeStore();
+const shouldShowSidebar = computed(() => props.showSidebar && themeStore.settings.showSidebar);
 </script>
 
 <style scoped>

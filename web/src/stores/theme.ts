@@ -29,6 +29,7 @@ export const useThemeStore = defineStore('theme', () => {
 
   function toggleSidebar() {
     settings.value.showSidebar = !settings.value.showSidebar;
+    localStorage.setItem('theme_showSidebar', String(settings.value.showSidebar));
   }
 
   function setFontSize(size: 'small' | 'medium' | 'large') {
@@ -55,6 +56,11 @@ export const useThemeStore = defineStore('theme', () => {
     const primaryColor = localStorage.getItem('theme_primaryColor');
     if (primaryColor) {
       settings.value.primaryColor = primaryColor;
+    }
+
+    const showSidebar = localStorage.getItem('theme_showSidebar');
+    if (showSidebar !== null) {
+      settings.value.showSidebar = showSidebar === 'true';
     }
   }
 

@@ -13,6 +13,8 @@ build/
 .env
 .tmp/
 exports/
+.strapi/
+.strapi-updater.json
 
 # Editor directories and files
 .idea/
@@ -24,5 +26,5 @@ exports/
 *.sw?
 
 # Frontend build output
-Web/dist/
+web/dist/
 public/app/

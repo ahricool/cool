@@ -1,25 +1,26 @@
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
-# Install backend dependencies
+# Install build tools and image processing deps so sharp can compile if it
+# cannot download a prebuilt libvips binary inside the container.
+RUN apk add --no-cache \
+    libc6-compat \
+    vips-dev \
+    build-base \
+    python3
+
 COPY package.json package-lock.json* ./
 RUN npm install
 
-# Install and build frontend (outputs to public/app via vite.config.ts)
-COPY Web/package.json Web/package-lock.json* ./Web/
-RUN cd Web && npm install
-COPY Web ./Web
-RUN mkdir -p /app/public/uploads
-RUN cd Web && npm run build
-
-# Copy backend source
+# Copy backend and frontend source, then build the frontend into public/app
 COPY . .
+
+RUN npm run build:all
 
 ENV NODE_ENV=production
 ENV STRAPI_TELEMETRY_DISABLED=true
-RUN npm run build
 
-EXPOSE 1337
+EXPOSE 8080
 
 CMD ["npm", "start"]

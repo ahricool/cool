@@ -9,6 +9,8 @@ const apiClient: AxiosInstance = axios.create({
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
+    // Keep legacy response nesting during the Strapi 5 migration.
+    'Strapi-Response-Format': 'v4',
   },
 });
 
@@ -39,6 +41,7 @@ apiClient.interceptors.response.use(
 
 export interface Post {
   id: string;
+  documentId: string;
   title: string;
   slug: string;
   excerpt?: string;
@@ -60,6 +63,7 @@ export interface Post {
 
 export interface Page {
   id: string;
+  documentId: string;
   title: string;
   slug: string;
   content: string;
@@ -68,8 +72,16 @@ export interface Page {
   updatedAt: string;
 }
 
+export interface NavPage {
+  id: string;
+  documentId: string;
+  title: string;
+  slug: string;
+}
+
 export interface Tag {
   id: string;
+  documentId?: string;
   name: string;
   slug: string;
   count: number;
@@ -77,6 +89,7 @@ export interface Tag {
 
 export interface Category {
   id: string;
+  documentId?: string;
   name: string;
   slug: string;
   count: number;
@@ -114,27 +127,31 @@ export interface PaginatedResponse<T> {
 
 // ─── Strapi response transformers ────────────────────────────────────────────
 
-function transformTag(item: { id: number; attributes: Record<string, unknown> }): Tag {
+function transformTag(item: { id: number; attributes: Record<string, unknown>; documentId?: string }): Tag {
   const attrs = item.attributes;
+  const relatedPosts = (attrs.posts as { data?: unknown[] } | null)?.data;
   return {
     id: String(item.id),
+    documentId: item.documentId,
     name: String(attrs.name ?? ''),
     slug: String(attrs.slug ?? ''),
-    count: Number(attrs.postCount ?? 0),
+    count: Array.isArray(relatedPosts) ? relatedPosts.length : Number(attrs.postCount ?? 0),
   };
 }
 
-function transformCategory(item: { id: number; attributes: Record<string, unknown> }): Category {
+function transformCategory(item: { id: number; attributes: Record<string, unknown>; documentId?: string }): Category {
   const attrs = item.attributes;
+  const relatedPosts = (attrs.posts as { data?: unknown[] } | null)?.data;
   return {
     id: String(item.id),
+    documentId: item.documentId,
     name: String(attrs.name ?? ''),
     slug: String(attrs.slug ?? ''),
-    count: Number(attrs.postCount ?? 0),
+    count: Array.isArray(relatedPosts) ? relatedPosts.length : Number(attrs.postCount ?? 0),
   };
 }
 
-function transformPost(item: { id: number; attributes: Record<string, unknown> }): Post {
+function transformPost(item: { id: number; attributes: Record<string, unknown>; documentId?: string }): Post {
   const attrs = item.attributes;
   const authorData = (attrs.author as { data?: { id: number; attributes: Record<string, unknown> } } | null)?.data;
   const tagsData = (attrs.tags as { data?: { id: number; attributes: Record<string, unknown> }[] } | null)?.data ?? [];
@@ -142,6 +159,7 @@ function transformPost(item: { id: number; attributes: Record<string, unknown> }
 
   return {
     id: String(item.id),
+    documentId: String(item.documentId ?? item.id),
     title: String(attrs.title ?? ''),
     slug: String(attrs.slug ?? ''),
     excerpt: attrs.excerpt ? String(attrs.excerpt) : undefined,
@@ -164,10 +182,11 @@ function transformPost(item: { id: number; attributes: Record<string, unknown> }
   };
 }
 
-function transformPage(item: { id: number; attributes: Record<string, unknown> }): Page {
+function transformPage(item: { id: number; attributes: Record<string, unknown>; documentId?: string }): Page {
   const attrs = item.attributes;
   return {
     id: String(item.id),
+    documentId: String(item.documentId ?? item.id),
     title: String(attrs.title ?? ''),
     slug: String(attrs.slug ?? ''),
     content: String(attrs.content ?? ''),
@@ -177,9 +196,19 @@ function transformPage(item: { id: number; attributes: Record<string, unknown> }
   };
 }
 
+function transformNavPage(item: { id: number; attributes: Record<string, unknown>; documentId?: string }): NavPage {
+  const attrs = item.attributes;
+  return {
+    id: String(item.id),
+    documentId: String(item.documentId ?? item.id),
+    title: String(attrs.title ?? ''),
+    slug: String(attrs.slug ?? ''),
+  };
+}
+
 function transformPagination<T>(
-  data: { data: { id: number; attributes: Record<string, unknown> }[]; meta: { pagination: { page: number; pageSize: number; pageCount: number; total: number } } },
-  transformer: (item: { id: number; attributes: Record<string, unknown> }) => T
+  data: { data: { id: number; attributes: Record<string, unknown>; documentId?: string }[]; meta: { pagination: { page: number; pageSize: number; pageCount: number; total: number } } },
+  transformer: (item: { id: number; attributes: Record<string, unknown>; documentId?: string }) => T
 ): PaginatedResponse<T> {
   const pagination = data.meta?.pagination ?? { page: 1, pageSize: 10, pageCount: 1, total: 0 };
   return {
@@ -203,16 +232,19 @@ export const api = {
         'pagination[page]': params?.page ?? 1,
         'pagination[pageSize]': params?.size ?? 10,
         populate: POPULATE_POSTS,
-        publicationState: 'live',
+        status: 'published',
         'sort[0]': 'publishedAt:desc',
       },
     });
     return transformPagination(response.data, transformPost);
   },
 
-  async getPost(id: string): Promise<Post> {
-    const response = await apiClient.get(`/posts/${id}`, {
-      params: { populate: POPULATE_POSTS },
+  async getPost(documentId: string): Promise<Post> {
+    const response = await apiClient.get(`/posts/${documentId}`, {
+      params: {
+        populate: POPULATE_POSTS,
+        status: 'published',
+      },
     });
     return transformPost(response.data.data);
   },
@@ -230,14 +262,30 @@ export const api = {
       params: {
         'pagination[page]': params?.page ?? 1,
         'pagination[pageSize]': params?.size ?? 10,
-        publicationState: 'live',
+        status: 'published',
       },
     });
     return transformPagination(response.data, transformPage);
   },
 
+  async getNavigationPages(): Promise<NavPage[]> {
+    const response = await apiClient.get('/pages', {
+      params: {
+        'filters[slug][$in][0]': 'about',
+        'filters[slug][$in][1]': 'links',
+        'pagination[pageSize]': 10,
+        status: 'published',
+      },
+    });
+    return (response.data.data ?? []).map(transformNavPage);
+  },
+
   async getPage(id: string): Promise<Page> {
-    const response = await apiClient.get(`/pages/${id}`);
+    const response = await apiClient.get(`/pages/${id}`, {
+      params: {
+        status: 'published',
+      },
+    });
     return transformPage(response.data.data);
   },
 
@@ -249,13 +297,20 @@ export const api = {
   // Tags
   async getTags(): Promise<Tag[]> {
     const response = await apiClient.get('/tags', {
-      params: { 'pagination[pageSize]': 100 },
+      params: {
+        'pagination[pageSize]': 100,
+        populate: 'posts',
+      },
     });
     return (response.data.data ?? []).map(transformTag);
   },
 
   async getTag(slug: string): Promise<Tag> {
-    const response = await apiClient.get(`/tags/by-slug/${slug}`);
+    const response = await apiClient.get(`/tags/by-slug/${slug}`, {
+      params: {
+        populate: 'posts',
+      },
+    });
     return transformTag(response.data.data);
   },
 
@@ -266,7 +321,7 @@ export const api = {
         'pagination[page]': params?.page ?? 1,
         'pagination[pageSize]': params?.size ?? 10,
         populate: POPULATE_POSTS,
-        publicationState: 'live',
+        status: 'published',
         'sort[0]': 'publishedAt:desc',
       },
     });
@@ -276,13 +331,20 @@ export const api = {
   // Categories
   async getCategories(): Promise<Category[]> {
     const response = await apiClient.get('/categories', {
-      params: { 'pagination[pageSize]': 100 },
+      params: {
+        'pagination[pageSize]': 100,
+        populate: 'posts',
+      },
     });
     return (response.data.data ?? []).map(transformCategory);
   },
 
   async getCategory(slug: string): Promise<Category> {
-    const response = await apiClient.get(`/categories/by-slug/${slug}`);
+    const response = await apiClient.get(`/categories/by-slug/${slug}`, {
+      params: {
+        populate: 'posts',
+      },
+    });
     return transformCategory(response.data.data);
   },
 
@@ -293,7 +355,7 @@ export const api = {
         'pagination[page]': params?.page ?? 1,
         'pagination[pageSize]': params?.size ?? 10,
         populate: POPULATE_POSTS,
-        publicationState: 'live',
+        status: 'published',
         'sort[0]': 'publishedAt:desc',
       },
     });
@@ -336,7 +398,7 @@ export const api = {
         'pagination[page]': params?.page ?? 1,
         'pagination[pageSize]': params?.size ?? 10,
         populate: POPULATE_POSTS,
-        publicationState: 'live',
+        status: 'published',
         'sort[0]': 'publishedAt:desc',
       },
     });

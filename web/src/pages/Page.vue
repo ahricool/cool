@@ -28,18 +28,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import Layout from '../components/Layout.vue';
 import { api } from '../services/api';
 import type { Page } from '../services/api';
+import { renderContent } from '../utils/renderContent';
 
 const route = useRoute();
 const page = ref<Page | null>(null);
 const loading = ref(true);
 
-onMounted(async () => {
-  const slug = route.params.slug as string;
+async function fetchPage(slug: string) {
+  loading.value = true;
   try {
     page.value = await api.getPageBySlug(slug);
   } catch (e) {
@@ -48,21 +49,24 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
-});
+}
+
+watch(
+  () => route.params.slug,
+  (slug) => {
+    if (typeof slug === 'string' && slug) {
+      fetchPage(slug);
+    } else {
+      page.value = null;
+      loading.value = false;
+    }
+  },
+  { immediate: true }
+);
 
 const formattedContent = computed(() => {
   if (!page.value) return '';
-  return page.value.content
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^(?!<[h|p|u])(.+)$/gm, '<p>$1</p>');
+  return renderContent(page.value.content);
 });
 </script>
 

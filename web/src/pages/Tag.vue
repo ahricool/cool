@@ -1,9 +1,9 @@
 <template>
   <Layout>
     <template #header>
-      <div class="category-header">
-        <h1>Category: {{ categoryName }}</h1>
-        <p v-if="category">{{ category.count }} posts</p>
+      <div class="tag-header">
+        <h1>Tag: {{ tagName }}</h1>
+        <p v-if="tag">{{ tag.count }} posts</p>
       </div>
     </template>
 
@@ -18,7 +18,7 @@
           :key="post.id"
           class="post-item"
         >
-          <router-link :to="`/post/${post.id}`" class="post-link">
+          <router-link :to="`/post/${post.slug}`" class="post-link">
             <div v-if="post.cover" class="post-thumbnail">
               <img :src="post.cover" :alt="post.title" loading="lazy" />
             </div>
@@ -35,7 +35,7 @@
       </div>
 
       <div v-else class="no-posts">
-        <p>No posts found in this category.</p>
+        <p>No posts found with this tag.</p>
       </div>
 
       <!-- Pagination -->
@@ -49,40 +49,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import Layout from '../components/Layout.vue';
 import { api } from '../services/api';
-import type { Post, Category } from '../services/api';
+import type { Post, Tag } from '../services/api';
 
 const route = useRoute();
 const posts = ref<Post[]>([]);
-const category = ref<Category | null>(null);
-const categoryName = ref('');
+const tag = ref<Tag | null>(null);
+const tagName = ref('');
 const currentPage = ref(1);
 const totalPages = ref(1);
-const loading = ref(false);
+const loading = ref(true);
 
 async function fetchData() {
   loading.value = true;
-  const categorySlug = route.params.category as string;
+  const tagSlug = route.params.tag as string;
   try {
-    const [categoryData, postsData] = await Promise.all([
-      api.getCategory(categorySlug).catch(() => null),
-      api.getPostsByCategory(categorySlug, { page: currentPage.value }),
+    const [tagData, postsData] = await Promise.all([
+      api.getTag(tagSlug).catch(() => null),
+      api.getPostsByTag(tagSlug, { page: currentPage.value }),
     ]);
-    category.value = categoryData;
-    categoryName.value = categoryData?.name ?? categorySlug;
+    tag.value = tagData;
+    tagName.value = tagData?.name ?? tagSlug;
     posts.value = postsData.items;
     totalPages.value = postsData.totalPages;
   } catch (e) {
-    console.error('Failed to fetch category posts:', e);
+    console.error('Failed to fetch tag posts:', e);
   } finally {
     loading.value = false;
   }
 }
 
-onMounted(fetchData);
+watch(
+  () => route.params.tag,
+  () => {
+    currentPage.value = 1;
+    fetchData();
+  },
+  { immediate: true }
+);
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -99,7 +106,7 @@ function nextPage() {
 </script>
 
 <style scoped>
-.category-header {
+.tag-header {
   padding: 3rem 2rem;
   background: linear-gradient(135deg, #FE9A9A 0%, #FE7C7C 100%);
   color: white;
@@ -108,13 +115,13 @@ function nextPage() {
   margin-bottom: 2rem;
 }
 
-.category-header h1 {
+.tag-header h1 {
   margin: 0 0 0.5rem 0;
   font-size: 2.5rem;
   font-weight: 700;
 }
 
-.category-header p {
+.tag-header p {
   margin: 0;
   font-size: 1.125rem;
   opacity: 0.9;
@@ -219,6 +226,6 @@ function nextPage() {
 @media (max-width: 768px) {
   .post-link { flex-direction: column; }
   .post-thumbnail { width: 100%; }
-  .category-header h1 { font-size: 1.75rem; }
+  .tag-header h1 { font-size: 1.75rem; }
 }
 </style>
