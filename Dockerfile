@@ -18,6 +18,9 @@ COPY . .
 
 RUN npm run build:all
 
+ENV NODE_ENV=production
+ENV STRAPI_TELEMETRY_DISABLED=true
+
 EXPOSE 8080
 
 CMD ["npm", "start"]

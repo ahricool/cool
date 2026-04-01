@@ -15,7 +15,6 @@ services:
       NODE_ENV: production
     volumes:
       - strapi_data:/app/.tmp
-      - ./public/app:/app/public/app:ro
     restart: unless-stopped
 
 volumes:
