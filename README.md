@@ -2,7 +2,7 @@
 
 A complete CMS system consisting of:
 - **Strapi 4** backend (this directory) — provides content APIs for posts, pages, tags, categories and site configuration
-- **Vue 3 frontend** (`Web/` directory) — a blog-style SPA that consumes the Strapi APIs
+- **Vue 3 frontend** (`web/` directory) — a blog-style SPA that consumes the Strapi APIs
 
 ---
 
@@ -22,7 +22,7 @@ A complete CMS system consisting of:
 │       ├── tag/              # Tag collection type
 │       ├── category/         # Category collection type
 │       └── site-config/      # Site configuration single type
-├── Web/                      # Vue 3 frontend (SPA)
+├── web/                      # Vue 3 frontend (SPA)
 │   ├── src/
 │   │   ├── services/api.ts   # API client (Strapi adapter)
 │   │   ├── stores/           # Pinia stores
@@ -71,7 +71,7 @@ The Strapi server starts at **http://localhost:1337**.
 ### 2. Vue 3 前端 / Frontend
 
 ```bash
-cd Web
+cd web
 npm install
 cp .env.example .env
 

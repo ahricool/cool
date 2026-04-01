@@ -1,4 +1,4 @@
-# Web – Vue 3 Frontend
+# web – Vue 3 Frontend
 
 A blog-style SPA frontend built with **Vue 3 + TypeScript + Vite + Pinia + Vue Router**, designed to work with the Strapi backend in the parent directory.
 

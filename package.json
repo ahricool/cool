@@ -7,7 +7,7 @@
     "develop": "strapi develop",
     "start": "strapi start",
     "build": "strapi build",
-    "build:frontend": "cd Web && npm install && npm run build",
+    "build:frontend": "cd web && npm install && npm run build",
     "build:all": "npm run build:frontend && npm run build",
     "strapi": "strapi"
   },
