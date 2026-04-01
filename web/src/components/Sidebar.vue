@@ -14,7 +14,7 @@
       <div class="widget-content">
         <ul class="post-list">
           <li v-for="post in recentPosts" :key="post.id">
-            <router-link :to="`/post/${post.id}`">
+            <router-link :to="`/post/${post.slug}`">
               {{ post.title }}
             </router-link>
             <span class="post-date">{{ formatDate(post.publishedAt) }}</span>

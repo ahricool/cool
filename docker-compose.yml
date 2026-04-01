@@ -12,6 +12,7 @@ services:
       TRANSFER_TOKEN_SALT: ${TRANSFER_TOKEN_SALT}
       JWT_SECRET: ${JWT_SECRET}
       DATABASE_FILENAME: .tmp/data.db
+      NODE_ENV: production
     volumes:
       - strapi_data:/app/.tmp
       - ./public/app:/app/public/app:ro
