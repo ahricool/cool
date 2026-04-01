@@ -29,6 +29,33 @@
     },
     "url": {
       "type": "string"
+    },
+    "navigation": {
+      "type": "json"
+    },
+    "socialLinks": {
+      "type": "json"
+    },
+    "hero": {
+      "type": "json"
+    },
+    "focus": {
+      "type": "json"
+    },
+    "footer": {
+      "type": "json"
+    },
+    "themeSettings": {
+      "type": "json"
+    },
+    "authorProfile": {
+      "type": "json"
+    },
+    "friendLinks": {
+      "type": "json"
+    },
+    "noticeTitle": {
+      "type": "text"
     }
   }
 }

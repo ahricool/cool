@@ -1,50 +1,132 @@
+import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import { api, type SiteConfig } from '../services/api';
+import { getBootstrap, type BootstrapData, type PageSummary, type PostSummary } from '@/services/api';
 
-export const useSiteStore = defineStore('site', () => {
-  // State
-  const config = ref<SiteConfig>({
-    title: 'My Blog',
+const defaultState: BootstrapData = {
+  site: {
+    title: 'Sakura',
     subtitle: '',
     description: '',
     logo: '',
-    favicon: '/favicon.ico',
+    favicon: '',
     url: '',
-  });
+  },
+  navigation: [],
+  socialLinks: [],
+  noticeTitle: '',
+  theme: {
+    general: {
+      themeSkin: '#fe9600',
+      listType: 'imageflow',
+    },
+    hero: {
+      enabled: true,
+      backgroundImage: '',
+      backgroundFilter: 'filter-grid',
+      titleStyle: 'glitch-text',
+      glitchText: 'Hi, Friend',
+      intro: '',
+      showSocials: true,
+      fullScreen: true,
+      wave: false,
+      showScrollDown: true,
+    },
+    focus: {
+      enabled: true,
+      title: '聚焦',
+      icon: 'fa:anchor',
+      items: [],
+    },
+    footer: {
+      logo: '/assets/images/footer/sakura.svg',
+      icp: '',
+      police: '',
+      policeCode: '',
+    },
+    theme: {
+      enableSwitcher: true,
+      backgrounds: [],
+    },
+    author: {
+      name: '',
+      avatar: '',
+      bio: '',
+      email: '',
+      location: '',
+      backgroundImage: '',
+    },
+  },
+  posts: [],
+  pages: [],
+  tags: [],
+  categories: [],
+  friendLinks: [],
+};
 
+export const useSiteStore = defineStore('site', () => {
+  const data = ref<BootstrapData>(defaultState);
   const loading = ref(false);
-  const error = ref<string | null>(null);
+  const error = ref('');
 
-  // Computed
-  const siteTitle = computed(() => config.value.title);
-  const siteSubtitle = computed(() => config.value.subtitle);
+  const posts = computed(() => data.value.posts);
+  const pages = computed(() => data.value.pages);
 
-  // Actions
-  async function fetchConfig() {
+  async function bootstrap() {
     loading.value = true;
-    error.value = null;
+    error.value = '';
     try {
-      config.value = await api.getSiteConfig();
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to fetch site config';
-      console.warn('Failed to fetch site config, using defaults:', e);
+      data.value = await getBootstrap();
+      updateHead();
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '加载站点配置失败';
+      console.error(err);
     } finally {
       loading.value = false;
     }
   }
 
-  function updateConfig(newConfig: Partial<SiteConfig>) {
-    config.value = { ...config.value, ...newConfig };
+  function updateHead() {
+    document.title = data.value.site.subtitle
+      ? `${data.value.site.title} - ${data.value.site.subtitle}`
+      : data.value.site.title;
+
+    if (data.value.site.description) {
+      let meta = document.querySelector('meta[name="description"]');
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', 'description');
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', data.value.site.description);
+    }
+
+    if (data.value.site.favicon) {
+      let link = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = data.value.site.favicon;
+    }
+  }
+
+  function getPostSummary(slug: string): PostSummary | undefined {
+    return posts.value.find((item) => item.slug === slug);
+  }
+
+  function getPageSummary(slug: string): PageSummary | undefined {
+    return pages.value.find((item) => item.slug === slug);
   }
 
   return {
-    config,
+    data,
+    posts,
+    pages,
     loading,
     error,
-    siteTitle,
-    siteSubtitle,
-    fetchConfig,
-    updateConfig,
+    bootstrap,
+    getPostSummary,
+    getPageSummary,
   };
 });

@@ -1,0 +1,10 @@
+node_modules
+web/node_modules
+.git
+.claire
+.claude
+.env
+.strapi
+build
+public/app
+npm-debug.log*

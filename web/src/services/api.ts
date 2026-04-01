@@ -1,59 +1,58 @@
-import axios, { type AxiosInstance, type AxiosResponse } from 'axios';
+import axios from 'axios';
 
-// API Base URL from environment variable
-const baseURL = import.meta.env.VITE_API_BASE || '/api';
-
-// Create axios instance
-const apiClient: AxiosInstance = axios.create({
-  baseURL,
-  timeout: 10000,
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE || '/api',
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
-    // Keep legacy response nesting during the Strapi 5 migration.
-    'Strapi-Response-Format': 'v4',
   },
 });
 
-// Request interceptor
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+export interface NavItem {
+  label: string;
+  path: string;
+  external: boolean;
+}
 
-// Response interceptor
-apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      console.error('Unauthorized access');
-    }
-    return Promise.reject(error);
-  }
-);
+export interface SocialLink {
+  label: string;
+  icon?: string;
+  url: string;
+  image?: string;
+}
 
-// ─── Frontend interfaces ──────────────────────────────────────────────────────
+export interface TagSummary {
+  id: string;
+  documentId: string;
+  name: string;
+  slug: string;
+  count: number;
+}
 
-export interface Post {
+export interface CategorySummary {
+  id: string;
+  documentId: string;
+  name: string;
+  slug: string;
+  count: number;
+}
+
+export interface AuthorSummary {
+  id: string;
+  name: string;
+  avatar?: string;
+}
+
+export interface PostSummary {
   id: string;
   documentId: string;
   title: string;
   slug: string;
-  excerpt?: string;
-  content: string;
+  excerpt: string;
   cover?: string;
-  author: {
-    id: string;
-    name: string;
-    avatar?: string;
-  };
-  tags: Tag[];
-  categories: Category[];
+  author: AuthorSummary;
+  tags: TagSummary[];
+  categories: CategorySummary[];
   createdAt: string;
   updatedAt: string;
   publishedAt: string;
@@ -61,349 +60,199 @@ export interface Post {
   likes: number;
 }
 
-export interface Page {
+export interface PostAdjacent {
+  title: string;
+  slug: string;
+}
+
+export interface PostDetail extends PostSummary {
+  content: string;
+  previousPost: PostAdjacent | null;
+  nextPost: PostAdjacent | null;
+}
+
+export interface PageSummary {
   id: string;
   documentId: string;
   title: string;
   slug: string;
-  content: string;
   cover?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface NavPage {
-  id: string;
-  documentId: string;
-  title: string;
-  slug: string;
+export interface PageDetail extends PageSummary {
+  content: string;
 }
 
-export interface Tag {
+export interface FriendLink {
   id: string;
-  documentId?: string;
+  group: string;
   name: string;
-  slug: string;
-  count: number;
+  url: string;
+  description: string;
+  logo?: string;
 }
 
-export interface Category {
-  id: string;
-  documentId?: string;
+export interface ThemeBackground {
   name: string;
-  slug: string;
-  count: number;
+  url?: string;
+  strategy: string;
+  icon?: string;
+  night: boolean;
+  default: boolean;
 }
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  bio?: string;
+export interface ThemeData {
+  general: {
+    themeSkin: string;
+    listType: string;
+  };
+  hero: {
+    enabled: boolean;
+    backgroundImage?: string;
+    backgroundFilter: string;
+    titleStyle: string;
+    glitchText: string;
+    intro?: string;
+    showSocials: boolean;
+    fullScreen: boolean;
+    wave: boolean;
+    showScrollDown: boolean;
+    backgroundVideo?: boolean;
+    backgroundVideoUrl?: string;
+  };
+  focus: {
+    enabled: boolean;
+    title: string;
+    icon?: string;
+    items: Array<{
+      id: string;
+      title: string;
+      description: string;
+      link: string;
+      image?: string;
+    }>;
+  };
+  footer: {
+    logo?: string;
+    icp?: string;
+    police?: string;
+    policeCode?: string;
+  };
+  theme: {
+    enableSwitcher: boolean;
+    backgrounds: ThemeBackground[];
+  };
+  author: {
+    name: string;
+    avatar?: string;
+    bio?: string;
+    email?: string;
+    location?: string;
+    backgroundImage?: string;
+  };
 }
 
-export interface SiteConfig {
+export interface SiteMeta {
   title: string;
   subtitle?: string;
   description?: string;
   logo?: string;
   favicon?: string;
-  url: string;
+  url?: string;
 }
 
-export interface PaginationParams {
-  page?: number;
-  size?: number;
+export interface BootstrapData {
+  site: SiteMeta;
+  navigation: NavItem[];
+  socialLinks: SocialLink[];
+  noticeTitle?: string;
+  theme: ThemeData;
+  posts: PostSummary[];
+  pages: PageSummary[];
+  tags: TagSummary[];
+  categories: CategorySummary[];
+  friendLinks: FriendLink[];
 }
 
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  size: number;
-  totalPages: number;
+function ensureUrl(value?: string) {
+  if (!value) {
+    return '';
+  }
+  if (/^https?:\/\//.test(value) || value.startsWith('data:') || value.startsWith('/')) {
+    return value;
+  }
+  return `/${value}`;
 }
 
-// ─── Strapi response transformers ────────────────────────────────────────────
-
-function transformTag(item: { id: number; attributes: Record<string, unknown>; documentId?: string }): Tag {
-  const attrs = item.attributes;
-  const relatedPosts = (attrs.posts as { data?: unknown[] } | null)?.data;
+function normalizePost(post: PostSummary): PostSummary {
   return {
-    id: String(item.id),
-    documentId: item.documentId,
-    name: String(attrs.name ?? ''),
-    slug: String(attrs.slug ?? ''),
-    count: Array.isArray(relatedPosts) ? relatedPosts.length : Number(attrs.postCount ?? 0),
+    ...post,
+    cover: ensureUrl(post.cover),
+    author: {
+      ...post.author,
+      avatar: ensureUrl(post.author?.avatar),
+    },
+    tags: (post.tags || []).map((tag) => ({ ...tag, count: Number(tag.count ?? 0) })),
+    categories: (post.categories || []).map((category) => ({ ...category, count: Number(category.count ?? 0) })),
   };
 }
 
-function transformCategory(item: { id: number; attributes: Record<string, unknown>; documentId?: string }): Category {
-  const attrs = item.attributes;
-  const relatedPosts = (attrs.posts as { data?: unknown[] } | null)?.data;
+function normalizePage(page: PageSummary): PageSummary {
   return {
-    id: String(item.id),
-    documentId: item.documentId,
-    name: String(attrs.name ?? ''),
-    slug: String(attrs.slug ?? ''),
-    count: Array.isArray(relatedPosts) ? relatedPosts.length : Number(attrs.postCount ?? 0),
+    ...page,
+    cover: ensureUrl(page.cover),
   };
 }
 
-function transformPost(item: { id: number; attributes: Record<string, unknown>; documentId?: string }): Post {
-  const attrs = item.attributes;
-  const authorData = (attrs.author as { data?: { id: number; attributes: Record<string, unknown> } } | null)?.data;
-  const tagsData = (attrs.tags as { data?: { id: number; attributes: Record<string, unknown> }[] } | null)?.data ?? [];
-  const categoriesData = (attrs.categories as { data?: { id: number; attributes: Record<string, unknown> }[] } | null)?.data ?? [];
-
+export async function getBootstrap() {
+  const response = await api.get<BootstrapData>('/site-config/bootstrap');
   return {
-    id: String(item.id),
-    documentId: String(item.documentId ?? item.id),
-    title: String(attrs.title ?? ''),
-    slug: String(attrs.slug ?? ''),
-    excerpt: attrs.excerpt ? String(attrs.excerpt) : undefined,
-    content: String(attrs.content ?? ''),
-    cover: attrs.cover ? String(attrs.cover) : undefined,
-    author: authorData
-      ? {
-          id: String(authorData.id),
-          name: String(authorData.attributes.username ?? authorData.attributes.name ?? 'Unknown'),
-          avatar: authorData.attributes.avatar ? String(authorData.attributes.avatar) : undefined,
-        }
-      : { id: '', name: 'Unknown' },
-    tags: tagsData.map(transformTag),
-    categories: categoriesData.map(transformCategory),
-    createdAt: String(attrs.createdAt ?? ''),
-    updatedAt: String(attrs.updatedAt ?? ''),
-    publishedAt: String(attrs.publishedAt ?? attrs.createdAt ?? ''),
-    views: Number(attrs.views ?? 0),
-    likes: Number(attrs.likes ?? 0),
+    ...response.data,
+    site: {
+      ...response.data.site,
+      logo: ensureUrl(response.data.site.logo),
+      favicon: ensureUrl(response.data.site.favicon),
+    },
+    theme: {
+      ...response.data.theme,
+      hero: {
+        ...response.data.theme.hero,
+        backgroundImage: ensureUrl(response.data.theme.hero.backgroundImage),
+        backgroundVideoUrl: ensureUrl(response.data.theme.hero.backgroundVideoUrl),
+      },
+      focus: {
+        ...response.data.theme.focus,
+        items: (response.data.theme.focus.items || []).map((item) => ({ ...item, image: ensureUrl(item.image) })),
+      },
+      footer: {
+        ...response.data.theme.footer,
+        logo: ensureUrl(response.data.theme.footer.logo),
+      },
+      author: {
+        ...response.data.theme.author,
+        avatar: ensureUrl(response.data.theme.author.avatar),
+        backgroundImage: ensureUrl(response.data.theme.author.backgroundImage),
+      },
+      theme: {
+        ...response.data.theme.theme,
+        backgrounds: (response.data.theme.theme.backgrounds || []).map((item) => ({ ...item, url: ensureUrl(item.url) })),
+      },
+    },
+    posts: (response.data.posts || []).map(normalizePost),
+    pages: (response.data.pages || []).map(normalizePage),
+    friendLinks: (response.data.friendLinks || []).map((item) => ({ ...item, logo: ensureUrl(item.logo) })),
+    socialLinks: (response.data.socialLinks || []).map((item) => ({ ...item, image: ensureUrl(item.image) })),
   };
 }
 
-function transformPage(item: { id: number; attributes: Record<string, unknown>; documentId?: string }): Page {
-  const attrs = item.attributes;
-  return {
-    id: String(item.id),
-    documentId: String(item.documentId ?? item.id),
-    title: String(attrs.title ?? ''),
-    slug: String(attrs.slug ?? ''),
-    content: String(attrs.content ?? ''),
-    cover: attrs.cover ? String(attrs.cover) : undefined,
-    createdAt: String(attrs.createdAt ?? ''),
-    updatedAt: String(attrs.updatedAt ?? ''),
-  };
+export async function getPostBySlug(slug: string) {
+  const response = await api.get<{ data: PostDetail }>(`/public/posts/slug/${slug}`);
+  return normalizePost(response.data.data) as PostDetail;
 }
 
-function transformNavPage(item: { id: number; attributes: Record<string, unknown>; documentId?: string }): NavPage {
-  const attrs = item.attributes;
-  return {
-    id: String(item.id),
-    documentId: String(item.documentId ?? item.id),
-    title: String(attrs.title ?? ''),
-    slug: String(attrs.slug ?? ''),
-  };
+export async function getPageBySlug(slug: string) {
+  const response = await api.get<{ data: PageDetail }>(`/public/pages/slug/${slug}`);
+  return normalizePage(response.data.data) as PageDetail;
 }
-
-function transformPagination<T>(
-  data: { data: { id: number; attributes: Record<string, unknown>; documentId?: string }[]; meta: { pagination: { page: number; pageSize: number; pageCount: number; total: number } } },
-  transformer: (item: { id: number; attributes: Record<string, unknown>; documentId?: string }) => T
-): PaginatedResponse<T> {
-  const pagination = data.meta?.pagination ?? { page: 1, pageSize: 10, pageCount: 1, total: 0 };
-  return {
-    items: (data.data ?? []).map(transformer),
-    total: pagination.total,
-    page: pagination.page,
-    size: pagination.pageSize,
-    totalPages: pagination.pageCount,
-  };
-}
-
-// ─── API functions ────────────────────────────────────────────────────────────
-
-const POPULATE_POSTS = 'tags,categories,author';
-
-export const api = {
-  // Posts
-  async getPosts(params?: PaginationParams): Promise<PaginatedResponse<Post>> {
-    const response = await apiClient.get('/posts', {
-      params: {
-        'pagination[page]': params?.page ?? 1,
-        'pagination[pageSize]': params?.size ?? 10,
-        populate: POPULATE_POSTS,
-        status: 'published',
-        'sort[0]': 'publishedAt:desc',
-      },
-    });
-    return transformPagination(response.data, transformPost);
-  },
-
-  async getPost(documentId: string): Promise<Post> {
-    const response = await apiClient.get(`/posts/${documentId}`, {
-      params: {
-        populate: POPULATE_POSTS,
-        status: 'published',
-      },
-    });
-    return transformPost(response.data.data);
-  },
-
-  async getPostBySlug(slug: string): Promise<Post> {
-    const response = await apiClient.get(`/posts/slug/${slug}`, {
-      params: { populate: POPULATE_POSTS },
-    });
-    return transformPost(response.data.data);
-  },
-
-  // Pages
-  async getPages(params?: PaginationParams): Promise<PaginatedResponse<Page>> {
-    const response = await apiClient.get('/pages', {
-      params: {
-        'pagination[page]': params?.page ?? 1,
-        'pagination[pageSize]': params?.size ?? 10,
-        status: 'published',
-      },
-    });
-    return transformPagination(response.data, transformPage);
-  },
-
-  async getNavigationPages(): Promise<NavPage[]> {
-    const response = await apiClient.get('/pages', {
-      params: {
-        'filters[slug][$in][0]': 'about',
-        'filters[slug][$in][1]': 'links',
-        'pagination[pageSize]': 10,
-        status: 'published',
-      },
-    });
-    return (response.data.data ?? []).map(transformNavPage);
-  },
-
-  async getPage(id: string): Promise<Page> {
-    const response = await apiClient.get(`/pages/${id}`, {
-      params: {
-        status: 'published',
-      },
-    });
-    return transformPage(response.data.data);
-  },
-
-  async getPageBySlug(slug: string): Promise<Page> {
-    const response = await apiClient.get(`/pages/slug/${slug}`);
-    return transformPage(response.data.data);
-  },
-
-  // Tags
-  async getTags(): Promise<Tag[]> {
-    const response = await apiClient.get('/tags', {
-      params: {
-        'pagination[pageSize]': 100,
-        populate: 'posts',
-      },
-    });
-    return (response.data.data ?? []).map(transformTag);
-  },
-
-  async getTag(slug: string): Promise<Tag> {
-    const response = await apiClient.get(`/tags/by-slug/${slug}`, {
-      params: {
-        populate: 'posts',
-      },
-    });
-    return transformTag(response.data.data);
-  },
-
-  async getPostsByTag(slug: string, params?: PaginationParams): Promise<PaginatedResponse<Post>> {
-    const response = await apiClient.get('/posts', {
-      params: {
-        'filters[tags][slug][$eq]': slug,
-        'pagination[page]': params?.page ?? 1,
-        'pagination[pageSize]': params?.size ?? 10,
-        populate: POPULATE_POSTS,
-        status: 'published',
-        'sort[0]': 'publishedAt:desc',
-      },
-    });
-    return transformPagination(response.data, transformPost);
-  },
-
-  // Categories
-  async getCategories(): Promise<Category[]> {
-    const response = await apiClient.get('/categories', {
-      params: {
-        'pagination[pageSize]': 100,
-        populate: 'posts',
-      },
-    });
-    return (response.data.data ?? []).map(transformCategory);
-  },
-
-  async getCategory(slug: string): Promise<Category> {
-    const response = await apiClient.get(`/categories/by-slug/${slug}`, {
-      params: {
-        populate: 'posts',
-      },
-    });
-    return transformCategory(response.data.data);
-  },
-
-  async getPostsByCategory(slug: string, params?: PaginationParams): Promise<PaginatedResponse<Post>> {
-    const response = await apiClient.get('/posts', {
-      params: {
-        'filters[categories][slug][$eq]': slug,
-        'pagination[page]': params?.page ?? 1,
-        'pagination[pageSize]': params?.size ?? 10,
-        populate: POPULATE_POSTS,
-        status: 'published',
-        'sort[0]': 'publishedAt:desc',
-      },
-    });
-    return transformPagination(response.data, transformPost);
-  },
-
-  // Site Config
-  async getSiteConfig(): Promise<SiteConfig> {
-    const response = await apiClient.get('/site-config');
-    const attrs = (response.data.data?.attributes ?? {}) as Record<string, unknown>;
-    return {
-      title: String(attrs.title ?? 'My Blog'),
-      subtitle: attrs.subtitle ? String(attrs.subtitle) : undefined,
-      description: attrs.description ? String(attrs.description) : undefined,
-      logo: attrs.logo ? String(attrs.logo) : undefined,
-      favicon: attrs.favicon ? String(attrs.favicon) : '/favicon.ico',
-      url: String(attrs.url ?? ''),
-    };
-  },
-
-  // User
-  async getUser(id: string): Promise<User> {
-    const response = await apiClient.get(`/users/${id}`);
-    const u = response.data as Record<string, unknown>;
-    return {
-      id: String(u.id ?? ''),
-      name: String(u.username ?? u.name ?? ''),
-      email: String(u.email ?? ''),
-      avatar: u.avatar ? String(u.avatar) : undefined,
-      bio: u.bio ? String(u.bio) : undefined,
-    };
-  },
-
-  // Search
-  async searchPosts(query: string, params?: PaginationParams): Promise<PaginatedResponse<Post>> {
-    const response = await apiClient.get('/posts', {
-      params: {
-        'filters[$or][0][title][$containsi]': query,
-        'filters[$or][1][content][$containsi]': query,
-        'pagination[page]': params?.page ?? 1,
-        'pagination[pageSize]': params?.size ?? 10,
-        populate: POPULATE_POSTS,
-        status: 'published',
-        'sort[0]': 'publishedAt:desc',
-      },
-    });
-    return transformPagination(response.data, transformPost);
-  },
-};
-
-export default apiClient;
