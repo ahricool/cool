@@ -18,7 +18,7 @@
           :key="post.id"
           class="post-item"
         >
-          <router-link :to="`/post/${post.id}`" class="post-link">
+          <router-link :to="`/post/${post.slug}`" class="post-link">
             <div v-if="post.cover" class="post-thumbnail">
               <img :src="post.cover" :alt="post.title" loading="lazy" />
             </div>
@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import Layout from '../components/Layout.vue';
 import { api } from '../services/api';
@@ -61,7 +61,7 @@ const tag = ref<Tag | null>(null);
 const tagName = ref('');
 const currentPage = ref(1);
 const totalPages = ref(1);
-const loading = ref(false);
+const loading = ref(true);
 
 async function fetchData() {
   loading.value = true;
@@ -82,7 +82,14 @@ async function fetchData() {
   }
 }
 
-onMounted(fetchData);
+watch(
+  () => route.params.tag,
+  () => {
+    currentPage.value = 1;
+    fetchData();
+  },
+  { immediate: true }
+);
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);

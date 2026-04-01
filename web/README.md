@@ -26,7 +26,7 @@ Make sure the Strapi backend is running at `http://localhost:8080` (or configure
 | Route | Component | Description |
 |-------|-----------|-------------|
 | `/` | Home.vue | Post list with pagination |
-| `/post/:id` | Post.vue | Post detail |
+| `/post/:slug` | Post.vue | Post detail |
 | `/page/:slug` | Page.vue | Static page |
 | `/tag/:tag` | Tag.vue | Posts filtered by tag |
 | `/category/:category` | Category.vue | Posts filtered by category |

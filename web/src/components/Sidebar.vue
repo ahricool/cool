@@ -14,7 +14,7 @@
       <div class="widget-content">
         <ul class="post-list">
           <li v-for="post in recentPosts" :key="post.id">
-            <router-link :to="`/post/${post.id}`">
+            <router-link :to="`/post/${post.slug}`">
               {{ post.title }}
             </router-link>
             <span class="post-date">{{ formatDate(post.publishedAt) }}</span>
@@ -35,7 +35,7 @@
             :to="`/tag/${tag.slug}`"
             class="tag-item"
           >
-            {{ tag.name }}
+            {{ tag.name }} <span class="tag-count">({{ tag.count }})</span>
           </router-link>
         </div>
         <p v-if="tags.length === 0" class="empty-hint">No tags yet.</p>
@@ -169,6 +169,11 @@ function formatDate(dateStr: string): string {
   border-radius: 4px;
   font-size: 0.875rem;
   transition: all 0.3s;
+}
+
+.tag-count {
+  opacity: 0.8;
+  font-size: 0.75rem;
 }
 
 .tag-item:hover {

@@ -30,7 +30,7 @@
             itemscope
             itemtype="http://schema.org/BlogPosting"
           >
-            <router-link :to="`/post/${post.id}`" class="post-link">
+            <router-link :to="`/post/${post.slug}`" class="post-link">
               <div v-if="post.cover" class="post-thumbnail">
                 <img :src="post.cover" :alt="post.title" loading="lazy" />
               </div>
@@ -81,7 +81,7 @@ const siteStore = useSiteStore();
 const posts = ref<Post[]>([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
-const loading = ref(false);
+const loading = ref(true);
 const showHero = ref(true);
 
 async function fetchPosts() {
