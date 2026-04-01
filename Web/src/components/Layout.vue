@@ -35,7 +35,6 @@
 </template>
 
 <script setup lang="ts">
-import { useThemeStore } from '../stores/theme';
 import Header from './Header.vue';
 import Footer from './Footer.vue';
 import Sidebar from './Sidebar.vue';
@@ -47,8 +46,6 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   showSidebar: true,
 });
-
-const _themeStore = useThemeStore();
 </script>
 
 <style scoped>
