@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import Layout from '../components/Layout.vue';
 import { api } from '../services/api';
@@ -61,7 +61,7 @@ const category = ref<Category | null>(null);
 const categoryName = ref('');
 const currentPage = ref(1);
 const totalPages = ref(1);
-const loading = ref(false);
+const loading = ref(true);
 
 async function fetchData() {
   loading.value = true;
@@ -77,12 +77,23 @@ async function fetchData() {
     totalPages.value = postsData.totalPages;
   } catch (e) {
     console.error('Failed to fetch category posts:', e);
+    posts.value = [];
+    category.value = null;
+    categoryName.value = categorySlug;
+    totalPages.value = 1;
   } finally {
     loading.value = false;
   }
 }
 
-onMounted(fetchData);
+watch(
+  () => route.params.category,
+  () => {
+    currentPage.value = 1;
+    void fetchData();
+  },
+  { immediate: true }
+);
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);

@@ -45,7 +45,7 @@ import type { Post } from '../services/api';
 
 const posts = ref<Post[]>([]);
 const loading = ref(false);
-const totalPosts = computed(() => posts.value.length);
+const totalPosts = ref(0);
 
 const groupedPosts = computed(() => {
   const groups: { [key: string]: Post[] } = {};
@@ -71,9 +71,9 @@ const groupedPosts = computed(() => {
 onMounted(async () => {
   loading.value = true;
   try {
-    // Fetch up to 200 posts for the archive view
     const response = await api.getPosts({ size: 200 });
     posts.value = response.items;
+    totalPosts.value = response.total;
   } catch (e) {
     console.error('Failed to fetch archive posts:', e);
   } finally {

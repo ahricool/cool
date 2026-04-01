@@ -12,10 +12,9 @@
 
     <nav class="site-navigation">
       <ul class="nav-menu">
-        <li><router-link to="/">Home</router-link></li>
-        <li><router-link to="/archive">Archive</router-link></li>
-        <li><router-link to="/page/about">About</router-link></li>
-        <li><router-link to="/page/links">Links</router-link></li>
+        <li v-for="item in navItems" :key="item.to">
+          <router-link :to="item.to">{{ item.label }}</router-link>
+        </li>
       </ul>
     </nav>
 
@@ -29,11 +28,33 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue';
 import { useSiteStore } from '../stores/site';
 import { useThemeStore } from '../stores/theme';
+import { api, type Page } from '../services/api';
 
 const siteStore = useSiteStore();
 const themeStore = useThemeStore();
+const navigationPages = ref<Page[]>([]);
+
+onMounted(async () => {
+  try {
+    const response = await api.getPages({ size: 20 });
+    navigationPages.value = response.items.slice(0, 5);
+  } catch (error) {
+    console.warn('Failed to load navigation pages:', error);
+    navigationPages.value = [];
+  }
+});
+
+const navItems = computed(() => [
+  { to: '/', label: 'Home' },
+  { to: '/archive', label: 'Archive' },
+  ...navigationPages.value.map((page) => ({
+    to: `/page/${page.slug}`,
+    label: page.title,
+  })),
+]);
 </script>
 
 <style scoped>

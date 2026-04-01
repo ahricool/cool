@@ -81,7 +81,7 @@ const siteStore = useSiteStore();
 const posts = ref<Post[]>([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
-const loading = ref(false);
+const loading = ref(true);
 const showHero = ref(true);
 
 async function fetchPosts() {
