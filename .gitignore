@@ -24,5 +24,5 @@ exports/
 *.sw?
 
 # Frontend build output
-Web/dist/
+web/dist/
 public/app/
