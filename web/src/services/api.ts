@@ -68,6 +68,12 @@ export interface Page {
   updatedAt: string;
 }
 
+export interface NavPage {
+  id: string;
+  title: string;
+  slug: string;
+}
+
 export interface Tag {
   id: string;
   name: string;
@@ -179,6 +185,15 @@ function transformPage(item: { id: number; attributes: Record<string, unknown> }
   };
 }
 
+function transformNavPage(item: { id: number; attributes: Record<string, unknown> }): NavPage {
+  const attrs = item.attributes;
+  return {
+    id: String(item.id),
+    title: String(attrs.title ?? ''),
+    slug: String(attrs.slug ?? ''),
+  };
+}
+
 function transformPagination<T>(
   data: { data: { id: number; attributes: Record<string, unknown> }[]; meta: { pagination: { page: number; pageSize: number; pageCount: number; total: number } } },
   transformer: (item: { id: number; attributes: Record<string, unknown> }) => T
@@ -239,6 +254,18 @@ export const api = {
       },
     });
     return transformPagination(response.data, transformPage);
+  },
+
+  async getNavigationPages(): Promise<NavPage[]> {
+    const response = await apiClient.get('/pages', {
+      params: {
+        'filters[slug][$in][0]': 'about',
+        'filters[slug][$in][1]': 'links',
+        'pagination[pageSize]': 10,
+        publicationState: 'live',
+      },
+    });
+    return (response.data.data ?? []).map(transformNavPage);
   },
 
   async getPage(id: string): Promise<Page> {

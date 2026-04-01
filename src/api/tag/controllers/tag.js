@@ -3,22 +3,24 @@
 const { createCoreController } = require('@strapi/strapi').factories;
 
 module.exports = createCoreController('api::tag.tag', ({ strapi }) => ({
+  async withPostCount(item) {
+    const postCount = await strapi.db.query('api::post.post').count({
+      where: { tags: { id: item.id }, publishedAt: { $notNull: true } },
+    });
+
+    return {
+      ...item,
+      attributes: {
+        ...item.attributes,
+        postCount,
+      },
+    };
+  },
+
   async find(ctx) {
     const response = await super.find(ctx);
     response.data = await Promise.all(
-      (response.data ?? []).map(async (item) => {
-        const postCount = await strapi.db.query('api::post.post').count({
-          where: { tags: { id: item.id }, publishedAt: { $notNull: true } },
-        });
-
-        return {
-          ...item,
-          attributes: {
-            ...item.attributes,
-            postCount,
-          },
-        };
-      })
+      (response.data ?? []).map((item) => this.withPostCount(item))
     );
 
     return response;
@@ -36,11 +38,6 @@ module.exports = createCoreController('api::tag.tag', ({ strapi }) => ({
     }
 
     const sanitizedEntity = await this.sanitizeOutput(entity, ctx);
-    const response = this.transformResponse(sanitizedEntity);
-    response.data.attributes.postCount = await strapi.db.query('api::post.post').count({
-      where: { tags: { id: entity.id }, publishedAt: { $notNull: true } },
-    });
-
-    return response;
+    return this.withPostCount(this.transformResponse(sanitizedEntity).data).then((data) => ({ data }));
   },
 }));
