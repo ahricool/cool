@@ -14,8 +14,9 @@
       <ul class="nav-menu">
         <li><router-link to="/">Home</router-link></li>
         <li><router-link to="/archive">Archive</router-link></li>
-        <li><router-link to="/page/about">About</router-link></li>
-        <li><router-link to="/page/links">Links</router-link></li>
+        <li v-for="page in navigationPages" :key="page.slug">
+          <router-link :to="`/page/${page.slug}`">{{ page.label }}</router-link>
+        </li>
       </ul>
     </nav>
 
@@ -29,11 +30,19 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useSiteStore } from '../stores/site';
 import { useThemeStore } from '../stores/theme';
 
 const siteStore = useSiteStore();
 const themeStore = useThemeStore();
+
+const navigationPages = computed(() =>
+  [
+    { slug: 'about', label: 'About' },
+    { slug: 'links', label: 'Links' },
+  ].filter((page) => siteStore.config.url !== '' || page.slug === 'about')
+);
 </script>
 
 <style scoped>

@@ -116,21 +116,23 @@ export interface PaginatedResponse<T> {
 
 function transformTag(item: { id: number; attributes: Record<string, unknown> }): Tag {
   const attrs = item.attributes;
+  const relatedPosts = (attrs.posts as { data?: unknown[] } | null)?.data;
   return {
     id: String(item.id),
     name: String(attrs.name ?? ''),
     slug: String(attrs.slug ?? ''),
-    count: Number(attrs.postCount ?? 0),
+    count: Array.isArray(relatedPosts) ? relatedPosts.length : Number(attrs.postCount ?? 0),
   };
 }
 
 function transformCategory(item: { id: number; attributes: Record<string, unknown> }): Category {
   const attrs = item.attributes;
+  const relatedPosts = (attrs.posts as { data?: unknown[] } | null)?.data;
   return {
     id: String(item.id),
     name: String(attrs.name ?? ''),
     slug: String(attrs.slug ?? ''),
-    count: Number(attrs.postCount ?? 0),
+    count: Array.isArray(relatedPosts) ? relatedPosts.length : Number(attrs.postCount ?? 0),
   };
 }
 
@@ -212,7 +214,10 @@ export const api = {
 
   async getPost(id: string): Promise<Post> {
     const response = await apiClient.get(`/posts/${id}`, {
-      params: { populate: POPULATE_POSTS },
+      params: {
+        populate: POPULATE_POSTS,
+        publicationState: 'live',
+      },
     });
     return transformPost(response.data.data);
   },
@@ -237,7 +242,11 @@ export const api = {
   },
 
   async getPage(id: string): Promise<Page> {
-    const response = await apiClient.get(`/pages/${id}`);
+    const response = await apiClient.get(`/pages/${id}`, {
+      params: {
+        publicationState: 'live',
+      },
+    });
     return transformPage(response.data.data);
   },
 
@@ -249,13 +258,20 @@ export const api = {
   // Tags
   async getTags(): Promise<Tag[]> {
     const response = await apiClient.get('/tags', {
-      params: { 'pagination[pageSize]': 100 },
+      params: {
+        'pagination[pageSize]': 100,
+        populate: 'posts',
+      },
     });
     return (response.data.data ?? []).map(transformTag);
   },
 
   async getTag(slug: string): Promise<Tag> {
-    const response = await apiClient.get(`/tags/by-slug/${slug}`);
+    const response = await apiClient.get(`/tags/by-slug/${slug}`, {
+      params: {
+        populate: 'posts',
+      },
+    });
     return transformTag(response.data.data);
   },
 
@@ -276,13 +292,20 @@ export const api = {
   // Categories
   async getCategories(): Promise<Category[]> {
     const response = await apiClient.get('/categories', {
-      params: { 'pagination[pageSize]': 100 },
+      params: {
+        'pagination[pageSize]': 100,
+        populate: 'posts',
+      },
     });
     return (response.data.data ?? []).map(transformCategory);
   },
 
   async getCategory(slug: string): Promise<Category> {
-    const response = await apiClient.get(`/categories/by-slug/${slug}`);
+    const response = await apiClient.get(`/categories/by-slug/${slug}`, {
+      params: {
+        populate: 'posts',
+      },
+    });
     return transformCategory(response.data.data);
   },
 

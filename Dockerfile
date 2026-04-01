@@ -13,10 +13,10 @@ RUN apk add --no-cache \
 COPY package.json package-lock.json* ./
 RUN npm install
 
-# Copy backend source and pre-built frontend (web/dist must exist before docker build)
+# Copy backend and frontend source, then build the frontend into public/app
 COPY . .
 
-RUN npm run build
+RUN npm run build:all
 
 EXPOSE 8080
 

@@ -78,18 +78,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import Layout from '../components/Layout.vue';
 import { api } from '../services/api';
 import type { Post } from '../services/api';
+import { renderContent } from '../utils/renderContent';
 
 const route = useRoute();
 const post = ref<Post | null>(null);
 const loading = ref(true);
 
-onMounted(async () => {
-  const postId = route.params.id as string;
+async function fetchPost(postId: string) {
+  loading.value = true;
   try {
     post.value = await api.getPost(postId);
   } catch (e) {
@@ -98,18 +99,24 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
-});
+}
+
+watch(
+  () => route.params.id,
+  (postId) => {
+    if (typeof postId === 'string' && postId) {
+      void fetchPost(postId);
+    } else {
+      post.value = null;
+      loading.value = false;
+    }
+  },
+  { immediate: true }
+);
 
 const formattedContent = computed(() => {
   if (!post.value) return '';
-  return post.value.content
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^(?!<[h|p])(.+)$/gm, '<p>$1</p>');
+  return renderContent(post.value.content);
 });
 
 function formatDate(dateStr: string): string {

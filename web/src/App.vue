@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { useSiteStore } from './stores/site';
 import { useThemeStore } from './stores/theme';
 
 const siteStore = useSiteStore();
 const themeStore = useThemeStore();
+const route = useRoute();
 
 onMounted(() => {
   themeStore.loadSettings();
@@ -14,7 +16,7 @@ onMounted(() => {
 
 <template>
   <div id="app" :class="{ 'dark-mode': themeStore.settings.darkMode }">
-    <router-view />
+    <router-view :key="route.fullPath" />
   </div>
 </template>
 

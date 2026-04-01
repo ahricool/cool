@@ -37,8 +37,10 @@ module.exports = (config, { strapi }) => {
 
     // Pass through Strapi's own routes
     if (
+      reqPath === '/api' ||
       reqPath.startsWith('/api/') ||
       reqPath.startsWith('/admin') ||
+      reqPath === '/uploads' ||
       reqPath.startsWith('/uploads/') ||
       reqPath === '/_health'
     ) {
