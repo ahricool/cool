@@ -21,7 +21,7 @@
               :key="post.id"
               class="archive-post"
             >
-              <router-link :to="`/post/${post.id}`" class="post-link">
+              <router-link :to="`/post/${post.slug}`" class="post-link">
                 <span class="post-date">{{ formatMonthDay(post.publishedAt) }}</span>
                 <span class="post-title">{{ post.title }}</span>
               </router-link>

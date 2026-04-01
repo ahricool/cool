@@ -89,10 +89,10 @@ const route = useRoute();
 const post = ref<Post | null>(null);
 const loading = ref(true);
 
-async function fetchPost(postId: string) {
+async function fetchPost(postSlug: string) {
   loading.value = true;
   try {
-    post.value = await api.getPost(postId);
+    post.value = await api.getPostBySlug(postSlug);
   } catch (e) {
     console.error('Failed to fetch post:', e);
     post.value = null;
@@ -102,10 +102,10 @@ async function fetchPost(postId: string) {
 }
 
 watch(
-  () => route.params.id,
-  (postId) => {
-    if (typeof postId === 'string' && postId) {
-      void fetchPost(postId);
+  () => route.params.slug,
+  (postSlug) => {
+    if (typeof postSlug === 'string' && postSlug) {
+      void fetchPost(postSlug);
     } else {
       post.value = null;
       loading.value = false;

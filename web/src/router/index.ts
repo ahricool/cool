@@ -13,7 +13,7 @@ const routes: RouteRecordRaw[] = [
     component: Home,
   },
   {
-    path: '/post/:id',
+    path: '/post/:slug',
     name: 'Post',
     component: Post,
     props: true,

@@ -30,7 +30,7 @@
             itemscope
             itemtype="http://schema.org/BlogPosting"
           >
-            <router-link :to="`/post/${post.id}`" class="post-link">
+            <router-link :to="`/post/${post.slug}`" class="post-link">
               <div v-if="post.cover" class="post-thumbnail">
                 <img :src="post.cover" :alt="post.title" loading="lazy" />
               </div>
