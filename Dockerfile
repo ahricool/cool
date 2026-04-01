@@ -16,6 +16,8 @@ RUN npm install
 # Copy backend and frontend source, then build the frontend into public/app
 COPY . .
 
+RUN mkdir -p public/uploads .tmp
+
 RUN npm run build:all
 
 ENV NODE_ENV=production

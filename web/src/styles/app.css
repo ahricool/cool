@@ -1,0 +1,259 @@
+body {
+  color: var(--body-color);
+  background-color: #f4f4f8;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+  z-index: -1;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.app-background {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  opacity: 0.35;
+}
+
+a.router-link-active {
+  color: var(--theme-color);
+}
+
+.nav-toggle-btn,
+.header-user-link,
+.iconsearch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color);
+}
+
+.nav-toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 1.25rem;
+  display: none;
+}
+
+.site-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--body-color);
+  font-size: 1rem;
+}
+
+.site-brand img {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.site-menu {
+  display: inline-flex;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.site-menu a {
+  color: var(--color);
+}
+
+.header-after {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+#content.main-inner {
+  align-items: flex-start;
+}
+
+.mobile-sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 5rem 1.5rem 1.5rem;
+}
+
+.mobile-sidebar-nav,
+.mobile-sidebar-socials {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cover-bg {
+  width: 100%;
+  height: var(--first-screen-height);
+  object-fit: cover;
+}
+
+.blend-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.notice {
+  margin: 20px 0 0;
+}
+
+.notice-content :is(p, span) {
+  margin: 0;
+}
+
+.post-thumb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 18.75rem;
+  background: linear-gradient(135deg, rgba(254, 150, 0, 0.9), rgba(255, 194, 102, 0.8));
+  color: #fff;
+  font-size: 1.25rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.pagination-list {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.load-more-btn,
+.page-search-form button,
+.button-normal {
+  border: none;
+  background: var(--theme-color);
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.page-search-form {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.page-search-form input {
+  flex: 1;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 0.8rem 1rem;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.post-list-empty,
+.search-summary,
+.not-found-page {
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.pattern-subtitle {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.post-navigation {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.author-profile-card {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.author-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.author-post-title {
+  margin: 2rem 0 1rem;
+}
+
+.archive-group {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.archive-group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.archive-group li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.archive-group li:last-child {
+  border-bottom: none;
+}
+
+.footer-copyright p {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.link-item-inner img {
+  object-fit: cover;
+}
+
+.change-skin-gear {
+  bottom: 0;
+  right: 1rem;
+  background: var(--widget-background-color);
+}
+
+@media (max-width: 860px) {
+  .site-menu {
+    display: none;
+  }
+
+  .nav-toggle-btn {
+    display: inline-flex;
+  }
+
+  .post-navigation,
+  .archive-group li,
+  .author-profile-card,
+  .page-search-form {
+    flex-direction: column;
+  }
+}
