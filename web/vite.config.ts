@@ -20,7 +20,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         // Proxy API calls to the Strapi backend during development
-        target: 'http://localhost:1337',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },

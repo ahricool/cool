@@ -28,7 +28,7 @@ A complete CMS system consisting of:
 │   │   ├── stores/           # Pinia stores
 │   │   ├── pages/            # Home, Post, Page, Tag, Category, Archive
 │   │   └── components/       # Layout, Header, Footer, Sidebar
-│   ├── vite.config.ts        # Dev proxy: /api → http://localhost:1337
+│   ├── vite.config.ts        # Dev proxy: /api → http://localhost:8080
 │   └── package.json
 ├── .env.example
 └── package.json
@@ -52,14 +52,14 @@ cp .env.example .env
 npm run develop
 ```
 
-The Strapi server starts at **http://localhost:1337**.
+The Strapi server starts at **http://localhost:8080**.
 
-- Admin panel: http://localhost:1337/admin
-- API: http://localhost:1337/api/...
+- Admin panel: http://localhost:8080/admin
+- API: http://localhost:8080/api/...
 
 #### First-time setup (Strapi Admin)
 
-1. Open http://localhost:1337/admin and create an admin account.
+1. Open http://localhost:8080/admin and create an admin account.
 2. Go to **Settings → Users & Permissions → Roles → Public** and enable the following permissions so the frontend can read data without authentication:
    - `Post`: `find`, `findOne`, `findBySlug`
    - `Page`: `find`, `findOne`, `findBySlug`
@@ -75,7 +75,7 @@ cd web
 npm install
 cp .env.example .env
 
-# Start dev server (proxies /api to http://localhost:1337)
+# Start dev server (proxies /api to http://localhost:8080)
 npm run dev
 ```
 
@@ -128,13 +128,13 @@ npm run build:frontend
 # 2. Build the Strapi admin panel
 npm run build
 
-# 3. Start the production server (serves API + frontend on http://localhost:1337)
+# 3. Start the production server (serves API + frontend on http://localhost:8080)
 npm run start
 ```
 
-The single server at **http://localhost:1337** now handles:
-- `http://localhost:1337/` → Vue SPA (frontend)
-- `http://localhost:1337/api/...` → Strapi REST API
-- `http://localhost:1337/admin` → Strapi admin panel
+The single server at **http://localhost:8080** now handles:
+- `http://localhost:8080/` → Vue SPA (frontend)
+- `http://localhost:8080/api/...` → Strapi REST API
+- `http://localhost:8080/admin` → Strapi admin panel
 
 Set `FRONTEND_URL` in `.env` to your production domain for CORS.

@@ -19,7 +19,7 @@ cp .env.example .env
 npm run dev       # http://localhost:3000
 ```
 
-Make sure the Strapi backend is running at `http://localhost:1337` (or configure `VITE_API_BASE` in `.env`).
+Make sure the Strapi backend is running at `http://localhost:8080` (or configure `VITE_API_BASE` in `.env`).
 
 ## Pages / Routes
 
