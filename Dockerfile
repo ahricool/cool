@@ -16,7 +16,7 @@ RUN npm install
 # Copy backend and frontend source, then build the frontend into public/app
 COPY . .
 
-RUN mkdir -p public/uploads .tmp
+RUN mkdir -p public/uploads .database
 
 RUN npm run build:all
 
