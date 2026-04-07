@@ -18,7 +18,7 @@ COPY . .
 
 RUN mkdir -p public/uploads .database
 
-RUN npm run build:all
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build:all
 
 ENV NODE_ENV=production
 ENV STRAPI_TELEMETRY_DISABLED=true
