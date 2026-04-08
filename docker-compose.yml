@@ -1,18 +1,10 @@
 services:
   backend:
     image: ghcr.io/ahricool/cool:latest
+    env_file:
+      - .env
     ports:
       - "8080:8080"
-    environment:
-      HOST: 0.0.0.0
-      PORT: 8080
-      APP_KEYS: ${APP_KEYS}
-      API_TOKEN_SALT: ${API_TOKEN_SALT}
-      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
-      TRANSFER_TOKEN_SALT: ${TRANSFER_TOKEN_SALT}
-      JWT_SECRET: ${JWT_SECRET}
-      DATABASE_FILENAME: .database/data.db
-      NODE_ENV: production
     volumes:
       - /data/cool:/app/.database
     restart: unless-stopped
