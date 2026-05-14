@@ -1,0 +1,91 @@
+apiVersion: v1alpha1
+kind: AnnotationSetting
+metadata:
+  name: theme-sakura-menu-annotation-setting
+spec:
+  targetRef:
+    group: ""
+    kind: MenuItem
+  formSchema:
+    - $formkit: "iconify"
+      name: "icon"
+      format: name
+      label: "图标"
+    - $formkit: "text"
+      name: "animation"
+      label: "动画"
+      help: "对图标所使用的微动画，支持的类型查看 https://l-lin.github.io/font-awesome-animation/#animation-list"
+---
+
+apiVersion: v1alpha1
+kind: AnnotationSetting
+metadata:
+  name: theme-sakura-post-annotation-setting
+spec:
+  targetRef:
+    group: content.halo.run
+    kind: Post
+  formSchema:
+    - $formkit: switch
+      name: randomImage
+      label: 使用随机封面
+      value: true
+    - $formkit: switch
+      name: toc
+      label: 自动生成目录
+      value: true
+    - $formkit: switch
+      name: original
+      id: original
+      label: 原创文章
+      value: false
+    - $formkit: switch
+      if: "$get(original).value == true"
+      name: post_license
+      id: post_license
+      label: 自定义授权协议
+      value: false
+    - $formkit: text
+      if: "$get(post_license).value == true"
+      name: post_license_text
+      label: 授权协议
+    - $formkit: text
+      if: "$get(post_license).value == true"
+      name: post_license_url
+      label: 协议链接
+
+---
+
+apiVersion: v1alpha1
+kind: AnnotationSetting
+metadata:
+  name: theme-sakura-single-page-annotation-setting
+spec:
+  targetRef:
+    group: content.halo.run
+    kind: SinglePage
+  formSchema:
+    - $formkit: switch
+      name: randomImage
+      label: 使用随机图
+      value: true
+
+    - $formkit: switch
+      name: toc
+      label: 自动生成目录
+      value: true
+      
+---
+
+apiVersion: v1alpha1
+kind: AnnotationSetting
+metadata:
+  name: theme-sakura-user-annotation-setting
+spec:
+  targetRef:
+    group: ""
+    kind: User
+  formSchema:
+    - $formkit: attachment
+      name: cover
+      label: 用户详情页封面图

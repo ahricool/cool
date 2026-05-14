@@ -1,0 +1,220 @@
+:root {
+  --theme-color: #fe9600;
+  --theme-skin: #fe9600;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+.vue-link {
+  cursor: pointer;
+}
+
+.header-search input {
+  width: 12rem;
+}
+
+.focusinfo .center-text {
+  margin: 0;
+}
+
+.sakura-vue-status {
+  width: 100%;
+  padding: 2rem 0;
+  color: var(--body-color);
+  text-align: center;
+}
+
+.sakura-admin {
+  width: 100%;
+}
+
+.sakura-admin .admin-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0 0 2rem;
+  padding: 0;
+  list-style: none;
+}
+
+.sakura-admin .admin-tabs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid var(--theme-color);
+  border-radius: 999px;
+  color: var(--theme-color);
+  background: var(--background-color);
+}
+
+.sakura-admin .admin-tabs a.router-link-active {
+  color: #fff;
+  background: var(--theme-color);
+}
+
+.sakura-admin .admin-panel,
+.sakura-admin .editor-main,
+.sakura-admin .editor-side {
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 10px;
+  background: var(--background-color);
+  box-shadow: 0 1px 20px -8px #00000080;
+}
+
+.sakura-admin .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.sakura-admin .stats-grid div {
+  padding: 1rem;
+  border-left: 4px solid var(--theme-color);
+  background: color-mix(in srgb, var(--theme-color) 8%, transparent);
+}
+
+.sakura-admin .stats-grid strong {
+  display: block;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.sakura-admin .toolbar,
+.sakura-admin .button-row,
+.sakura-admin .inline-field,
+.sakura-admin .actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sakura-admin .toolbar {
+  justify-content: space-between;
+}
+
+.sakura-admin table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sakura-admin th,
+.sakura-admin td {
+  padding: 0.85rem 0.5rem;
+  border-bottom: 1px dashed var(--border-color);
+  text-align: left;
+}
+
+.sakura-admin td small {
+  display: block;
+  opacity: 0.72;
+}
+
+.sakura-admin input,
+.sakura-admin select,
+.sakura-admin textarea {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.75rem;
+  color: var(--body-color);
+  background: var(--background-color);
+}
+
+.sakura-admin label {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.sakura-admin button,
+.sakura-admin .admin-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  border: 1px solid var(--theme-color);
+  border-radius: 999px;
+  padding: 0 1rem;
+  color: var(--theme-color);
+  background: transparent;
+  cursor: pointer;
+}
+
+.sakura-admin .admin-button-primary,
+.sakura-admin button.primary {
+  color: #fff;
+  background: var(--theme-color);
+}
+
+.sakura-admin .status-pill {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  color: #fff;
+  background: var(--theme-color);
+  font-size: 0.75rem;
+}
+
+.sakura-admin .status-pill.draft {
+  background: #8a6d3b;
+}
+
+.sakura-admin .status-pill.archived {
+  background: #6b7280;
+}
+
+.sakura-admin .editor-grid,
+.sakura-admin .two-column {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.sakura-admin .two-column {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sakura-admin .taxonomy-list {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sakura-admin .taxonomy-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.post-list-thumb .post-thumb img,
+.post-list .feature img {
+  display: block;
+  object-fit: cover;
+}
+
+.post-article .entry-content {
+  min-height: 12rem;
+}
+
+@media (max-width: 860px) {
+  .sakura-admin .stats-grid,
+  .sakura-admin .editor-grid,
+  .sakura-admin .two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .sakura-admin .admin-panel {
+    overflow-x: auto;
+  }
+}
