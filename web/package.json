@@ -1,0 +1,27 @@
+{
+  "name": "cool-cms-web",
+  "private": true,
+  "description": "Vue3 frontend for the Cool CMS",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "prettier": "prettier --write './src/**/*.{js,ts,css,json,html}'"
+  },
+  "keywords": ["cms", "vue3", "headless-cms"],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "autoprefixer": "^10.4.20",
+    "postcss-custom-properties": "^14.0.4",
+    "postcss-mixins": "^11.0.3",
+    "postcss-nesting": "^13.0.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  },
+  "dependencies": {
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  }
+}
