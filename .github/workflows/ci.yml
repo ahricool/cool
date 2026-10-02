@@ -26,9 +26,9 @@ jobs:
     env:
       DATABASE_URL: postgresql://cms:ci-only-password@localhost:5432/cms_test
       JWT_SECRET: ci-only-secret-at-least-32-characters-long
-      ADMIN_EMAIL: owner@example.test
-      ADMIN_PASSWORD: ci-owner-password-only
+      E2E_PASSWORD: ci-owner-password-only
       MEDIA_ROOT: /tmp/cms-ci-uploads
+      CORS_ORIGINS: http://localhost:3001
       NUXT_TELEMETRY_DISABLED: '1'
     steps:
       - uses: actions/checkout@v4
@@ -50,7 +50,7 @@ jobs:
         env:
           CMS_NGINX_TEST: '1'
           CMS_NGINX_BIN: /usr/sbin/nginx
-      - run: node --import tsx --test tests/unit/*.test.ts
+      - run: npm run test:unit
       - run: node apps/backend/dist/seed.js
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
@@ -63,7 +63,7 @@ jobs:
   compose-smoke:
     name: Production Compose and backup restore
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     permissions:
       contents: read
     steps:
@@ -72,8 +72,10 @@ jobs:
         with:
           node-version: 24
       - uses: docker/setup-buildx-action@v3
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
       - name: Build and verify isolated production stacks
-        run: timeout --signal=TERM --kill-after=180s 25m bash scripts/compose-smoke.sh
+        run: timeout --signal=TERM --kill-after=180s 35m bash scripts/compose-smoke.sh
       - name: Publish smoke summary
         if: always()
         run: |
@@ -90,6 +92,7 @@ jobs:
             test-results/compose-smoke/*-containers.log
             test-results/compose-smoke/*-services.log
             test-results/compose-smoke/operations.log
+            test-results/production-browser/
           if-no-files-found: warn
           retention-days: 7
   images:
@@ -106,8 +109,6 @@ jobs:
             dockerfile: Dockerfile
           - service: frontend
             dockerfile: Dockerfile.frontend
-          - service: admin
-            dockerfile: Dockerfile.admin
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3

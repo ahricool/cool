@@ -6,7 +6,7 @@ node_modules
 backups
 **/.nuxt
 **/.output
-vendor
 test-results
 playwright-report
 data
+deployment

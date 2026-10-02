@@ -27,35 +27,40 @@ for report in source-http source-after-backup-http restored-http; do
 done
 RUNTIME_DIR=$(mktemp -d "$PWD/test-results/.compose-smoke.XXXXXX")
 ENV_FILE="$RUNTIME_DIR/cms.env"
+IMAGES_FILE="$RUNTIME_DIR/images.yml"
 LOG_FILE="$RUNTIME_DIR/operations.log"
 STAGE=initializing
 BACKUPS=()
 # Explicit values prevent the operator's ambient environment from overriding the
 # disposable --env-file. Compose's top-level name is always overridden with -p.
-unset CMS_IMAGE CMS_FRONTEND_IMAGE CMS_ADMIN_IMAGE DATABASE_URL JWT_SECRET \
-  POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD ADMIN_EMAIL ADMIN_PASSWORD \
-  ADMIN_NAME HTTP_PORT CORS_ORIGINS COMPOSE_FILE COMPOSE_PROFILES
+unset DATABASE_URL JWT_SECRET POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD \
+  HTTP_PORT CORS_ORIGINS COMPOSE_FILE COMPOSE_PROFILES
 cat > "$ENV_FILE" <<ENV
-CMS_IMAGE=${RUN_ID}-backend:local
-CMS_FRONTEND_IMAGE=${RUN_ID}-frontend:local
-CMS_ADMIN_IMAGE=${RUN_ID}-admin:local
 POSTGRES_DB=cms_smoke
 POSTGRES_USER=cms_smoke
 POSTGRES_PASSWORD=compose-smoke-database-password-only
 DATABASE_URL=postgresql://cms_smoke:compose-smoke-database-password-only@database:5432/cms_smoke
 JWT_SECRET=compose-smoke-jwt-secret-for-disposable-test-only
-ADMIN_EMAIL=compose-smoke@example.test
-ADMIN_PASSWORD=compose-smoke-initial-password-only
-ADMIN_NAME=Compose Smoke Owner
 HTTP_PORT=127.0.0.1:0
 CORS_ORIGINS=
 ENV
+cat > "$IMAGES_FILE" <<YAML
+services:
+  backend:
+    image: ${RUN_ID}-backend:local
+  migrate:
+    image: ${RUN_ID}-backend:local
+  seed:
+    image: ${RUN_ID}-backend:local
+  frontend:
+    image: ${RUN_ID}-frontend:local
+YAML
 
 compose() {
   local project=$1; shift
   case "$project" in "$SOURCE_PROJECT"|"$RESTORE_PROJECT") ;; *) echo 'Unsafe Compose project' >&2; return 1 ;; esac
   timeout --signal=TERM --kill-after=10s 180s docker compose \
-    --env-file "$ENV_FILE" -p "$project" -f docker-compose.prod.yml "$@"
+    --env-file "$ENV_FILE" -p "$project" -f docker-compose.prod.yml -f "$IMAGES_FILE" "$@"
 }
 sanitize() {
   sed -E \
@@ -67,9 +72,9 @@ sanitize() {
 capture_stack() {
   local project=$1 label=$2
   # Bounded tails only. Never upload inspect/config/env output or backup archives.
-  timeout --kill-after=5s 15s docker compose --env-file "$ENV_FILE" -p "$project" -f docker-compose.prod.yml \
+  timeout --kill-after=5s 15s docker compose --env-file "$ENV_FILE" -p "$project" -f docker-compose.prod.yml -f "$IMAGES_FILE" \
     ps -a 2>&1 | tail -c 65536 | sanitize > "$REPORT_DIR/${label}-containers.log" || true
-  timeout --kill-after=5s 15s docker compose --env-file "$ENV_FILE" -p "$project" -f docker-compose.prod.yml \
+  timeout --kill-after=5s 15s docker compose --env-file "$ENV_FILE" -p "$project" -f docker-compose.prod.yml -f "$IMAGES_FILE" \
     logs --no-color --tail=100 2>&1 | tail -n 700 | tail -c 262144 | sanitize > "$REPORT_DIR/${label}-services.log" || true
 }
 cleanup() {
@@ -80,7 +85,7 @@ cleanup() {
   capture_stack "$RESTORE_PROJECT" restore-final
   for project in "$SOURCE_PROJECT" "$RESTORE_PROJECT"; do
     timeout --signal=TERM --kill-after=5s 40s docker compose \
-      --env-file "$ENV_FILE" -p "$project" -f docker-compose.prod.yml \
+      --env-file "$ENV_FILE" -p "$project" -f docker-compose.prod.yml -f "$IMAGES_FILE" \
       down --volumes --remove-orphans --timeout 10 >> "$LOG_FILE" 2>&1 || cleanup_failed=1
   done
   # Every removed path was returned by this run's successful backup.sh call.
@@ -97,10 +102,11 @@ cleanup() {
     echo "Last stage: $STAGE"
     echo "Scoped cleanup: $([[ "$cleanup_failed" == 0 ]] && echo PASS || echo FAIL)"
     echo
-    echo '- Local-built backend, Blog and Admin images; no application image push or production access'
+    echo '- Local-built backend and unified Nuxt/Nginx frontend images; no application image push or production access'
     echo '- Empty-database/virgin-media backup before migrations and first backend startup'
-    echo '- Production migrations, idempotent seed, health, Blog/Admin routes and served bundles'
+    echo '- Production migrations, idempotent seed, first password setup, health, unified Blog/Admin routes and served bundles'
     echo '- Authenticated CRUD, publication, generated image upload and changed owner password'
+    echo '- Playwright against the generated frontend through real production Nginx, with desktop/mobile screenshots'
     echo '- Populated backup with writer stop/resume, restrictive archive permissions'
     echo '- Restore into a distinct empty database and media volume after removing the source project'
     echo '- Exact migration history, stable owner/content/media IDs, Markdown and media SHA-256'
@@ -128,7 +134,7 @@ backup() {
   echo "==> $STAGE"
   timeout --signal=TERM --kill-after=20s 180s env \
     CMS_ENV_FILE="$ENV_FILE" COMPOSE_PROJECT_NAME="$SOURCE_PROJECT" \
-    bash backup.sh > "$output" 2>&1 || { cat "$output" >> "$LOG_FILE"; return 1; }
+    bash backup.sh --images "$IMAGES_FILE" > "$output" 2>&1 || { cat "$output" >> "$LOG_FILE"; return 1; }
   cat "$output" >> "$LOG_FILE"
   directory=$(sed -n 's/^Consistent backup saved: //p' "$output")
   [[ "$directory" =~ ^backups/cms-[0-9]{8}T[0-9]{6}Z-[0-9]+$ ]]
@@ -144,7 +150,7 @@ backup() {
 }
 stack_url() {
   local binding
-  binding=$(compose "$1" port proxy 80)
+  binding=$(compose "$1" port frontend 80)
   [[ "$binding" =~ ^127\.0\.0\.1:[0-9]+$ ]]
   printf 'http://%s\n' "$binding"
 }
@@ -154,10 +160,10 @@ migration_snapshot() {
 }
 
 run_step validate-compose compose "$SOURCE_PROJECT" config --quiet
-run_step pull-infrastructure-only compose "$SOURCE_PROJECT" pull database proxy
+run_step pull-infrastructure-only compose "$SOURCE_PROJECT" pull database
 run_step build-current-code timeout --signal=TERM --kill-after=20s 900s env \
   CMS_ENV_FILE="$ENV_FILE" COMPOSE_PROJECT_NAME="$SOURCE_PROJECT" \
-  bash scripts/build.sh
+  bash scripts/build.sh --images "$IMAGES_FILE"
 run_step start-empty-database compose "$SOURCE_PROJECT" up -d --wait --wait-timeout 120 --no-build --pull never database
 # Mirrors deploy.sh's default first-install backup, without SKIP_BACKUP and
 # before migrate/seed or any backend startup. Docker volume copy-up must work.
@@ -169,17 +175,28 @@ run_step verify-virgin-media-permissions compose "$SOURCE_PROJECT" run --rm --no
 run_step migrate compose "$SOURCE_PROJECT" run --rm -T migrate
 run_step seed compose "$SOURCE_PROJECT" run --rm -T seed
 run_step seed-idempotence compose "$SOURCE_PROJECT" run --rm -T seed
-run_step start-source-stack compose "$SOURCE_PROJECT" up -d --wait --wait-timeout 120 --no-build --pull never backend frontend admin proxy
+run_step start-source-stack compose "$SOURCE_PROJECT" up -d --wait --wait-timeout 120 --no-build --pull never backend frontend
 SOURCE_URL=$(stack_url "$SOURCE_PROJECT")
 run_step populate-through-production-ingress timeout 180s node scripts/compose-smoke.mjs populate \
   "$SOURCE_URL" "$RUNTIME_DIR/state.json" "$REPORT_DIR/source-http.json"
+# Start the independent browser suite with fresh per-process rate-limit buckets.
+# Persisted users/content/sessions remain intact across this restart.
+run_step restart-before-browser compose "$SOURCE_PROJECT" restart backend frontend
+run_step wait-before-browser compose "$SOURCE_PROJECT" up -d --wait --wait-timeout 120 --no-build --pull never backend frontend
+# Docker may allocate a new ephemeral host port when the frontend restarts.
+SOURCE_URL=$(stack_url "$SOURCE_PROJECT")
+run_step production-browser-flows timeout --signal=TERM --kill-after=10s 600s env \
+  E2E_EXTERNAL=1 E2E_BLOG_URL="$SOURCE_URL" E2E_ADMIN_URL="$SOURCE_URL/admin" \
+  E2E_API_URL="$SOURCE_URL/api/v1" E2E_COOKIE_SECURE=1 \
+  E2E_PASSWORD=compose-smoke-restored-password-only \
+  npx --no-install playwright test --output test-results/production-browser
 migration_snapshot "$SOURCE_PROJECT" > "$RUNTIME_DIR/source-migrations.jsonl"
 test -s "$RUNTIME_DIR/source-migrations.jsonl"
 backup populated
 POPULATED_BACKUP=$LAST_BACKUP
 [[ $(wc -l < "$RUNTIME_DIR/media-populated.list") == 2 ]]
 [[ -n $(compose "$SOURCE_PROJECT" ps --status running -q backend) ]]
-run_step wait-for-resumed-backend compose "$SOURCE_PROJECT" up -d --wait --wait-timeout 120 --no-build --pull never backend frontend admin proxy
+run_step wait-for-resumed-backend compose "$SOURCE_PROJECT" up -d --wait --wait-timeout 120 --no-build --pull never backend frontend
 run_step verify-backup-source-resumed timeout 180s node scripts/compose-smoke.mjs verify \
   "$SOURCE_URL" "$RUNTIME_DIR/state.json" "$REPORT_DIR/source-after-backup-http.json"
 capture_stack "$SOURCE_PROJECT" source-before-removal
@@ -190,7 +207,7 @@ EMPTY_TABLES=$(compose "$RESTORE_PROJECT" exec -T database sh -c \
   'psql -X -A -t -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT count(*) FROM pg_tables WHERE schemaname = '\''public'\'';"')
 [[ "$EMPTY_TABLES" == 0 ]]
 # Exact recovery commands from docs/operations.md, scoped to the new project.
-run_step stop-restore-writers compose "$RESTORE_PROJECT" stop proxy backend
+run_step stop-restore-writers compose "$RESTORE_PROJECT" stop frontend backend
 run_step restore-database compose "$RESTORE_PROJECT" exec -T database sh -c \
   'pg_restore --exit-on-error --clean --if-exists --no-owner -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
   < "$POPULATED_BACKUP/database.dump"
@@ -201,7 +218,7 @@ migration_snapshot "$RESTORE_PROJECT" > "$RUNTIME_DIR/restored-migrations.jsonl"
 run_step compare-migration-history diff -u "$RUNTIME_DIR/source-migrations.jsonl" "$RUNTIME_DIR/restored-migrations.jsonl"
 run_step verify-restored-media-permissions compose "$RESTORE_PROJECT" run --rm --no-deps -T --entrypoint sh backend \
   -c 'test "$(id -u)" != 0 && test -r /app/data/uploads && test -w /app/data/uploads && find /app/data/uploads -type f -exec test -r {} \;'
-run_step start-restored-stack compose "$RESTORE_PROJECT" up -d --wait --wait-timeout 120 --no-build --pull never backend frontend admin proxy
+run_step start-restored-stack compose "$RESTORE_PROJECT" up -d --wait --wait-timeout 120 --no-build --pull never backend frontend
 RESTORE_URL=$(stack_url "$RESTORE_PROJECT")
 run_step verify-isolated-restore timeout 180s node scripts/compose-smoke.mjs verify \
   "$RESTORE_URL" "$RUNTIME_DIR/state.json" "$REPORT_DIR/restored-http.json"

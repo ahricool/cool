@@ -1,8 +1,16 @@
 import { IsAssetPath } from './validators';
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  PartialType,
+  OmitType,
+} from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
+  ArrayMinSize,
+  ValidateNested,
+  IsDefined,
   ArrayUnique,
   IsArray,
   IsEnum,
@@ -17,7 +25,7 @@ import {
   Min,
   ValidateIf,
 } from 'class-validator';
-import { PostStatus } from './generated/prisma/enums';
+import { ContentLocale, PostStatus } from './generated/prisma/enums';
 export class ListQuery {
   @ApiPropertyOptional({ default: 1 })
   @ValidateIf((_o, v) => v !== undefined)
@@ -49,12 +57,12 @@ export class ListQuery {
   @Length(1, 160)
   tag?: string;
 }
-export class CreatePostDto {
-  @ApiProperty()
-  @IsString()
-  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-  @MaxLength(160)
-  slug!: string;
+export class LocaleDto {
+  @ApiProperty({ enum: ContentLocale })
+  @IsEnum(ContentLocale)
+  locale!: ContentLocale;
+}
+export class PostTranslationDto extends LocaleDto {
   @ApiProperty() @IsString() @Length(1, 200) @Matches(/\S/) title!: string;
   @ApiPropertyOptional()
   @ValidateIf((_o, v) => v !== undefined)
@@ -66,11 +74,6 @@ export class CreatePostDto {
   @IsString()
   @MaxLength(500000)
   content?: string;
-  @ApiPropertyOptional({ nullable: true })
-  @ValidateIf((_o, v) => v !== undefined && v !== null)
-  @IsAssetPath()
-  @MaxLength(2048)
-  coverUrl?: string | null;
   @ApiPropertyOptional({ enum: PostStatus })
   @ValidateIf((_o, v) => v !== undefined)
   @IsEnum(PostStatus)
@@ -79,6 +82,37 @@ export class CreatePostDto {
   @ValidateIf((_o, v) => v !== undefined && v !== null)
   @IsISO8601({ strict: true })
   publishedAt?: string | null;
+}
+export class UpdatePostTranslationDto extends PartialType(
+  OmitType(PostTranslationDto, ['locale'] as const),
+  {
+    skipNullProperties: false,
+  },
+) {
+  @ApiProperty({ enum: ContentLocale })
+  @IsDefined()
+  @IsEnum(ContentLocale)
+  locale!: ContentLocale;
+}
+export class CreatePostDto {
+  @ApiProperty()
+  @IsString()
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  @MaxLength(160)
+  slug!: string;
+  @ApiPropertyOptional({ nullable: true })
+  @ValidateIf((_o, v) => v !== undefined && v !== null)
+  @IsAssetPath()
+  @MaxLength(2048)
+  coverUrl?: string | null;
+  @ApiProperty({ type: [PostTranslationDto] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(2)
+  @ArrayUnique((item: PostTranslationDto) => item?.locale)
+  @ValidateNested({ each: true })
+  @Type(() => PostTranslationDto)
+  translations!: PostTranslationDto[];
   @ApiPropertyOptional({ type: [String] })
   @ValidateIf((_o, v) => v !== undefined)
   @IsArray()
@@ -94,6 +128,17 @@ export class CreatePostDto {
   @IsUUID('all', { each: true })
   tagIds?: string[];
 }
-export class UpdatePostDto extends PartialType(CreatePostDto, {
-  skipNullProperties: false,
-}) {}
+export class UpdatePostDto extends PartialType(
+  OmitType(CreatePostDto, ['translations'] as const),
+  { skipNullProperties: false },
+) {
+  @ApiPropertyOptional({ type: [UpdatePostTranslationDto] })
+  @ValidateIf((_o, v) => v !== undefined)
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(2)
+  @ArrayUnique((item: UpdatePostTranslationDto) => item?.locale)
+  @ValidateNested({ each: true })
+  @Type(() => UpdatePostTranslationDto)
+  translations?: UpdatePostTranslationDto[];
+}

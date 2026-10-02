@@ -20,11 +20,17 @@ import { AuthGuard } from './auth';
 import { CommentDto, ModerateCommentDto } from './content.dto';
 import { ListQuery } from './dto';
 import { visiblePosts } from './posts';
+import { ContentLocale, LocalePipe } from './localization';
 @ApiTags('Comments')
-@Controller('public/posts/:slug/comments')
+@Controller('public/:locale/posts/:slug/comments')
 export class PublicCommentsController {
   constructor(private readonly db: Database) {}
-  @Get() async list(@Param('slug') slug: string, @Query() q: ListQuery) {
+  @Get() async list(
+    @Param('locale', LocalePipe) locale: ContentLocale,
+    @Param('slug') slug: string,
+    @Query() q: ListQuery,
+  ) {
+    void locale;
     const post = await this.db.post.findFirst({
       where: { slug, ...visiblePosts() },
     });
@@ -45,7 +51,11 @@ export class PublicCommentsController {
   }
   @Post()
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  async create(@Param('slug') slug: string, @Body() d: CommentDto) {
+  async create(
+    @Param('locale', LocalePipe) locale: ContentLocale,
+    @Param('slug') slug: string,
+    @Body() d: CommentDto,
+  ) {
     if (d.website) throw new BadRequestException('Invalid submission');
     const site = await this.db.siteSetting.findUnique({
       where: { key: 'site' },
@@ -62,7 +72,12 @@ export class PublicCommentsController {
     await this.db.comment.create({
       data: { postId: post.id, name: d.name, content: d.content },
     });
-    return { message: '评论已提交，审核后显示。' };
+    return {
+      message:
+        locale === 'en'
+          ? 'Comment submitted for moderation.'
+          : '评论已提交，审核后显示。',
+    };
   }
 }
 @ApiTags('Moderation')
@@ -74,7 +89,15 @@ export class AdminCommentsController {
   @Get() async list(@Query() q: ListQuery) {
     return {
       items: await this.db.comment.findMany({
-        include: { post: { select: { title: true, slug: true } } },
+        include: {
+          post: {
+            select: {
+              id: true,
+              slug: true,
+              translations: { select: { locale: true, title: true } },
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         skip: (q.page - 1) * q.pageSize,
         take: q.pageSize,

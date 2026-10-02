@@ -1,5 +1,5 @@
+import { blog } from './urls';
 import { test, expect, type Page, type TestInfo } from '@playwright/test';
-const blog = process.env.E2E_BLOG_URL ?? 'http://localhost:3001';
 const content = `# 把日常写成故事
 
 春天不是某一个盛大的瞬间，而是窗边的光、刚刚翻开的书，以及想与你分享的小事。这里收藏生活，也记录每一次灵感。
@@ -33,6 +33,7 @@ const posts = [
   {
     id: 'visual-spring',
     slug: 'visual-spring',
+    contentLocale: 'zh',
     title: '在时光里，收藏一片春天',
     excerpt:
       '把日常写成故事，让灵感在字里行间生长。中文与 English、照片与代码，都在这里找到舒服的位置。',
@@ -48,12 +49,31 @@ const posts = [
     updatedAt: '2026-04-12T08:00:00.000Z',
     commentCount: 1,
     viewCount: 12,
-    categories: [{ category: { id: 'life', name: '日常手记', slug: 'life' } }],
-    tags: [{ tag: { id: 'spring', name: '春日', slug: 'spring' } }],
+    categories: [
+      {
+        category: {
+          id: 'life',
+          name: '日常手记',
+          slug: 'life',
+          contentLocale: 'zh',
+        },
+      },
+    ],
+    tags: [
+      {
+        tag: {
+          id: 'spring',
+          name: '春日',
+          slug: 'spring',
+          contentLocale: 'zh',
+        },
+      },
+    ],
   },
   {
     id: 'visual-walk',
     slug: 'visual-walk',
+    contentLocale: 'zh',
     title: '没有目的地的散步，也会遇见好风景',
     excerpt:
       '一条熟悉的路，一首循环播放的歌。给平凡的日子留一点空白，也给自己留一点期待。',
@@ -64,22 +84,39 @@ const posts = [
     updatedAt: '2026-04-10T08:00:00.000Z',
     commentCount: 0,
     viewCount: 8,
-    categories: [{ category: { id: 'life', name: '日常手记', slug: 'life' } }],
+    categories: [
+      {
+        category: {
+          id: 'life',
+          name: '日常手记',
+          slug: 'life',
+          contentLocale: 'zh',
+        },
+      },
+    ],
     tags: [],
   },
 ];
 async function fixture(page: Page) {
-  await page.route('**/api/v1/public/tags', (route) =>
+  await page.route('**/api/v1/public/zh/tags', (route) =>
     route.fulfill({
       json: [
-        { id: 'spring', name: '春日', slug: 'spring' },
-        { id: 'life', name: '生活', slug: 'life' },
+        { id: 'spring', name: '春日', slug: 'spring', contentLocale: 'zh' },
+        { id: 'life', name: '生活', slug: 'life', contentLocale: 'zh' },
       ],
     }),
   );
-  await page.route('**/api/v1/public/site', (route) =>
+  await page.route(
+    /\/api\/v1\/public\/zh\/(?:categories|tags)\/[^/]+\/posts(?:[?]|$)/,
+    (route) =>
+      route.fulfill({
+        json: { items: posts, total: posts.length, page: 1, pageSize: 8 },
+      }),
+  );
+  await page.route('**/api/v1/public/zh/site', (route) =>
     route.fulfill({
       json: {
+        contentLocale: 'zh',
         title: 'Sakura',
         description: '记录生活，也记录每一次灵感。',
         authorName: 'Sakura',
@@ -89,10 +126,11 @@ async function fixture(page: Page) {
       },
     }),
   );
-  await page.route('**/api/v1/public/config', (route) =>
+  await page.route('**/api/v1/public/zh/config', (route) =>
     route.fulfill({
       json: {
         homepage: {
+          contentLocale: 'zh',
           coverUrl: '/sakura/images/default/hd.webp',
           focusMode: 'glitch-text',
           greeting: 'Hello, Sakura',
@@ -104,7 +142,7 @@ async function fixture(page: Page) {
       },
     }),
   );
-  await page.route(/\/api\/v1\/public\/posts(?:[/?]|$)/, (route) => {
+  await page.route(/\/api\/v1\/public\/zh\/posts(?:[/?]|$)/, (route) => {
     const path = new URL(route.request().url()).pathname;
     return route.fulfill({
       json: path.endsWith('/comments')
@@ -285,7 +323,7 @@ test('Blog search, empty and retry states retain readable Sakura controls on mob
 }, info) => {
   await fixture(page);
   let fail = false;
-  await page.route('**/api/v1/public/search*', (route) =>
+  await page.route('**/api/v1/public/zh/search*', (route) =>
     route.fulfill(
       fail
         ? { status: 503, json: { message: 'unavailable' } }
@@ -313,7 +351,12 @@ test('Blog search, empty and retry states retain readable Sakura controls on mob
   await page.getByRole('button', { name: '重新加载' }).click();
   await expect(page.getByRole('alert')).toHaveCount(0);
   await expect(page.locator('.api-state')).toContainText('这里还没有内容');
-  await page.goto(blog + '/tags?tag=spring');
+  await page.goto(blog + '/tags');
+  await page.getByRole('link', { name: '春日', exact: true }).click();
+  await expect(page).toHaveURL(
+    (url) => url.pathname === '/zh/tags/spring' && !url.search,
+  );
+  await expect(page.locator('.post-list-thumb')).toHaveCount(2);
   const selected = page.locator('.chip.selected');
   await expect(selected).toHaveText('春日');
   await expect(selected).toHaveCSS('background-color', 'rgb(179, 66, 114)');

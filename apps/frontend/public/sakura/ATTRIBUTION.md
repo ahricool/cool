@@ -1,0 +1,10 @@
+# Third-party visual assets
+
+- **Halo Sakura**: https://github.com/LIlGG/halo-theme-sakura, commit a31ff6520b34e45beab20ef91204f958dcf1cd81, MIT. Original compiled CSS and bundled images are retained locally. The unified Nuxt application keeps the unchanged compiled stylesheet at apps/frontend/app/assets/blog/sakura.css and shares apps/frontend/public/sakura/images/default/hd.webp and images/footer/sakura.svg between the blog and admin workspace; original image credits/watermarks are preserved. The upstream copyright notice is retained beside this file in LICENSE. Blog footer credits LIlGG. The build applies zero-specificity surface scoping and corrects three upstream theme-color variable typos without modifying the retained stylesheet.
+- **Solar icons** by **480 Design**: https://www.figma.com/community/file/1166831539721848736. Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Selected unchanged SVG paths from https://github.com/iconify/icon-sets/blob/master/json/solar.json are bundled in apps/frontend/app/assets/icons.json. Only a local key spelling is adapted; no remote icon API is used.
+- **Ubuntu font**: bundled through @fontsource/ubuntu, Ubuntu Font Licence 1.0. Full notice in Ubuntu-Font-LICENSE.txt. Font files are emitted once into the unified frontend build.
+- **Noto Sans SC**: Google Inc., SIL Open Font License 1.1, bundled through @fontsource/noto-sans-sc (Chinese-simplified regular/bold). Full notice is in Noto-Sans-SC-LICENSE.txt beside this file, served at /sakura/Noto-Sans-SC-LICENSE.txt for both frontend surfaces. No Google Fonts request is made at runtime.
+- **Element Plus icons**: @element-plus/icons-vue, MIT, bundled through npm; used only in Admin.
+- **highlight.js**: BSD-3-Clause; **markdown-it**: MIT. Package copyright notices are retained by dependency distributions.
+
+No external CDN is required at runtime. User-supplied content images must use the local media API or bundled theme assets; external links remain ordinary hyperlinks.

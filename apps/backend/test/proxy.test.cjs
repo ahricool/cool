@@ -86,20 +86,22 @@ test('spoofed leading chain entries and X-Real-IP cannot reset a proxy quota', a
   await login(http, '198.51.100.40').expect(400);
 });
 
-test('both Nginx API locations replace client-supplied forwarding headers', () => {
+test('all Nginx API locations replace client-supplied forwarding headers', () => {
   const config = readFileSync(
     join(__dirname, '../../../nginx/default.conf'),
     'utf8',
   );
   for (const location of [
     /location = \/api\/v1\/admin\/auth\/login \{([^}]+)\}/,
+    /location = \/api\/v1\/admin\/auth\/setup \{([^}]+)\}/,
     /location \/api\/ \{([^}]+)\}/,
   ]) {
     const block = config.match(location)?.[1];
-    assert.ok(block, 'Both API proxy locations must be present');
+    assert.ok(block, 'All API proxy locations must be present');
     for (const directive of [
       'X-Forwarded-For $remote_addr',
-      'X-Forwarded-Host $host',
+      'Host $http_host',
+      'X-Forwarded-Host $http_host',
       'X-Forwarded-Proto $scheme',
     ])
       assert.ok(block.includes(`proxy_set_header ${directive};`));
