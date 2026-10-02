@@ -94,11 +94,18 @@ test('cookie session survives reload and all-device logout revokes browser and s
     .locator('.sidebar')
     .getByRole('link', { name: '我的账户', exact: true })
     .click();
-  await page.getByRole('button', { name: '退出所有设备', exact: true }).click();
+  await page
+    .locator('.workspace')
+    .getByRole('button', { name: '退出所有设备', exact: true })
+    .click();
   const dialog = page.getByRole('dialog', { name: '退出所有设备' });
   await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  await expect(dialog).toBeHidden();
   await expect(page).toHaveURL((url) => url.pathname === '/admin/profile');
-  await page.getByRole('button', { name: '退出所有设备', exact: true }).click();
+  await page
+    .locator('.workspace')
+    .getByRole('button', { name: '退出所有设备', exact: true })
+    .click();
   await page
     .getByRole('dialog', { name: '退出所有设备' })
     .getByRole('button', { name: '退出所有设备', exact: true })
