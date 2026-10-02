@@ -1,0 +1,17 @@
+FROM node:24-bookworm-slim AS build
+WORKDIR /app
+ENV NUXT_TELEMETRY_DISABLED=1
+COPY package.json package-lock.json ./
+COPY apps/blog/package.json apps/blog/package.json
+COPY packages/content/package.json packages/content/package.json
+RUN npm ci --workspace @cms/blog --workspace @cms/content --include-workspace-root
+COPY apps/blog apps/blog
+COPY packages/content packages/content
+RUN npm run build -w @cms/blog
+FROM node:24-bookworm-slim
+WORKDIR /app
+ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000
+COPY --from=build /app/apps/blog/.output ./.output
+USER node
+EXPOSE 3000
+CMD ["node", ".output/server/index.mjs"]

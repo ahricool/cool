@@ -1,0 +1,136 @@
+name: Verify and publish CMS
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: cms-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: cms
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: cms_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U cms -d cms_test"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://cms:ci-only-password@localhost:5432/cms_test
+      JWT_SECRET: ci-only-secret-at-least-32-characters-long
+      ADMIN_EMAIL: owner@example.test
+      ADMIN_PASSWORD: ci-owner-password-only
+      MEDIA_ROOT: /tmp/cms-ci-uploads
+      NUXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run db:generate
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run audit
+      - run: npm run db:deploy
+      - name: Install Nginx for real ingress regression tests
+        run: sudo apt-get update && sudo apt-get install --yes nginx
+      - run: npm test && npm run test:content
+        env:
+          CMS_NGINX_TEST: '1'
+          CMS_NGINX_BIN: /usr/sbin/nginx
+      - run: node --import tsx --test tests/unit/*.test.ts
+      - run: node apps/backend/dist/seed.js
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-test-results
+          path: test-results/
+          retention-days: 7
+  compose-smoke:
+    name: Production Compose and backup restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and verify isolated production stacks
+        run: timeout --signal=TERM --kill-after=180s 25m bash scripts/compose-smoke.sh
+      - name: Publish smoke summary
+        if: always()
+        run: |
+          if [ -f test-results/compose-smoke/summary.md ]; then
+            cat test-results/compose-smoke/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-compose-smoke-results
+          path: |
+            test-results/compose-smoke/summary.md
+            test-results/compose-smoke/*-http.json
+            test-results/compose-smoke/*-containers.log
+            test-results/compose-smoke/*-services.log
+            test-results/compose-smoke/operations.log
+          if-no-files-found: warn
+          retention-days: 7
+  images:
+    needs: [verify, compose-smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            dockerfile: Dockerfile
+          - service: frontend
+            dockerfile: Dockerfile.frontend
+          - service: admin
+            dockerfile: Dockerfile.admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        if: github.event_name == 'push'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository }}-${{ matrix.service }}
+          tags: |
+            type=raw,value=main,enable=${{ github.event_name == 'push' }}
+            type=sha,format=long
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}

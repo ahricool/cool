@@ -1,0 +1,12 @@
+.git
+node_modules
+**/dist
+**/generated
+.env*
+backups
+**/.nuxt
+**/.output
+vendor
+test-results
+playwright-report
+data

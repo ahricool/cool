@@ -1,1 +1,14 @@
 node_modules/
+**/dist/
+**/generated/
+.env
+.env.*
+!.env.example
+backups/
+coverage/
+.DS_Store
+**/.nuxt/
+**/.output/
+data/
+playwright-report/
+test-results/
