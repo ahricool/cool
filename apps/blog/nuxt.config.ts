@@ -7,6 +7,8 @@ export default defineNuxtConfig({
   css: [
     '@fontsource/ubuntu/400.css',
     '@fontsource/ubuntu/700.css',
+    '@fontsource/noto-sans-sc/chinese-simplified-400.css',
+    '@fontsource/noto-sans-sc/chinese-simplified-700.css',
     'highlight.js/styles/github.css',
     '~/assets/adapters.css',
     '~/assets/refinements.css',

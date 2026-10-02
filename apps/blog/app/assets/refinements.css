@@ -2,7 +2,8 @@
  * Upstream Sakura CSS/assets remain intact; these are our product refinements. */
 html:root {
   --sakura-font:
-    Ubuntu, 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    Ubuntu, 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
   --sakura-accent: #b34272;
   --sakura-accent-strong: #92335c;
   --sakura-text: #403649;
@@ -57,7 +58,7 @@ html {
 }
 body.sakura-ui {
   font-family: var(--sakura-font);
-  font-synthesis: none;
+  font-synthesis: style;
   text-shadow: none;
   color: var(--sakura-text);
   background: var(--sakura-page);
@@ -82,7 +83,8 @@ body.sakura-ui {
 .sakura-ui a:hover {
   color: var(--sakura-accent-strong);
 }
-.sakura-ui .site-header .header-inner {
+.sakura-ui .site-header .header-inner,
+.sakura-ui .is-homepage .site-header .header-inner {
   background: var(--header-background);
   border-bottom: 1px solid var(--sakura-border);
   box-shadow: 0 3px 18px #71395108;
@@ -190,6 +192,10 @@ body.sakura-ui {
   overflow: hidden;
   height: auto;
   min-height: 300px;
+}
+.sakura-ui .post-list-thumb .post-thumb {
+  flex: 0 0 55%;
+  min-width: 0;
 }
 .sakura-ui .post-list-thumb .post-thumb a {
   height: 100%;
@@ -319,7 +325,8 @@ body.sakura-ui {
   display: none;
 }
 .sakura-ui .entry-content pre code {
-  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-family:
+    ui-monospace, 'SFMono-Regular', Consolas, 'Noto Sans SC', monospace;
   font-size: 14px;
   line-height: 1.8;
   background: transparent;
@@ -585,6 +592,9 @@ body.sakura-ui {
     margin-top: 28px;
     padding: 16px;
   }
+  .sakura-ui .post-list-thumb .post-thumb {
+    flex: none;
+  }
   .sakura-ui .post-list-thumb .post-thumb a {
     height: 240px;
     min-height: 0;
@@ -697,4 +707,116 @@ body.sakura-ui {
 }
 .sakura-ui .card-container .chip-container .card-content .chip.selected {
   color: var(--sakura-page);
+}
+
+/* Legible token colours on light panels, with explicit dark counterparts. */
+.sakura-ui
+  .entry-content
+  .highlight-wrap
+  code
+  :is(
+    .hljs-keyword,
+    .hljs-doctag,
+    .hljs-formula,
+    .hljs-selector-tag,
+    .hljs-literal
+  ) {
+  color: #9b326e;
+}
+.sakura-ui
+  .entry-content
+  .highlight-wrap
+  code
+  :is(.hljs-string, .hljs-regexp, .hljs-addition, .hljs-attribute) {
+  color: #386547;
+}
+.sakura-ui
+  .entry-content
+  .highlight-wrap
+  code
+  :is(
+    .hljs-number,
+    .hljs-attr,
+    .hljs-built_in,
+    .hljs-symbol,
+    .hljs-variable,
+    .hljs-type,
+    .hljs-title,
+    .hljs-section
+  ) {
+  color: #515ca3;
+}
+.sakura-ui
+  .entry-content
+  .highlight-wrap
+  code
+  :is(.hljs-comment, .hljs-quote, .hljs-meta) {
+  color: #746679;
+}
+.dark
+  .sakura-ui
+  .entry-content
+  .highlight-wrap
+  code
+  :is(
+    .hljs-keyword,
+    .hljs-doctag,
+    .hljs-formula,
+    .hljs-selector-tag,
+    .hljs-literal
+  ) {
+  color: #f3a2c8;
+}
+.dark
+  .sakura-ui
+  .entry-content
+  .highlight-wrap
+  code
+  :is(.hljs-string, .hljs-regexp, .hljs-addition, .hljs-attribute) {
+  color: #b4d7cc;
+}
+.dark
+  .sakura-ui
+  .entry-content
+  .highlight-wrap
+  code
+  :is(
+    .hljs-number,
+    .hljs-attr,
+    .hljs-built_in,
+    .hljs-symbol,
+    .hljs-variable,
+    .hljs-type,
+    .hljs-title,
+    .hljs-section
+  ) {
+  color: #bacbf2;
+}
+.dark
+  .sakura-ui
+  .entry-content
+  .highlight-wrap
+  code
+  :is(.hljs-comment, .hljs-quote, .hljs-meta) {
+  color: #b9aac2;
+}
+.sakura-ui section.site-sidebar .sidebar-close {
+  background: var(--sakura-surface);
+  border: 1px solid var(--sakura-border);
+  border-radius: 10px;
+}
+.sakura-ui .top-social a {
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  padding: 4px;
+  background: #fff4fa;
+}
+.sakura-ui .top-social ul li {
+  width: 36px;
+  height: 36px;
+}
+.sakura-ui .post-list-thumb .post-meta {
+  display: flex;
+  gap: 12px;
 }

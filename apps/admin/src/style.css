@@ -8,12 +8,13 @@
   --el-color-primary-dark-2: #ae6f1a;
   --el-border-radius-base: 8px;
   --el-font-family:
-    Ubuntu, 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    Ubuntu, 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
   --el-font-size-base: 14px;
   color: #323330;
   font-family: var(--el-font-family);
   background: #f6f7f9;
-  font-synthesis: none;
+  font-synthesis: style;
 }
 * {
   box-sizing: border-box;
@@ -456,7 +457,7 @@ textarea {
   padding: 24px;
   color: #535862;
   line-height: 1.9;
-  font-family: ui-monospace, monospace;
+  font-family: ui-monospace, 'Noto Sans SC', monospace;
   font-size: 13px;
   outline: none;
 }

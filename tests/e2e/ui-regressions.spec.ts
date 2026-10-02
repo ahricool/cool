@@ -82,6 +82,17 @@ test('Admin formatting preserves prose and upload buttons work from keyboard', a
       return image.naturalWidth;
     }, loginArt!),
   ).toBeGreaterThan(0);
+  const cjkFaces = await page.evaluate(async () =>
+    Promise.all([
+      document.fonts
+        .load('400 16px "Noto Sans SC"', '春天')
+        .then((faces) => faces.length),
+      document.fonts
+        .load('700 20px "Noto Sans SC"', '春天')
+        .then((faces) => faces.length),
+    ]),
+  );
+  expect(cjkFaces).toEqual([1, 1]);
   await page.screenshot({
     path: info.outputPath('sakura-admin-login.png'),
     fullPage: true,

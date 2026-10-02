@@ -84,7 +84,7 @@ onMounted(load);
               " /></el-form-item
           ><el-form-item label="首屏展示"
             ><el-radio-group v-model="form.homepage.focusMode"
-              ><el-radio-button value="glitch-text">Glitch 文字</el-radio-button
+              ><el-radio-button value="glitch-text">标题文字</el-radio-button
               ><el-radio-button value="avatar"
                 >头像</el-radio-button
               ></el-radio-group

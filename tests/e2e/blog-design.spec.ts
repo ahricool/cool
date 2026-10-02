@@ -6,7 +6,7 @@ const content = `# 把日常写成故事
 
 ## 留一点空白
 
-清晰的文字，让阅读慢下来。中文与 English、数字 2026，以及 **值得记住的片段**，都应该自然地站在一起。
+清晰的文字，让阅读慢下来。中文与 English、数字 2026，以及 **值得记住的片段** 和 *偶然的灵感*，都应该自然地站在一起。
 
 > 不必急着抵达，沿途的风景也值得被认真收藏。
 
@@ -160,12 +160,25 @@ test('Blog carries the Admin Sakura typography and surfaces through populated de
     '21px',
   );
   await expect(page.locator('.main-title .sakura-flower')).toBeVisible();
+  const cjkFaces = await page.evaluate(async () =>
+    Promise.all([
+      document.fonts
+        .load('400 16px "Noto Sans SC"', '春天')
+        .then((faces) => faces.length),
+      document.fonts
+        .load('700 20px "Noto Sans SC"', '春天')
+        .then((faces) => faces.length),
+    ]),
+  );
+  expect(cjkFaces).toEqual([1, 1]);
   for (const article of await page.locator('.post-list-thumb').all()) {
     const card = (await article.boundingBox())!;
     const more = (await article
       .getByRole('link', { name: /^阅读 / })
       .boundingBox())!;
     expect(more.y + more.height).toBeLessThanOrEqual(card.y + card.height);
+    const cover = (await article.locator('.post-thumb').boundingBox())!;
+    expect(Math.abs(cover.width / card.width - 0.55)).toBeLessThan(0.01);
     await article.scrollIntoViewIfNeeded();
   }
   await expect
@@ -197,6 +210,10 @@ test('Blog carries the Admin Sakura typography and surfaces through populated de
     '20px',
   );
   await noOverflow(page);
+  await expect(page.locator('.site-header .header-inner')).toHaveCSS(
+    'background-color',
+    /255, 250, 253/,
+  );
   const notice = (await page.locator('.notice').boundingBox())!;
   expect(notice.x).toBeGreaterThanOrEqual(0);
   expect(notice.x + notice.width).toBeLessThanOrEqual(390);
@@ -214,6 +231,14 @@ test('Blog carries the Admin Sakura typography and surfaces through populated de
 
   await page.goto(blog + '/posts/visual-spring');
   await expect(page.locator('.entry-content h1')).toHaveText('把日常写成故事');
+  await expect(page.locator('.entry-content em')).toHaveCSS(
+    'font-style',
+    'italic',
+  );
+  await expect(page.locator('.entry-content em')).toHaveCSS(
+    'font-synthesis',
+    'style',
+  );
   await expect(page.locator('.entry-content > p').first()).toHaveCSS(
     'font-size',
     '16px',
@@ -230,6 +255,14 @@ test('Blog carries the Admin Sakura typography and surfaces through populated de
     'complete',
     true,
   );
+  await expect(page.locator('.entry-content .hljs-keyword').first()).toHaveCSS(
+    'color',
+    'rgb(155, 50, 110)',
+  );
+  await expect(page.locator('.entry-content .hljs-string').first()).toHaveCSS(
+    'color',
+    'rgb(56, 101, 71)',
+  );
   await noOverflow(page);
   await capture(page, info, 'sakura-refined-article-mobile.png');
   await page.setViewportSize({ width: 1280, height: 850 });
@@ -240,6 +273,10 @@ test('Blog carries the Admin Sakura typography and surfaces through populated de
     'rgb(33, 27, 39)',
   );
   await expect(page.locator('body')).toHaveCSS('color', 'rgb(238, 227, 238)');
+  await expect(page.locator('.entry-content .hljs-keyword').first()).toHaveCSS(
+    'color',
+    'rgb(243, 162, 200)',
+  );
   await capture(page, info, 'sakura-refined-article-dark.png');
 });
 

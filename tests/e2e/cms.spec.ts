@@ -17,6 +17,7 @@ test('owner writes, previews and publishes; visitors read and comment; owner mod
   await page.getByLabel('密码', { exact: true }).fill(password);
   await page.getByRole('button', { name: '登录工作空间' }).click();
   await expect(page.getByRole('heading', { name: /你好/ })).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
   await page.screenshot({
     path: info.outputPath('admin-overview.png'),
     fullPage: true,
