@@ -1,7 +1,7 @@
 import { localizePublicRequest } from '~/i18n/locale';
 export function useApi() {
   const config = useRuntimeConfig();
-  const { locale } = useCmsI18n();
+  const { locale } = useCoolI18n();
   return $fetch.create({
     baseURL: config.public.apiBase,
     onRequest(context) {

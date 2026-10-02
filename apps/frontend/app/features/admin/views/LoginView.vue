@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCmsI18n } from '~/composables/useCmsI18n';
+import { useCoolI18n } from '~/composables/useCoolI18n';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
@@ -10,7 +10,7 @@ import {
   safeAdminNext,
   type AuthResult,
 } from '../api';
-const { t, localePath } = useCmsI18n();
+const { t, localePath } = useCoolI18n();
 const password = ref('');
 const confirmation = ref('');
 const busy = ref(false);
@@ -89,7 +89,7 @@ async function login() {
       <p>
         {{ t('记录热爱，整理思绪。') }}<br />{{ t('这里是属于你的内容空间。') }}
       </p>
-      <span class="login-footnote">SAKURA · {{ t('个人内容管理') }}</span>
+      <span class="login-footnote">Cool · {{ t('创作工作台') }}</span>
     </section>
     <section class="login-form">
       <p class="eyebrow">{{ t(firstSetup ? '新的篇章' : '欢迎归来') }}</p>

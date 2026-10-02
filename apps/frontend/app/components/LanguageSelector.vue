@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { locale, setLocale } = useCmsI18n();
+const { locale, setLocale } = useCoolI18n();
 </script>
 <template>
   <label class="language-selector">

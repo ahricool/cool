@@ -152,7 +152,7 @@ for (const kind of ['posts', 'pages']) {
       expect(delay.submitted[0].translations[0].content).toBe(
         '请求发送时的正文',
       );
-      const draftKey = `cms-draft-${kind}-${id}-zh`;
+      const draftKey = `cool-draft-${kind}-${id}-zh`;
       await expect
         .poll(() =>
           page.evaluate((key) => sessionStorage.getItem(key), draftKey),
@@ -197,7 +197,7 @@ test('canceling navigation preserves the editor, URL, and local draft', async ({
     .poll(() =>
       page.evaluate(
         (key) => sessionStorage.getItem(key),
-        `cms-draft-posts-${id}-zh`,
+        `cool-draft-posts-${id}-zh`,
       ),
     )
     .toContain('尚未保存的重要内容');
@@ -356,7 +356,7 @@ for (const kind of ['posts', 'pages']) {
           page.evaluate((key) => {
             const stored = sessionStorage.getItem(key);
             return stored ? JSON.parse(stored) : null;
-          }, `cms-draft-${kind}-${record}-${locale}`),
+          }, `cool-draft-${kind}-${record}-${locale}`),
         )
         .toMatchObject(drafts[locale]);
     }

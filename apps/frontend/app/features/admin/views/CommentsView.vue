@@ -1,9 +1,9 @@
 <script setup lang="ts">
-const { t, formatDate, contentLang, locale } = useCmsI18n();
+const { t, formatDate, contentLang, locale } = useCoolI18n();
 import { onMounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { api, errorText } from '../api';
-import type { Comment, Pagination } from '@cms/content';
+import type { Comment, Pagination } from '@cool/content';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
 import { publicUrl } from '../publicUrl';

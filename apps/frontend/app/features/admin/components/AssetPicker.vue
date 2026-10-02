@@ -1,9 +1,9 @@
 <script setup lang="ts">
-const { t } = useCmsI18n();
+const { t } = useCoolI18n();
 import { ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { api, upload, errorText } from '../api';
-import type { Media, Pagination } from '@cms/content';
+import type { Media, Pagination } from '@cool/content';
 const props = defineProps<{
   modelValue: string | null | undefined;
   disabled?: boolean;

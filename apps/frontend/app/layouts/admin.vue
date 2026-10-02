@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useCmsI18n } from '~/composables/useCmsI18n';
+import { useCoolI18n } from '~/composables/useCoolI18n';
 import {
   nextTick,
   onMounted,
@@ -28,7 +28,7 @@ import {
 import { api, clearSession, errorText, session } from '~/features/admin/api';
 import { ElMessage } from 'element-plus';
 import { publicUrl } from '~/features/admin/publicUrl';
-const { t } = useCmsI18n();
+const { t } = useCoolI18n();
 const route = useRoute();
 const router = useRouter();
 const open = ref(false);
@@ -127,7 +127,7 @@ async function logout() {
   }
 }
 useHead(() => ({
-  title: `${t(String(route.meta.title ?? '管理'))} · Sakura CMS`,
+  title: `${t(String(route.meta.title ?? '管理'))} · Cool`,
 }));
 </script>
 <template>
@@ -155,7 +155,7 @@ useHead(() => ({
       <RouterLink to="/admin" class="brand" @click="open = false"
         ><SakuraFlower class="brand-mark" />
         <div>
-          Sakura<small>{{ t('你的内容，自在生长。') }}</small>
+          Cool<small>{{ t('你的内容，自在生长。') }}</small>
         </div></RouterLink
       ><span class="nav-caption">{{ t('工作空间') }}</span>
       <nav>
@@ -212,13 +212,13 @@ useHead(() => ({
             t('访问博客 ↗')
           }}</a
           ><span class="owner-avatar">{{
-            session.owner?.displayName.slice(0, 1) || 'S'
+            session.owner?.displayName.slice(0, 1) || 'C'
           }}</span>
         </div>
       </header>
       <main class="workspace"><slot /></main>
       <footer class="admin-footer">
-        <span>Sakura CMS · {{ t('写下值得记住的事') }}</span
+        <span>Cool · {{ t('写下值得记住的事') }}</span
         ><LanguageSelector />
       </footer>
     </div>

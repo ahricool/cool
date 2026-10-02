@@ -1,30 +1,34 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { defaultSite, defaultHomepage, type AdminSettings } from '@cms/content';
-import { useCmsI18n } from '~/composables/useCmsI18n';
-import type { CmsLocale } from '~/i18n/locale';
+import {
+  defaultSite,
+  defaultHomepage,
+  type AdminSettings,
+} from '@cool/content';
+import { useCoolI18n } from '~/composables/useCoolI18n';
+import type { CoolLocale } from '~/i18n/locale';
 import { api, errorText } from '../api';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
 import AssetPicker from '../components/AssetPicker.vue';
 
-const { t } = useCmsI18n();
-const contentLocale = ref<CmsLocale>('en');
-const locales: CmsLocale[] = ['en', 'zh'];
-const blankSiteTranslation = (locale: CmsLocale) => ({
+const { t } = useCoolI18n();
+const contentLocale = ref<CoolLocale>('en');
+const locales: CoolLocale[] = ['en', 'zh'];
+const blankSiteTranslation = (locale: CoolLocale) => ({
   locale,
   title: '',
   description: '',
   authorBio: '',
 });
-const blankHomepageTranslation = (locale: CmsLocale) => ({
+const blankHomepageTranslation = (locale: CoolLocale) => ({
   locale,
   greeting: '',
   description: '',
   notice: '',
 });
-const blankSocialTranslation = (locale: CmsLocale) => ({ locale, label: '' });
+const blankSocialTranslation = (locale: CoolLocale) => ({ locale, label: '' });
 const form = reactive<AdminSettings>({
   site: {
     authorName: defaultSite.authorName,
@@ -239,7 +243,7 @@ onMounted(load);
           /></el-form-item>
         </el-form>
       </el-tab-pane>
-      <el-tab-pane :label="t('Sakura 首页')" name="homepage">
+      <el-tab-pane :label="t('Cool 首页')" name="homepage">
         <el-form label-position="top">
           <el-form-item :label="t('首屏文字')"
             ><el-input

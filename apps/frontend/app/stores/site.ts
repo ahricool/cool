@@ -5,9 +5,9 @@ import {
   type Site,
   type Homepage,
   type Social,
-} from '@cms/content';
+} from '@cool/content';
 export const useSiteStore = defineStore('site', () => {
-  const { locale } = useCmsI18n();
+  const { locale } = useCoolI18n();
   const api = useApi();
   const site = ref<Site>({ ...defaultSite });
   const homepage = ref<Homepage>({ ...defaultHomepage });

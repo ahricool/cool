@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const { t, formatDate, localePath, contentLang } = useCmsI18n();
-import type { Post } from '@cms/content';
+const { t, formatDate, localePath, contentLang } = useCoolI18n();
+import type { Post } from '@cool/content';
 defineProps<{ posts: Post[] }>();
 </script>
 <template>

@@ -235,7 +235,7 @@ export interface AdminSettings {
   social: AdminSocial[];
 }
 export const defaultSite: Site = {
-  title: 'Sakura',
+  title: 'Cool',
   description: '记录生活，也记录每一次灵感。',
   authorName: 'Administrator',
   authorBio: '在这里，收藏日常的微光。',
@@ -246,7 +246,7 @@ export const defaultSite: Site = {
 export const defaultHomepage: Homepage = {
   coverUrl: '/sakura/images/default/hd.webp',
   focusMode: 'glitch-text',
-  greeting: 'Hi, Sakura!',
+  greeting: 'Hi, Cool!',
   description: 'You got to put the past behind you before you can move on.',
   notice: '欢迎来到我的小小世界。',
   wave: true,

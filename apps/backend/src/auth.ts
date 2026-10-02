@@ -13,6 +13,7 @@ import {
   Req,
   Res,
   UnauthorizedException,
+  UnsupportedMediaTypeException,
   UseGuards,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -34,7 +35,6 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { CookieOptions, Request, Response } from 'express';
 import { Database } from './database';
 import { verifyPassword, hashPassword } from './password';
-import { readConfig } from './config';
 import {
   ADMIN_EMAIL,
   SESSION_COOKIE,
@@ -95,21 +95,18 @@ function sessionCookie(req: Request) {
     return undefined;
   }
 }
-// Login/setup also need origin protection to prevent login CSRF. Originless CLI
-// requests remain supported; browsers additionally send Fetch Metadata.
-function assertTrustedOrigin(req: Request) {
-  const origin = req.get('origin');
-  const allowed = readConfig().origins;
-  if (origin) {
-    const sameOrigin = `${req.protocol}://${req.get('host')}`;
-    if (origin !== sameOrigin && !allowed.includes(origin))
-      throw new ForbiddenException('Untrusted request origin');
+// Keep login/setup outside the browser's simple HTML-form request types. This
+// prevents form-based login CSRF without an origin allowlist or proxy scheme.
+@Injectable()
+class JsonRequestGuard implements CanActivate {
+  canActivate(context: ExecutionContext) {
+    const req = context.switchToHttp().getRequest<Request>();
+    if (!req.is('application/json'))
+      throw new UnsupportedMediaTypeException(
+        'Content-Type must be application/json',
+      );
+    return true;
   }
-  if (
-    req.get('sec-fetch-site') === 'cross-site' &&
-    (!origin || !allowed.includes(origin))
-  )
-    throw new ForbiddenException('Cross-site request rejected');
 }
 
 @Injectable()
@@ -134,8 +131,8 @@ export class AuthGuard implements CanActivate {
         version: number;
       }>(token, {
         algorithms: ['HS256'],
-        issuer: 'cms',
-        audience: 'cms-admin',
+        issuer: 'cool',
+        audience: 'cool-admin',
       });
       if (
         typeof payload.sub !== 'string' ||
@@ -163,7 +160,6 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException();
     }
     if (!authorization && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
-      assertTrustedOrigin(req);
       if (!constantEqual(req.get('x-csrf-token') ?? '', req.csrfToken))
         throw new ForbiddenException('A valid X-CSRF-Token is required');
     }
@@ -215,13 +211,12 @@ export class AuthController {
     };
   }
   @Post('setup')
+  @UseGuards(JsonRequestGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async setup(
     @Body() body: SetupDto,
-    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    assertTrustedOrigin(req);
     const passwordHash = await hashPassword(body.password);
     const user = await this.db.$transaction(async (tx) => {
       // Seed and concurrent first requests serialize on the same transaction lock.
@@ -248,13 +243,12 @@ export class AuthController {
     return this.issueSession(user, res);
   }
   @Post('login')
+  @UseGuards(JsonRequestGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(
     @Body() body: LoginDto,
-    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    assertTrustedOrigin(req);
     const user =
       body.email.trim().toLowerCase() === ADMIN_EMAIL
         ? await this.db.user.findUnique({ where: { email: ADMIN_EMAIL } })

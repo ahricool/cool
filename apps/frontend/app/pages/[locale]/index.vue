@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const { t, locale, contentLang } = useCmsI18n();
-import type { Pagination, Post } from '@cms/content';
+const { t, locale, contentLang } = useCoolI18n();
+import type { Pagination, Post } from '@cool/content';
 const store = useSiteStore();
 const route = useRoute();
 const api = useApi();

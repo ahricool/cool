@@ -1,4 +1,4 @@
-name: personal-cms
+name: cool
 # Published application images are fixed here, never selected through .env.
 x-backend: &backend
   image: ghcr.io/ahricool/cool-backend:latest
@@ -7,12 +7,24 @@ x-backend: &backend
     PORT: 3000
     DATABASE_URL: ${DATABASE_URL:?Set container DATABASE_URL with database hostname}
     JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
-    CORS_ORIGINS: ${CORS_ORIGINS:-}
-    MEDIA_ROOT: /app/data/uploads
-    # Only the frontend publishes a host port and replaces forwarding headers.
-    TRUST_PROXY_HOPS: '1'
+    MEDIA_ROOT: /app/data
   init: true
+x-media: &media
+  - type: bind
+    source: ${MEDIA_ROOT:-./data}
+    target: /app/data
 services:
+  # Run once before first backend startup (deploy.sh and backup.sh do this).
+  # Only the dedicated mount root is changed; existing files are never chowned.
+  media-init:
+    <<: *backend
+    profiles: [tools]
+    user: '0:0'
+    network_mode: none
+    environment: {}
+    volumes: *media
+    entrypoint: ['sh', '-ec']
+    command: ['chown node:node /app/data && chmod 0750 /app/data']
   database:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -44,8 +56,7 @@ services:
   backend:
     <<: *backend
     build: .
-    volumes:
-      - media_data:/app/data
+    volumes: *media
     restart: unless-stopped
     depends_on:
       database:
@@ -78,5 +89,4 @@ services:
       timeout: 5s
       retries: 10
 volumes:
-  media_data:
   postgres_data:

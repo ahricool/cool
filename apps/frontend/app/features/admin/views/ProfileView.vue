@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useCmsI18n } from '~/composables/useCmsI18n';
+import { useCoolI18n } from '~/composables/useCoolI18n';
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { api, clearSession, errorText, session } from '../api';
 import ViewHeader from '../components/ViewHeader.vue';
 import AssetPicker from '../components/AssetPicker.vue';
-const { t } = useCmsI18n();
+const { t } = useCoolI18n();
 const profile = reactive({
   email: '',
   displayName: '',

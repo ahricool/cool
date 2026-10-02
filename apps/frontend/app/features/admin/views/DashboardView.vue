@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useCmsI18n } from '~/composables/useCmsI18n';
+import { useCoolI18n } from '~/composables/useCoolI18n';
 import { computed, onMounted, ref } from 'vue';
 import { api, session, errorText } from '../api';
-import type { AdminPost, Pagination } from '@cms/content';
+import type { AdminPost, Pagination } from '@cool/content';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
-const { t, locale, formatDate } = useCmsI18n();
+const { t, locale, formatDate } = useCoolI18n();
 const counts = ref({ posts: 0, drafts: 0, media: 0, comments: 0 });
 const posts = ref<AdminPost[]>([]);
 const error = ref('');

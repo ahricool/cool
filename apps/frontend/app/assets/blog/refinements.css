@@ -396,7 +396,7 @@ body.sakura-ui {
   line-height: 1.5;
 }
 .sakura-ui .comment-form,
-.sakura-ui .cms-search {
+.sakura-ui .cool-search {
   padding: 24px;
   border: 1px solid var(--sakura-border);
   border-radius: 14px;
@@ -406,18 +406,18 @@ body.sakura-ui {
   margin-top: 0;
 }
 .sakura-ui .comment-form label,
-.sakura-ui .cms-search label {
+.sakura-ui .cool-search label {
   font-size: 14px;
   font-weight: 700;
   color: var(--sakura-heading);
 }
-.sakura-ui .cms-search label {
+.sakura-ui .cool-search label {
   display: block;
   margin-bottom: 12px;
 }
 .sakura-ui .comment-form input,
 .sakura-ui .comment-form textarea,
-.sakura-ui .cms-search input {
+.sakura-ui .cool-search input {
   font-size: 16px;
   line-height: 1.5;
   border: 1px solid var(--sakura-border);
@@ -435,7 +435,7 @@ body.sakura-ui {
 .sakura-ui .comment-list li {
   border-color: var(--sakura-border);
 }
-.sakura-ui :is(.api-state, .comment-form, .cms-search, .site-error) button,
+.sakura-ui :is(.api-state, .comment-form, .cool-search, .site-error) button,
 .sakura-ui .post-footer button,
 .sakura-ui .pagination :is(button, a) {
   display: inline-flex;
@@ -455,13 +455,13 @@ body.sakura-ui {
     background 0.2s,
     border-color 0.2s;
 }
-.sakura-ui :is(.comment-form, .cms-search) button {
+.sakura-ui :is(.comment-form, .cool-search) button {
   background: #b34272;
   color: #fff;
   border-color: #b34272;
   box-shadow: 0 3px 9px #b342721c;
 }
-.sakura-ui :is(.comment-form, .cms-search) button:hover:not(:disabled) {
+.sakura-ui :is(.comment-form, .cool-search) button:hover:not(:disabled) {
   background: #92335c;
   border-color: #92335c;
 }
@@ -600,7 +600,7 @@ body.sakura-ui {
     font-size: 22px;
   }
   .sakura-ui .comment-form,
-  .sakura-ui .cms-search {
+  .sakura-ui .cool-search {
     padding: 20px 16px;
   }
   .sakura-ui .author-profile {

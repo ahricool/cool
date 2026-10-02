@@ -15,7 +15,7 @@ export default async function setup() {
     if (!status.initialized) {
       const initialized = await context.post(api + '/admin/auth/setup', {
         data: {
-          password: process.env.E2E_PASSWORD ?? 'cms-e2e-owner-password',
+          password: process.env.E2E_PASSWORD ?? 'cool-e2e-owner-password',
         },
       });
       if (!initialized.ok())

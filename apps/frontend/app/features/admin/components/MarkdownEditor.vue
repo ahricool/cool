@@ -1,8 +1,8 @@
 <script setup lang="ts">
-const { t, contentLang, locale } = useCmsI18n();
+const { t, contentLang, locale } = useCoolI18n();
 import { computed, nextTick, ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { renderMarkdown } from '@cms/content';
+import { renderMarkdown } from '@cool/content';
 import { upload, errorText } from '../api';
 import { translate } from '~/i18n/messages';
 const props = defineProps<{

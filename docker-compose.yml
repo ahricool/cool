@@ -1,10 +1,10 @@
-name: personal-cms-dev
+name: cool-dev
 services:
   database:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-cms}
-      POSTGRES_USER: ${POSTGRES_USER:-cms}
+      POSTGRES_DB: ${POSTGRES_DB:-cool}
+      POSTGRES_USER: ${POSTGRES_USER:-cool}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
     ports:
       - '127.0.0.1:5433:5432'

@@ -42,8 +42,8 @@ class HealthController {
         signOptions: {
           algorithm: 'HS256',
           expiresIn: '15d',
-          issuer: 'cms',
-          audience: 'cms-admin',
+          issuer: 'cool',
+          audience: 'cool-admin',
         },
       }),
     }),
@@ -71,15 +71,18 @@ class HealthController {
 })
 export class AppModule {}
 export async function createApp() {
-  const config = readConfig();
+  readConfig();
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bodyParser: false,
   });
-  // Enable only behind the sole ingress proxy, which overwrites forwarding headers.
-  app.set('trust proxy', config.trustProxyHops);
+  // Production is private behind the built-in Nginx, which replaces forwarding
+  // headers. Trust that one adjacent hop, regardless of external proxy layers.
+  app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : 0);
   app.use(helmet());
   app.use(json({ limit: '1mb' }));
-  app.enableCors({ origin: config.origins, credentials: true });
+  // Public/API clients can use any origin. Never reflect credentialed origins;
+  // the browser admin uses same-origin cookies and a per-session CSRF token.
+  app.enableCors({ origin: '*', credentials: false });
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(
     new ValidationPipe({
@@ -94,10 +97,10 @@ export async function createApp() {
   const document = SwaggerModule.createDocument(
     app,
     new DocumentBuilder()
-      .setTitle('Personal CMS API')
+      .setTitle('Cool API')
       .setVersion('1.0')
       .addBearerAuth()
-      .addCookieAuth('cms_session')
+      .addCookieAuth('cool_session')
       .build(),
   );
   SwaggerModule.setup('api/docs', app, document, {

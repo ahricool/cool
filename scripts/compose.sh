@@ -2,7 +2,7 @@
 # Production image names are fixed in Compose; .env holds runtime settings only.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
-COMPOSE=(docker compose --env-file "${CMS_ENV_FILE:-.env}" -f docker-compose.prod.yml)
+COMPOSE=(docker compose --env-file "${COOL_ENV_FILE:-.env}" -f docker-compose.prod.yml)
 # Explicit overrides are only for local builds, isolated tests, and recovery.
 if [[ "${1:-}" == --images ]]; then
   [[ $# -ge 2 ]] || { echo 'Usage: compose.sh [--images file|local] <compose arguments>' >&2; exit 2; }

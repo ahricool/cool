@@ -4,7 +4,7 @@ import {
   detectLocale,
   resolveLocale,
   effectiveLocale,
-  formatCmsDate,
+  formatCoolDate,
   isLocale,
   pathForLocale,
   localizePublicRequest,
@@ -76,15 +76,15 @@ test('saved explicit preference overrides browser detection and invalid storage 
 });
 
 test('localized dates keep the Shanghai site date across UTC day and month boundaries', () => {
-  assert.equal(formatCmsDate('2026-01-31T16:30:00.000Z', 'zh'), '2026/02/01');
-  assert.equal(formatCmsDate('2026-01-31T16:30:00.000Z', 'en'), '02/01/2026');
+  assert.equal(formatCoolDate('2026-01-31T16:30:00.000Z', 'zh'), '2026/02/01');
+  assert.equal(formatCoolDate('2026-01-31T16:30:00.000Z', 'en'), '02/01/2026');
   assert.equal(
-    formatCmsDate('2026-01-31T16:30:00.000Z', 'en', {
+    formatCoolDate('2026-01-31T16:30:00.000Z', 'en', {
       year: 'numeric',
       month: 'long',
     }),
     'February 2026',
   );
-  assert.equal(formatCmsDate(null, 'en'), '');
-  assert.equal(formatCmsDate('invalid', 'zh'), '');
+  assert.equal(formatCoolDate(null, 'en'), '');
+  assert.equal(formatCoolDate('invalid', 'zh'), '');
 });

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const { t, locale, formatDate, contentLang } = useCmsI18n();
-import { renderMarkdown, type Pagination, type Moment } from '@cms/content';
+const { t, locale, formatDate, contentLang } = useCoolI18n();
+import { renderMarkdown, type Pagination, type Moment } from '@cool/content';
 const route = useRoute();
 const store = useSiteStore();
 const api = useApi();

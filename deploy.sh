@@ -31,7 +31,11 @@ if [[ "$BACKEND_REVISION" != "$REVISION" || "$FRONTEND_REVISION" != "$REVISION" 
 fi
 
 "${COMPOSE[@]}" up -d --wait --no-build --pull never database
-if [[ "${SKIP_BACKUP:-0}" != 1 ]]; then ./backup.sh; fi
+if [[ "${SKIP_BACKUP:-0}" != 1 ]]; then
+  ./backup.sh
+else
+  "${COMPOSE[@]}" run --rm --no-deps --pull never -T media-init
+fi
 "${COMPOSE[@]}" run --rm --no-deps --pull never migrate
 "${COMPOSE[@]}" run --rm --no-deps --pull never seed
 "${COMPOSE[@]}" up -d --wait --no-build --pull never --remove-orphans backend frontend

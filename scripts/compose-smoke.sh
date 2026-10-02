@@ -17,7 +17,7 @@ fi
 case "$DOCKER_ENDPOINT" in unix:///*) ;; *) echo 'Smoke drill requires a local Unix-socket Docker daemon' >&2; exit 1 ;; esac
 docker compose version >/dev/null
 
-RUN_ID="cms-smoke-$(date -u +%Y%m%d%H%M%S)-$$-$RANDOM"
+RUN_ID="cool-smoke-$(date -u +%Y%m%d%H%M%S)-$$-$RANDOM"
 SOURCE_PROJECT="${RUN_ID}-source"
 RESTORE_PROJECT="${RUN_ID}-restore"
 REPORT_DIR="$PWD/test-results/compose-smoke"
@@ -26,7 +26,14 @@ for report in source-http source-after-backup-http restored-http; do
   printf '{"passed": false, "status": "not run"}\n' > "$REPORT_DIR/$report.json"
 done
 RUNTIME_DIR=$(mktemp -d "$PWD/test-results/.compose-smoke.XXXXXX")
-ENV_FILE="$RUNTIME_DIR/cms.env"
+# Every Compose call below binds only these new, disposable host directories.
+# Changing -p alone does NOT isolate a bind mount.
+readonly RUNTIME_DIR
+readonly SOURCE_MEDIA="$RUNTIME_DIR/source-media" RESTORE_MEDIA="$RUNTIME_DIR/restore-media"
+readonly SMOKE_BACKUP_ROOT="$RUNTIME_DIR/backups"
+mkdir -m 0755 "$SOURCE_MEDIA" "$RESTORE_MEDIA"
+IMAGES_BUILT=0
+ENV_FILE="$RUNTIME_DIR/cool.env"
 IMAGES_FILE="$RUNTIME_DIR/images.yml"
 LOG_FILE="$RUNTIME_DIR/operations.log"
 STAGE=initializing
@@ -34,18 +41,19 @@ BACKUPS=()
 # Explicit values prevent the operator's ambient environment from overriding the
 # disposable --env-file. Compose's top-level name is always overridden with -p.
 unset DATABASE_URL JWT_SECRET POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD \
-  HTTP_PORT CORS_ORIGINS COMPOSE_FILE COMPOSE_PROFILES
+  HTTP_PORT MEDIA_ROOT COMPOSE_FILE COMPOSE_PROFILES
 cat > "$ENV_FILE" <<ENV
-POSTGRES_DB=cms_smoke
-POSTGRES_USER=cms_smoke
+POSTGRES_DB=cool_smoke
+POSTGRES_USER=cool_smoke
 POSTGRES_PASSWORD=compose-smoke-database-password-only
-DATABASE_URL=postgresql://cms_smoke:compose-smoke-database-password-only@database:5432/cms_smoke
+DATABASE_URL=postgresql://cool_smoke:compose-smoke-database-password-only@database:5432/cool_smoke
 JWT_SECRET=compose-smoke-jwt-secret-for-disposable-test-only
 HTTP_PORT=127.0.0.1:0
-CORS_ORIGINS=
 ENV
 cat > "$IMAGES_FILE" <<YAML
 services:
+  media-init:
+    image: ${RUN_ID}-backend:local
   backend:
     image: ${RUN_ID}-backend:local
   migrate:
@@ -56,11 +64,31 @@ services:
     image: ${RUN_ID}-frontend:local
 YAML
 
+media_dir() {
+  case "$1" in
+    "$SOURCE_PROJECT") printf '%s\n' "$SOURCE_MEDIA" ;;
+    "$RESTORE_PROJECT") printf '%s\n' "$RESTORE_MEDIA" ;;
+    *) echo 'Unsafe Compose project' >&2; return 1 ;;
+  esac
+}
 compose() {
-  local project=$1; shift
-  case "$project" in "$SOURCE_PROJECT"|"$RESTORE_PROJECT") ;; *) echo 'Unsafe Compose project' >&2; return 1 ;; esac
-  timeout --signal=TERM --kill-after=10s 180s docker compose \
+  local project=$1 media; shift
+  media=$(media_dir "$project") || return
+  MEDIA_ROOT="$media" timeout --signal=TERM --kill-after=10s "${COMPOSE_TIMEOUT:-180s}" docker compose \
     --env-file "$ENV_FILE" -p "$project" -f docker-compose.prod.yml -f "$IMAGES_FILE" "$@"
+}
+clear_test_media() {
+  local project=$1 media
+  media=$(media_dir "$project") || return
+  [[ -d "$media" ]] || return 0
+  if [[ "$IMAGES_BUILT" == 1 ]]; then
+    # Run as node, which owns generated uploads. Never clean a user-supplied path.
+    COMPOSE_TIMEOUT=30s compose "$project" run --rm --no-deps --pull never -T --entrypoint sh backend \
+      -c 'find /app/data -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +' || return
+  fi
+  # The runner may have a different UID from node; the now-empty directory can
+  # still be removed through its runner-owned parent without widening access.
+  rmdir -- "$media"
 }
 sanitize() {
   sed -E \
@@ -72,10 +100,8 @@ sanitize() {
 capture_stack() {
   local project=$1 label=$2
   # Bounded tails only. Never upload inspect/config/env output or backup archives.
-  timeout --kill-after=5s 15s docker compose --env-file "$ENV_FILE" -p "$project" -f docker-compose.prod.yml -f "$IMAGES_FILE" \
-    ps -a 2>&1 | tail -c 65536 | sanitize > "$REPORT_DIR/${label}-containers.log" || true
-  timeout --kill-after=5s 15s docker compose --env-file "$ENV_FILE" -p "$project" -f docker-compose.prod.yml -f "$IMAGES_FILE" \
-    logs --no-color --tail=100 2>&1 | tail -n 700 | tail -c 262144 | sanitize > "$REPORT_DIR/${label}-services.log" || true
+  COMPOSE_TIMEOUT=15s compose "$project" ps -a 2>&1 | tail -c 65536 | sanitize > "$REPORT_DIR/${label}-containers.log" || true
+  COMPOSE_TIMEOUT=15s compose "$project" logs --no-color --tail=100 2>&1 | tail -n 700 | tail -c 262144 | sanitize > "$REPORT_DIR/${label}-services.log" || true
 }
 cleanup() {
   local result=$? cleanup_failed=0
@@ -84,13 +110,13 @@ cleanup() {
   capture_stack "$SOURCE_PROJECT" source-final
   capture_stack "$RESTORE_PROJECT" restore-final
   for project in "$SOURCE_PROJECT" "$RESTORE_PROJECT"; do
-    timeout --signal=TERM --kill-after=5s 40s docker compose \
-      --env-file "$ENV_FILE" -p "$project" -f docker-compose.prod.yml -f "$IMAGES_FILE" \
-      down --volumes --remove-orphans --timeout 10 >> "$LOG_FILE" 2>&1 || cleanup_failed=1
+    COMPOSE_TIMEOUT=30s compose "$project" stop frontend backend >> "$LOG_FILE" 2>&1 || cleanup_failed=1
+    clear_test_media "$project" >> "$LOG_FILE" 2>&1 || cleanup_failed=1
+    COMPOSE_TIMEOUT=40s compose "$project" down --volumes --remove-orphans --timeout 10 >> "$LOG_FILE" 2>&1 || cleanup_failed=1
   done
   # Every removed path was returned by this run's successful backup.sh call.
   for backup in "${BACKUPS[@]}"; do
-    if [[ "$backup" =~ ^backups/cms-[0-9]{8}T[0-9]{6}Z-[0-9]+$ ]]; then rm -rf -- "$backup"; fi
+    if [[ "${backup%/*}" == "$SMOKE_BACKUP_ROOT" && "${backup##*/}" =~ ^cool-[0-9]{8}T[0-9]{6}\.[0-9]{9}Z-[A-Za-z0-9]{12}$ ]]; then rm -rf -- "$backup"; fi
   done
   tail -n 350 "$LOG_FILE" | tail -c 262144 | sanitize > "$REPORT_DIR/operations.log"
   if [[ "$cleanup_failed" != 0 ]]; then result=1; fi
@@ -108,7 +134,7 @@ cleanup() {
     echo '- Authenticated CRUD, publication, generated image upload and changed owner password'
     echo '- Playwright against the generated frontend through real production Nginx, with desktop/mobile screenshots'
     echo '- Populated backup with writer stop/resume, restrictive archive permissions'
-    echo '- Restore into a distinct empty database and media volume after removing the source project'
+    echo '- Restore into a distinct empty database volume and temporary media bind directory after removing the source project'
     echo '- Exact migration history, stable owner/content/media IDs, Markdown and media SHA-256'
     echo
     echo 'Each completed HTTP check is recorded in the accompanying JSON reports. PASS requires every stage and cleanup to succeed.'
@@ -133,11 +159,13 @@ backup() {
   STAGE="backup-$label"
   echo "==> $STAGE"
   timeout --signal=TERM --kill-after=20s 180s env \
-    CMS_ENV_FILE="$ENV_FILE" COMPOSE_PROJECT_NAME="$SOURCE_PROJECT" \
+    COOL_ENV_FILE="$ENV_FILE" COMPOSE_PROJECT_NAME="$SOURCE_PROJECT" MEDIA_ROOT="$SOURCE_MEDIA" \
+    COOL_BACKUP_ROOT="$SMOKE_BACKUP_ROOT" \
     bash backup.sh --images "$IMAGES_FILE" > "$output" 2>&1 || { cat "$output" >> "$LOG_FILE"; return 1; }
   cat "$output" >> "$LOG_FILE"
   directory=$(sed -n 's/^Consistent backup saved: //p' "$output")
-  [[ "$directory" =~ ^backups/cms-[0-9]{8}T[0-9]{6}Z-[0-9]+$ ]]
+  [[ "${directory%/*}" == "$SMOKE_BACKUP_ROOT" ]]
+  [[ "${directory##*/}" =~ ^cool-[0-9]{8}T[0-9]{6}\.[0-9]{9}Z-[A-Za-z0-9]{12}$ ]]
   BACKUPS+=("$directory")
   test -s "$directory/database.dump"
   test -s "$directory/media.tar.gz"
@@ -145,7 +173,7 @@ backup() {
   [[ $(stat -c '%a' "$directory/database.dump") == 600 ]]
   [[ $(stat -c '%a' "$directory/media.tar.gz") == 600 ]]
   tar -tzf "$directory/media.tar.gz" > "$RUNTIME_DIR/media-$label.list"
-  grep -qx 'uploads/' "$RUNTIME_DIR/media-$label.list"
+  grep -qx './' "$RUNTIME_DIR/media-$label.list"
   LAST_BACKUP=$directory
 }
 stack_url() {
@@ -162,16 +190,17 @@ migration_snapshot() {
 run_step validate-compose compose "$SOURCE_PROJECT" config --quiet
 run_step pull-infrastructure-only compose "$SOURCE_PROJECT" pull database
 run_step build-current-code timeout --signal=TERM --kill-after=20s 900s env \
-  CMS_ENV_FILE="$ENV_FILE" COMPOSE_PROJECT_NAME="$SOURCE_PROJECT" \
+  COOL_ENV_FILE="$ENV_FILE" COMPOSE_PROJECT_NAME="$SOURCE_PROJECT" MEDIA_ROOT="$SOURCE_MEDIA" \
   bash scripts/build.sh --images "$IMAGES_FILE"
+IMAGES_BUILT=1
 run_step start-empty-database compose "$SOURCE_PROJECT" up -d --wait --wait-timeout 120 --no-build --pull never database
 # Mirrors deploy.sh's default first-install backup, without SKIP_BACKUP and
-# before migrate/seed or any backend startup. Docker volume copy-up must work.
+# before migrate/seed or any backend startup. Bind ownership initialization must work.
 backup empty
 [[ $(wc -l < "$RUNTIME_DIR/media-empty.list") == 1 ]]
 [[ -z $(compose "$SOURCE_PROJECT" ps --status running -q backend) ]]
 run_step verify-virgin-media-permissions compose "$SOURCE_PROJECT" run --rm --no-deps -T --entrypoint sh backend \
-  -c 'test "$(id -u)" != 0 && test -d /app/data/uploads && test -r /app/data/uploads && test -w /app/data/uploads'
+  -c 'test "$(id -u)" != 0 && test -d /app/data && test -r /app/data && test -w /app/data'
 run_step migrate compose "$SOURCE_PROJECT" run --rm -T migrate
 run_step seed compose "$SOURCE_PROJECT" run --rm -T seed
 run_step seed-idempotence compose "$SOURCE_PROJECT" run --rm -T seed
@@ -200,7 +229,9 @@ run_step wait-for-resumed-backend compose "$SOURCE_PROJECT" up -d --wait --wait-
 run_step verify-backup-source-resumed timeout 180s node scripts/compose-smoke.mjs verify \
   "$SOURCE_URL" "$RUNTIME_DIR/state.json" "$REPORT_DIR/source-after-backup-http.json"
 capture_stack "$SOURCE_PROJECT" source-before-removal
-# Removing source volumes proves the restore cannot accidentally read them.
+# Remove both kinds of source storage so restore cannot accidentally reuse them.
+run_step stop-source-writers compose "$SOURCE_PROJECT" stop frontend backend
+run_step remove-source-media clear_test_media "$SOURCE_PROJECT"
 run_step remove-source-project compose "$SOURCE_PROJECT" down --volumes --remove-orphans --timeout 10
 run_step start-isolated-restore-database compose "$RESTORE_PROJECT" up -d --wait --wait-timeout 120 --no-build --pull never database
 EMPTY_TABLES=$(compose "$RESTORE_PROJECT" exec -T database sh -c \
@@ -208,16 +239,19 @@ EMPTY_TABLES=$(compose "$RESTORE_PROJECT" exec -T database sh -c \
 [[ "$EMPTY_TABLES" == 0 ]]
 # Exact recovery commands from docs/operations.md, scoped to the new project.
 run_step stop-restore-writers compose "$RESTORE_PROJECT" stop frontend backend
+run_step initialize-restore-media compose "$RESTORE_PROJECT" run --rm --no-deps --pull never -T media-init
+run_step verify-empty-restore-media compose "$RESTORE_PROJECT" run --rm --no-deps --pull never -T --entrypoint sh backend \
+  -c 'test -z "$(find /app/data -mindepth 1 -print -quit)"'
 run_step restore-database compose "$RESTORE_PROJECT" exec -T database sh -c \
   'pg_restore --exit-on-error --clean --if-exists --no-owner -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
   < "$POPULATED_BACKUP/database.dump"
 run_step restore-media compose "$RESTORE_PROJECT" run --rm --no-deps -T --entrypoint sh backend \
-  -c 'rm -rf /app/data/uploads && mkdir -p /app/data/uploads && tar -xzf - -C /app/data' \
+  -c 'find /app/data -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + && tar -xzf - -C /app/data' \
   < "$POPULATED_BACKUP/media.tar.gz"
 migration_snapshot "$RESTORE_PROJECT" > "$RUNTIME_DIR/restored-migrations.jsonl"
 run_step compare-migration-history diff -u "$RUNTIME_DIR/source-migrations.jsonl" "$RUNTIME_DIR/restored-migrations.jsonl"
 run_step verify-restored-media-permissions compose "$RESTORE_PROJECT" run --rm --no-deps -T --entrypoint sh backend \
-  -c 'test "$(id -u)" != 0 && test -r /app/data/uploads && test -w /app/data/uploads && find /app/data/uploads -type f -exec test -r {} \;'
+  -c 'test "$(id -u)" != 0 && test -r /app/data && test -w /app/data && find /app/data -type f -exec test -r {} \;'
 run_step start-restored-stack compose "$RESTORE_PROJECT" up -d --wait --wait-timeout 120 --no-build --pull never backend frontend
 RESTORE_URL=$(stack_url "$RESTORE_PROJECT")
 run_step verify-isolated-restore timeout 180s node scripts/compose-smoke.mjs verify \

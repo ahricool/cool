@@ -24,7 +24,7 @@ import type { Response } from 'express';
 import { Database } from './database';
 import { AuthGuard } from './auth';
 import { ListQuery } from './dto';
-const mediaRoot = () => resolve(process.env.MEDIA_ROOT ?? '../../data/uploads');
+import { mediaRoot } from './media-root';
 export const mediaUrl = (key: string) => `/api/v1/media/${key}`;
 @ApiTags('Media')
 @ApiBearerAuth()

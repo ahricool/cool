@@ -16,13 +16,14 @@ import { spawnSync } from 'node:child_process';
 
 const sha = '1'.repeat(40);
 async function fixture() {
-  const dir = await mkdtemp(join(tmpdir(), 'cms-deployment-test-'));
+  const dir = await mkdtemp(join(tmpdir(), 'cool-deployment-test-'));
   for (const name of ['scripts', 'deployment', 'bin'])
     await mkdir(join(dir, name));
   for (const file of [
     'deploy.sh',
     'scripts/compose.sh',
     'scripts/build.sh',
+    'scripts/backup-retention.sh',
     'docker-compose.prod.yml',
     'docker-compose.local.yml',
   ]) {
@@ -37,15 +38,16 @@ async function fixture() {
   );
   const log = join(dir, 'calls.jsonl');
   await writeFile(log, '');
-  const record = `const fs=require('node:fs');const args=process.argv.slice(2);fs.appendFileSync(process.env.CMS_FAKE_LOG,JSON.stringify([TOOL,...args])+'\\n');`;
+  const record = `const fs=require('node:fs');const args=process.argv.slice(2);fs.appendFileSync(process.env.COOL_FAKE_LOG,JSON.stringify([TOOL,...args])+'\\n');`;
   await writeFile(
     join(dir, 'bin/docker'),
     `#!/usr/bin/env node
 ${record.replace('TOOL', "'docker'")}
-if(process.env.CMS_FAIL && args.join(' ').includes(process.env.CMS_FAIL)) process.exit(1);
-if(args.includes('ps') && process.env.CMS_RUNNING==='1') console.log('running-backend');
+if(process.env.COOL_FAIL && args.join(' ').includes(process.env.COOL_FAIL)) process.exit(1);
+if(args.includes('ps') && process.env.COOL_RUNNING==='1') console.log('running-backend');
+if(args.some(arg=>arg.includes('pg_dump')) || args.includes('tar')) console.log('fixture-backup-bytes');
 if(args[0]==='image' && args[1]==='inspect') {
-  console.log(args.at(-1).includes('frontend') ? process.env.CMS_FRONTEND_REVISION : process.env.CMS_BACKEND_REVISION);
+  console.log(args.at(-1).includes('frontend') ? process.env.COOL_FRONTEND_REVISION : process.env.COOL_BACKEND_REVISION);
 }
 `,
   );
@@ -53,16 +55,16 @@ if(args[0]==='image' && args[1]==='inspect') {
     join(dir, 'bin/git'),
     `#!/usr/bin/env node
 ${record.replace('TOOL', "'git'")}
-if(process.env.CMS_GIT_FAIL===args[0]) process.exit(1);
+if(process.env.COOL_GIT_FAIL===args[0]) process.exit(1);
 if(args[0]==='rev-parse') console.log('${sha}');
-if(args[0]==='status' && process.env.CMS_DIRTY==='1') console.log(' M deploy.sh');
+if(args[0]==='status' && process.env.COOL_DIRTY==='1') console.log(' M deploy.sh');
 `,
   );
   await writeFile(
     join(dir, 'backup.sh'),
     `#!/usr/bin/env node
 ${record.replace('TOOL', "'backup'")}
-if(process.env.CMS_FAIL==='backup') process.exit(1);
+if(process.env.COOL_FAIL==='backup') process.exit(1);
 `,
   );
   for (const tool of ['bin/docker', 'bin/git', 'backup.sh'])
@@ -73,10 +75,10 @@ if(process.env.CMS_FAIL==='backup') process.exit(1);
       env: {
         ...process.env,
         PATH: `${join(dir, 'bin')}:${process.env.PATH}`,
-        CMS_ENV_FILE: '.env',
-        CMS_FAKE_LOG: log,
-        CMS_BACKEND_REVISION: sha,
-        CMS_FRONTEND_REVISION: sha,
+        COOL_ENV_FILE: '.env',
+        COOL_FAKE_LOG: log,
+        COOL_BACKEND_REVISION: sha,
+        COOL_FRONTEND_REVISION: sha,
         SKIP_BACKUP: '0',
         ...extra,
       },
@@ -122,7 +124,7 @@ test('normal Compose ignores previous image manifests and honors runtime env fil
     const envFile = join(f.dir, 'runtime.env');
     await writeFile(envFile, 'JWT_SECRET=fixture-runtime-only\n');
     const result = f.run('scripts/compose.sh', ['config', '--quiet'], {
-      CMS_ENV_FILE: envFile,
+      COOL_ENV_FILE: envFile,
     });
     assert.equal(result.status, 0, result.stderr + result.stdout);
     const expected = compose('config', '--quiet');
@@ -141,7 +143,7 @@ test('explicit local builds do not overwrite published latest image tags', async
       compose('-f', 'docker-compose.local.yml', 'build', 'backend', 'frontend'),
     ]);
     const local = await readFile('docker-compose.local.yml', 'utf8');
-    assert.equal((local.match(/image: cool-backend:local/g) ?? []).length, 3);
+    assert.equal((local.match(/image: cool-backend:local/g) ?? []).length, 4);
     assert.match(local, /image: cool-frontend:local/);
     assert.doesNotMatch(local, /image:.*:latest/);
   } finally {
@@ -242,19 +244,19 @@ test('Compose command shortcut does not update or deploy', async () => {
 });
 
 for (const extra of [
-  { CMS_DIRTY: '1' },
-  { CMS_GIT_FAIL: 'checkout' },
-  { CMS_GIT_FAIL: 'pull' },
-  { CMS_FAIL: 'config --quiet' },
-  { CMS_FAIL: 'pull backend frontend database' },
-  { CMS_FAIL: 'image inspect' },
-  { CMS_FRONTEND_REVISION: '2'.repeat(40) },
+  { COOL_DIRTY: '1' },
+  { COOL_GIT_FAIL: 'checkout' },
+  { COOL_GIT_FAIL: 'pull' },
+  { COOL_FAIL: 'config --quiet' },
+  { COOL_FAIL: 'pull backend frontend database' },
+  { COOL_FAIL: 'image inspect' },
+  { COOL_FRONTEND_REVISION: '2'.repeat(40) },
   {
-    CMS_BACKEND_REVISION: '2'.repeat(40),
-    CMS_FRONTEND_REVISION: '2'.repeat(40),
+    COOL_BACKEND_REVISION: '2'.repeat(40),
+    COOL_FRONTEND_REVISION: '2'.repeat(40),
   },
-  { CMS_BACKEND_REVISION: '<no value>' },
-  { CMS_BACKEND_REVISION: '', CMS_FRONTEND_REVISION: '' },
+  { COOL_BACKEND_REVISION: '<no value>' },
+  { COOL_BACKEND_REVISION: '', COOL_FRONTEND_REVISION: '' },
 ]) {
   test(`preflight failure leaves containers and data untouched: ${JSON.stringify(extra)}`, async () => {
     const f = await fixture();
@@ -269,7 +271,7 @@ for (const extra of [
             args[0] === 'backup' || args.includes('up') || args.includes('run'),
         ),
       );
-      if ('CMS_DIRTY' in extra || 'CMS_GIT_FAIL' in extra)
+      if ('COOL_DIRTY' in extra || 'COOL_GIT_FAIL' in extra)
         assert(!calls.some((args) => args[0] === 'docker'));
     } finally {
       await rm(f.dir, { recursive: true, force: true });
@@ -287,7 +289,7 @@ for (const [failure, forbidden] of [
   test(`deployment stops and reports failure at ${failure}`, async () => {
     const f = await fixture();
     try {
-      const result = f.run('deploy.sh', [], { CMS_FAIL: failure });
+      const result = f.run('deploy.sh', [], { COOL_FAIL: failure });
       assert.notEqual(result.status, 0);
       assert.doesNotMatch(result.stdout, /Deployment ready/);
       assert(!(await f.calls()).some((args) => args.includes(forbidden)));
@@ -304,6 +306,7 @@ test('backup is skipped only when explicitly requested', async () => {
     assert.equal(result.status, 0, result.stderr);
     assert(!(await f.calls()).some((args) => args[0] === 'backup'));
     assert((await f.calls()).some((args) => args.includes('migrate')));
+    assert((await f.calls()).some((args) => args.at(-1) === 'media-init'));
   } finally {
     await rm(f.dir, { recursive: true, force: true });
   }
@@ -313,10 +316,22 @@ test('real backup preserves writer stop/resume without repulling checked latest'
   const f = await fixture();
   try {
     await copyFile(resolve('backup.sh'), join(f.dir, 'backup.sh'));
-    const result = f.run('backup.sh', [], { CMS_RUNNING: '1' });
+    const result = f.run('backup.sh', [], { COOL_RUNNING: '1' });
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /Consistent backup saved/);
     const calls = await f.calls();
+    assert.deepEqual(
+      calls.shift(),
+      compose(
+        'run',
+        '--rm',
+        '--no-deps',
+        '--pull',
+        'never',
+        '-T',
+        'media-init',
+      ),
+    );
     assert.deepEqual(
       calls[0],
       compose('ps', '--status', 'running', '-q', 'backend'),
@@ -341,7 +356,7 @@ test('real backup preserves writer stop/resume without repulling checked latest'
         '-',
         '-C',
         '/app/data',
-        'uploads',
+        '.',
       ),
     );
     assert.deepEqual(calls[4], compose('start', 'backend'));

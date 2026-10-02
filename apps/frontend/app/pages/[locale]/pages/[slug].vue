@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const { t, locale, contentLang } = useCmsI18n();
-import { renderMarkdown, type Page } from '@cms/content';
+const { t, locale, contentLang } = useCoolI18n();
+import { renderMarkdown, type Page } from '@cool/content';
 const route = useRoute();
 const api = useApi();
 const { data, pending, error, refresh } = await useAsyncData(

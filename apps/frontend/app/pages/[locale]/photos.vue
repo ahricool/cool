@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const { t, locale, contentLang } = useCmsI18n();
-import type { Pagination, Photo } from '@cms/content';
+const { t, locale, contentLang } = useCoolI18n();
+import type { Pagination, Photo } from '@cool/content';
 import { masonryPositions } from '~/utils/masonry';
 const route = useRoute();
 const api = useApi();

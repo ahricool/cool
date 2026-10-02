@@ -12,24 +12,18 @@ const { Database } = require('../dist/database');
 
 before(() => {
   Logger.overrideLogger(false);
-  process.env.DATABASE_URL = 'postgresql://unused:unused@127.0.0.1/cms_test';
+  process.env.DATABASE_URL = 'postgresql://unused:unused@127.0.0.1/cool_test';
   process.env.JWT_SECRET = 'proxy-test-secret-at-least-32-characters';
   process.env.NODE_ENV = 'test';
-  delete process.env.CORS_ORIGINS;
 });
 
-function setTrust(t, value) {
-  const previous = process.env.TRUST_PROXY_HOPS;
-  if (value === undefined) delete process.env.TRUST_PROXY_HOPS;
-  else process.env.TRUST_PROXY_HOPS = value;
+async function startApp(t, environment = 'test') {
+  const previous = process.env.NODE_ENV;
+  process.env.NODE_ENV = environment;
   t.after(() => {
-    if (previous === undefined) delete process.env.TRUST_PROXY_HOPS;
-    else process.env.TRUST_PROXY_HOPS = previous;
+    if (previous === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previous;
   });
-}
-
-async function startApp(t, trustProxyHops) {
-  setTrust(t, trustProxyHops);
   // These requests stop at DTO validation or the real ThrottlerGuard. No query
   // runs, so bypass only database startup; exercise the production app wiring.
   t.mock.method(Database.prototype, 'onModuleInit', async () => {});
@@ -47,28 +41,84 @@ function login(http, forwardedFor, realIp = '203.0.113.99') {
     .send({});
 }
 
-test('proxy trust defaults to direct and accepts only zero or one hop', (t) => {
-  setTrust(t, undefined);
-  assert.equal(readConfig().trustProxyHops, 0);
-  for (const value of ['0', '1']) {
-    process.env.TRUST_PROXY_HOPS = value;
-    assert.equal(readConfig().trustProxyHops, Number(value));
+test('configuration only requires database, signing secret and port', () => {
+  assert.deepEqual(Object.keys(readConfig()).sort(), [
+    'databaseUrl',
+    'jwtSecret',
+    'port',
+  ]);
+});
+
+test('CORS is wildcard without credentialed origin reflection', async (t) => {
+  const http = await startApp(t);
+  for (const origin of [
+    'https://other.test',
+    'http://localhost:3001',
+    'null',
+  ]) {
+    const response = await http
+      .get('/api/openapi.json')
+      .set('Origin', origin)
+      .expect(200);
+    assert.equal(response.headers['access-control-allow-origin'], '*');
+    assert.equal(
+      response.headers['access-control-allow-credentials'],
+      undefined,
+    );
+    const preflight = await http
+      .options('/api/v1/admin/auth/profile')
+      .set('Origin', origin)
+      .set('Access-Control-Request-Method', 'PUT')
+      .set('Access-Control-Request-Headers', 'content-type,x-csrf-token')
+      .expect(204);
+    assert.equal(preflight.headers['access-control-allow-origin'], '*');
+    assert.equal(
+      preflight.headers['access-control-allow-credentials'],
+      undefined,
+    );
+    assert.match(
+      preflight.headers['access-control-allow-headers'],
+      /x-csrf-token/,
+    );
   }
-  for (const value of ['', 'true', 'false', '2', '-1', '1.5', 'loopback']) {
-    process.env.TRUST_PROXY_HOPS = value;
-    assert.throws(() => readConfig(), /TRUST_PROXY_HOPS/);
+});
+
+test('login and setup reject browser simple form content types', async (t) => {
+  const http = await startApp(t);
+  for (const path of ['login', 'setup']) {
+    for (const contentType of [
+      'text/plain',
+      'application/x-www-form-urlencoded',
+      'multipart/form-data; boundary=test',
+    ])
+      await http
+        .post(`/api/v1/admin/auth/${path}`)
+        .set('Content-Type', contentType)
+        .set('Origin', 'https://other.test')
+        .set('Sec-Fetch-Site', 'cross-site')
+        .send(
+          '{"email":"other@example.test","password":"long-enough-password"}',
+        )
+        .expect(415);
+    // Correct JSON reaches ordinary DTO validation with any Origin metadata.
+    await http
+      .post(`/api/v1/admin/auth/${path}`)
+      .set('Origin', 'https://other.test')
+      .set('Sec-Fetch-Site', 'cross-site')
+      .send({})
+      .expect(400);
   }
 });
 
 test('direct mode ignores spoofed forwarding headers for login limits', async (t) => {
-  const http = await startApp(t, undefined);
+  const http = await startApp(t);
   for (let i = 1; i <= 5; i++)
     await login(http, `198.51.100.${i}`, `203.0.113.${i}`).expect(400);
   await login(http, '198.51.100.200', '203.0.113.200').expect(429);
 });
 
-test('a single proxy gives each forwarded client a separate login quota', async (t) => {
-  const http = await startApp(t, '1');
+test('production trusts one adjacent proxy for each client login quota', async (t) => {
+  const http = await startApp(t, 'production');
   for (let i = 0; i < 5; i++) await login(http, '198.51.100.10').expect(400);
   await login(http, '198.51.100.10').expect(429);
   for (let i = 0; i < 5; i++) await login(http, '198.51.100.20').expect(400);
@@ -77,7 +127,7 @@ test('a single proxy gives each forwarded client a separate login quota', async 
 });
 
 test('spoofed leading chain entries and X-Real-IP cannot reset a proxy quota', async (t) => {
-  const http = await startApp(t, '1');
+  const http = await startApp(t, 'production');
   for (let i = 1; i <= 5; i++)
     await login(http, `203.0.113.${i}, 198.51.100.30`, `203.0.113.${i}`).expect(
       400,
@@ -111,5 +161,10 @@ test('all Nginx API locations replace client-supplied forwarding headers', () =>
     join(__dirname, '../../../docker-compose.prod.yml'),
     'utf8',
   );
-  assert.match(compose, /TRUST_PROXY_HOPS: '1'/);
+  assert.match(compose, /NODE_ENV: production/);
+  const backend = compose.match(
+    /\n {2}backend:\n([\s\S]*?)\n {2}frontend:/,
+  )?.[1];
+  assert.ok(backend);
+  assert.doesNotMatch(backend, /\n\s+ports:/);
 });

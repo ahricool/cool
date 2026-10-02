@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const route = useRoute();
-const { locale, contentLang } = useCmsI18n();
+const { locale, contentLang } = useCoolI18n();
 const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
 useHead(() => ({
   htmlAttrs: {

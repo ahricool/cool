@@ -117,7 +117,7 @@ async function fixture(page: Page) {
     route.fulfill({
       json: {
         contentLocale: 'zh',
-        title: 'Sakura',
+        title: 'Cool',
         description: '记录生活，也记录每一次灵感。',
         authorName: 'Sakura',
         authorBio: '在这里，收藏日常的微光。',
@@ -133,7 +133,7 @@ async function fixture(page: Page) {
           contentLocale: 'zh',
           coverUrl: '/sakura/images/default/hd.webp',
           focusMode: 'glitch-text',
-          greeting: 'Hello, Sakura',
+          greeting: 'Hello, Cool',
           description: '把日常写成故事，让灵感自由生长。',
           notice: '欢迎来到我的小小世界。愿每一次相遇，都能留下一点温柔。',
           wave: true,

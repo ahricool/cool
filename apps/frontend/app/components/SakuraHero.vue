@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t, localePath, contentLang } = useCmsI18n();
+const { t, localePath, contentLang } = useCoolI18n();
 import { socialIcon } from '~/utils/social-icon';
 const store = useSiteStore();
 function scrollDown() {

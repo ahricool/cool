@@ -1,5 +1,5 @@
-import { currentLocale, type CmsLocale } from '../../i18n/locale';
-export function displayTranslation<T extends { locale: CmsLocale }>(
+import { currentLocale, type CoolLocale } from '../../i18n/locale';
+export function displayTranslation<T extends { locale: CoolLocale }>(
   item: { translations: T[] },
   locale = currentLocale.value,
 ) {

@@ -1,5 +1,5 @@
 {
-  "name": "sakura-cms",
+  "name": "cool",
   "version": "0.1.0",
   "private": true,
   "workspaces": [
@@ -10,22 +10,22 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "dev": "npm run dev -w @cms/backend",
-    "build": "npm run build -w @cms/backend && npm run build -w @cms/frontend",
-    "start": "npm run start -w @cms/backend",
+    "dev": "npm run dev -w @cool/backend",
+    "build": "npm run build -w @cool/backend && npm run build -w @cool/frontend",
+    "start": "npm run start -w @cool/backend",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "npm run test -w @cms/backend",
-    "db:generate": "npm run db:generate -w @cms/backend",
-    "db:migrate": "npm run db:migrate -w @cms/backend",
-    "db:deploy": "npm run db:deploy -w @cms/backend",
-    "db:seed": "npm run db:seed -w @cms/backend",
-    "typecheck": "npm run typecheck -w @cms/frontend",
-    "test:content": "npm test -w @cms/content",
+    "test": "npm run test -w @cool/backend",
+    "db:generate": "npm run db:generate -w @cool/backend",
+    "db:migrate": "npm run db:migrate -w @cool/backend",
+    "db:deploy": "npm run db:deploy -w @cool/backend",
+    "db:seed": "npm run db:seed -w @cool/backend",
+    "typecheck": "npm run typecheck -w @cool/frontend",
+    "test:content": "npm test -w @cool/content",
     "test:e2e": "playwright test",
     "audit": "node scripts/audit.mjs",
-    "dev:frontend": "npm run dev -w @cms/frontend",
+    "dev:frontend": "npm run dev -w @cool/frontend",
     "test:unit": "node --import tsx --test tests/unit/*.test.ts apps/frontend/build/*.test.ts apps/frontend/app/features/admin/api.test.ts"
   },
   "devDependencies": {

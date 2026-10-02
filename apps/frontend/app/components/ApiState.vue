@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t } = useCmsI18n();
+const { t } = useCoolI18n();
 defineProps<{ pending?: boolean; error?: unknown; empty?: boolean }>();
 defineEmits<{ retry: [] }>();
 </script>

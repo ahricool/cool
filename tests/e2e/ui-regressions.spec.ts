@@ -1,7 +1,7 @@
 import { blog, admin } from './urls';
 import { test, expect } from '@playwright/test';
 const email = 'whoreahri@gmail.com';
-const password = process.env.E2E_PASSWORD ?? 'cms-e2e-owner-password';
+const password = process.env.E2E_PASSWORD ?? 'cool-e2e-owner-password';
 
 test('Sakura mobile sidebar traps focus, closes, and restores navigation', async ({
   page,

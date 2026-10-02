@@ -30,7 +30,7 @@ function send(
   path,
   method = 'GET',
   forged = '203.0.113.99',
-  host = 'cms.test',
+  host = 'cool.test',
 ) {
   return new Promise((resolve, reject) => {
     const req = request(
@@ -71,24 +71,22 @@ function assertBoundary(response, status, client) {
   assert.equal(response.headers['x-test-client-ip'], client);
   assert.equal(response.headers['x-test-forwarded-for'], client);
   assert.equal(response.headers['x-test-real-ip'], client);
-  assert.equal(response.headers['x-test-hostname'], 'cms.test');
+  assert.equal(response.headers['x-test-hostname'], 'cool.test');
   assert.equal(response.headers['x-test-protocol'], 'http');
 }
 
 test(
   'real Nginx isolates client quotas and overwrites forged identity headers',
-  { skip: process.env.CMS_NGINX_TEST !== '1', timeout: 30000 },
+  { skip: process.env.COOL_NGINX_TEST !== '1', timeout: 30000 },
   async (t) => {
     Logger.overrideLogger(false);
-    process.env.DATABASE_URL = 'postgresql://unused:unused@127.0.0.1/cms_test';
+    process.env.DATABASE_URL = 'postgresql://unused:unused@127.0.0.1/cool_test';
     process.env.JWT_SECRET = 'nginx-test-secret-at-least-32-characters';
-    process.env.NODE_ENV = 'test';
-    process.env.TRUST_PROXY_HOPS = '1';
-    delete process.env.CORS_ORIGINS;
+    process.env.NODE_ENV = 'production';
     // Only bypass database startup. Real routes, validation, auth and throttling
     // run; invalid DTOs and missing credentials prevent database queries.
     t.mock.method(Database.prototype, 'onModuleInit', async () => {});
-    const directory = mkdtempSync(join(tmpdir(), 'cms-nginx-test-'));
+    const directory = mkdtempSync(join(tmpdir(), 'cool-nginx-test-'));
     let app, nginx, closed;
     let output = '';
     t.after(async () => {
@@ -153,7 +151,7 @@ http {
 `,
     );
     nginx = spawn(
-      process.env.CMS_NGINX_BIN || 'nginx',
+      process.env.COOL_NGINX_BIN || 'nginx',
       ['-p', directory, '-c', config, '-g', 'daemon off; master_process off;'],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     );
@@ -192,13 +190,13 @@ http {
           '/admin',
           'GET',
           '203.0.113.99',
-          'cms.test:43210',
+          'cool.test:43210',
         );
         assert.equal(response.status, 301);
         assert.equal(response.headers.location, '/admin/');
         for (const origin of [
-          'http://cms.test:43210',
-          'https://cms.test:43210',
+          'http://cool.test:43210',
+          'https://cool.test:43210',
         ])
           assert.equal(
             new URL(response.headers.location, origin).href,
@@ -208,7 +206,7 @@ http {
     );
 
     await t.test(
-      'API forwarding preserves the external port for origin validation',
+      'API forwarding preserves the external host and port',
       async () => {
         const response = await send(
           port,
@@ -216,13 +214,13 @@ http {
           '/api/v1/admin/auth/me',
           'GET',
           '203.0.113.99',
-          'cms.test:43210',
+          'cool.test:43210',
         );
         assert.equal(response.status, 401);
-        assert.equal(response.headers['x-test-host'], 'cms.test:43210');
+        assert.equal(response.headers['x-test-host'], 'cool.test:43210');
         assert.equal(
           response.headers['x-test-forwarded-host'],
-          'cms.test:43210',
+          'cool.test:43210',
         );
       },
     );
