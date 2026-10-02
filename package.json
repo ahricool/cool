@@ -1,16 +1,36 @@
 {
-  "name": "hello-world",
-  "version": "1.0.0",
+  "name": "sakura-cms",
+  "version": "0.1.0",
   "private": true,
-  "description": "Fastify Hello World server",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
+  "workspaces": [
+    "apps/*"
+  ],
   "engines": {
-    "node": ">=18"
+    "node": ">=24 <25"
   },
-  "dependencies": {
-    "fastify": "^5.3.0"
+  "scripts": {
+    "dev": "npm run dev -w @cms/backend",
+    "build": "npm run build -w @cms/backend",
+    "start": "npm run start -w @cms/backend",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test -w @cms/backend",
+    "db:generate": "npm run db:generate -w @cms/backend",
+    "db:migrate": "npm run db:migrate -w @cms/backend",
+    "db:deploy": "npm run db:deploy -w @cms/backend",
+    "db:seed": "npm run db:seed -w @cms/backend"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "eslint": "^10.11.0",
+    "typescript-eslint": "^8.46.0",
+    "prettier": "^3.6.0",
+    "typescript": "~5.9.3"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.2",
+    "mysql2": "^3.24.5",
+    "js-yaml": "^5.4.2"
   }
 }
