@@ -19,7 +19,7 @@ defineProps<{ posts: Post[] }>();
         }}</time>
       </div>
       <NuxtLink :to="`/posts/${post.slug}`" class="post-title"
-        ><h1>{{ post.title }}</h1></NuxtLink
+        ><h2>{{ post.title }}</h2></NuxtLink
       >
       <div class="post-meta">
         <span class="flex-child-center">{{ post.commentCount }} 条评论</span
@@ -40,7 +40,7 @@ defineProps<{ posts: Post[] }>();
             :to="`/posts/${post.slug}`"
             class="button-normal flex-child-center"
             :aria-label="`阅读 ${post.title}`"
-            >•••</NuxtLink
+            >阅读全文 →</NuxtLink
           >
         </div>
       </div>

@@ -9,11 +9,12 @@ export default defineNuxtConfig({
     '@fontsource/ubuntu/700.css',
     'highlight.js/styles/github.css',
     '~/assets/adapters.css',
+    '~/assets/refinements.css',
   ],
   app: {
     head: {
       htmlAttrs: { lang: 'zh-CN' },
-      bodyAttrs: { class: 'serif' },
+      bodyAttrs: { class: 'sakura-ui' },
       link: [{ rel: 'stylesheet', href: '/sakura/main.css' }],
     },
   },

@@ -16,14 +16,14 @@ const { data, pending, error, refresh } = await useAsyncData(
   <PageFrame content-class="index"
     ><template #header><SakuraHero /></template>
     <div v-if="store.homepage.notice" class="notice">
-      <span aria-hidden="true">♧</span>
+      <span class="sakura-flower" aria-hidden="true"></span>
       <div class="notice-content">{{ store.homepage.notice }}</div>
     </div>
     <div id="primary" class="content-area">
       <div id="main" class="site-main">
-        <h1 class="main-title flex-child-center">
-          <span aria-hidden="true">❀</span> Discovery
-        </h1>
+        <h2 class="main-title flex-child-center">
+          <span class="sakura-flower" aria-hidden="true"></span> 发现故事
+        </h2>
         <ApiState
           :pending="pending"
           :error="error"

@@ -63,7 +63,7 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 
 固定上游 `a31ff6520b34e45beab20ef91204f958dcf1cd81`，保留原模板、CSS 源码及许可在 `vendor/sakura`。`apps/blog/public/sakura/main.css` 是上游编译 CSS 原件；图片、选用的 Solar SVG、Ubuntu 字体均在本地提供，详见 [许可清单](../licenses/THIRD-PARTY.md)。不使用 Tailwind。
 
-Vue 保留主要模板层级和 class。Pjax 被 Nuxt 路由替换；导航、明暗切换、返回顶部和图库弹窗使用 Vue 生命周期管理，波浪/glitch/响应式沿用原 CSS。未引入上游可选音乐播放器、Live2D、第三方评论和外部小部件。
+Vue 保留主要模板层级和 class。Pjax 被 Nuxt 路由替换；导航、明暗切换、返回顶部和图库弹窗使用 Vue 生命周期管理，波浪和响应式布局沿用原 CSS。独立的产品样式层与管理端统一无衬线排版、樱粉/梅紫配色、卡片和表单；首页文字采用清晰的静态字形，正文和输入框强调阅读舒适度，同时覆盖深色模式。上游源码和资源不作重写。未引入上游可选音乐播放器、Live2D、第三方评论和外部小部件。
 
 博客路由：`/`、`/posts/:slug`、`/archives`、`/categories`、`/tags`、`/moments`、`/photos`、`/links`、`/search`、`/pages/:slug`。原主题移动端会隐藏 Hero 焦点文字区，这是保留的响应式行为。
 
