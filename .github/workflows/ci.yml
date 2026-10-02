@@ -1,14 +1,12 @@
 name: Verify and publish Cool
 on:
-  pull_request:
-    branches: [main]
   push:
     branches: [main]
 permissions:
   contents: read
 concurrency:
   group: cool-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 jobs:
   verify:
     runs-on: ubuntu-latest
