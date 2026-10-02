@@ -2,9 +2,9 @@
 import { ref, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { api, errorText } from '../api';
-import type { AdminPost, AdminPage, Pagination } from '@cms/content';
+import type { AdminPost, AdminPage, Pagination } from '@cool/content';
 import { displayTranslation } from '../content';
-const { t, formatDate, contentLang } = useCmsI18n();
+const { t, formatDate, contentLang } = useCoolI18n();
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
 const props = withDefaults(defineProps<{ kind?: 'posts' | 'pages' }>(), {

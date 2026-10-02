@@ -1,9 +1,9 @@
 <script setup lang="ts">
-const { t } = useCmsI18n();
+const { t } = useCoolI18n();
 import { onMounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { api, upload, errorText } from '../api';
-import type { Media, Pagination } from '@cms/content';
+import type { Media, Pagination } from '@cool/content';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
 const items = ref<Media[]>([]);

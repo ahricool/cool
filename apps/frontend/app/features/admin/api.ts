@@ -1,5 +1,5 @@
 import { reactive } from 'vue';
-import type { Author, Media } from '@cms/content';
+import type { Author, Media } from '@cool/content';
 
 type Owner = Author & { email: string };
 export type AuthResult = { user: Owner; csrfToken: string };

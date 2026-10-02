@@ -9,7 +9,8 @@ coverage/
 .DS_Store
 **/.nuxt/
 **/.output/
-data/
+# Uploaded media stays on the host, never in Git.
+/data/
 playwright-report/
 test-results/
 deployment/

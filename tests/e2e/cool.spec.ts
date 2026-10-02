@@ -2,7 +2,7 @@ import { blog, admin, api } from './urls';
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 const email = 'whoreahri@gmail.com';
-const password = process.env.E2E_PASSWORD ?? 'cms-e2e-owner-password';
+const password = process.env.E2E_PASSWORD ?? 'cool-e2e-owner-password';
 test('owner writes, previews and publishes; visitors read and comment; owner moderates', async ({
   page,
   context,
@@ -110,7 +110,7 @@ test('owner writes, previews and publishes; visitors read and comment; owner mod
   });
   // The browser keeps its HttpOnly session across reloads; scripts can use bearer auth.
   const token = (await context.cookies()).find(
-    (cookie) => cookie.name === 'cms_session',
+    (cookie) => cookie.name === 'cool_session',
   )?.value;
   expect(token).toBeDefined();
   const headers = { Authorization: `Bearer ${token}` };

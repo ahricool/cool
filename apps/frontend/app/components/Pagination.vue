@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t } = useCmsI18n();
+const { t } = useCoolI18n();
 const props = defineProps<{ total: number; page: number; pageSize: number }>();
 const route = useRoute();
 const pages = computed(() => Math.ceil(props.total / props.pageSize));

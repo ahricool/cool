@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const { t, locale, localePath, contentLang } = useCmsI18n();
-import type { Pagination, Post, Taxonomy } from '@cms/content';
+const { t, locale, localePath, contentLang } = useCoolI18n();
+import type { Pagination, Post, Taxonomy } from '@cool/content';
 const props = defineProps<{ kind: 'categories' | 'tags' }>();
 const route = useRoute();
 const api = useApi();

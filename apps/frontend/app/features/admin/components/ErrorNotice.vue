@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useCmsI18n } from '~/composables/useCmsI18n';
-const { t } = useCmsI18n();
+import { useCoolI18n } from '~/composables/useCoolI18n';
+const { t } = useCoolI18n();
 defineProps<{ error: string }>();
 defineEmits<{ retry: [] }>();
 </script>

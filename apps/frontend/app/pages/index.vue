@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { localePath } = useCmsI18n();
+const { localePath } = useCoolI18n();
 const route = useRoute();
 await navigateTo(
   {

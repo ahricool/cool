@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const { t, locale, formatDate } = useCmsI18n();
-import type { Pagination, Comment } from '@cms/content';
+const { t, locale, formatDate } = useCoolI18n();
+import type { Pagination, Comment } from '@cool/content';
 const props = defineProps<{ slug: string; enabled: boolean }>();
 const api = useApi();
 const page = ref(1);

@@ -1,4 +1,4 @@
-name: Verify and publish CMS
+name: Verify and publish Cool
 on:
   pull_request:
     branches: [main]
@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: cms-${{ github.workflow }}-${{ github.ref }}
+  group: cool-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   verify:
@@ -16,19 +16,18 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_USER: cms
+          POSTGRES_USER: cool
           POSTGRES_PASSWORD: ci-only-password
-          POSTGRES_DB: cms_test
+          POSTGRES_DB: cool_test
         ports: ['5432:5432']
         options: >-
-          --health-cmd "pg_isready -U cms -d cms_test"
+          --health-cmd "pg_isready -U cool -d cool_test"
           --health-interval 5s --health-timeout 5s --health-retries 20
     env:
-      DATABASE_URL: postgresql://cms:ci-only-password@localhost:5432/cms_test
+      DATABASE_URL: postgresql://cool:ci-only-password@localhost:5432/cool_test
       JWT_SECRET: ci-only-secret-at-least-32-characters-long
       E2E_PASSWORD: ci-owner-password-only
-      MEDIA_ROOT: /tmp/cms-ci-uploads
-      CORS_ORIGINS: http://localhost:3001
+      MEDIA_ROOT: /tmp/cool-ci-uploads
       NUXT_TELEMETRY_DISABLED: '1'
     steps:
       - uses: actions/checkout@v4
@@ -48,8 +47,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes nginx
       - run: npm test && npm run test:content
         env:
-          CMS_NGINX_TEST: '1'
-          CMS_NGINX_BIN: /usr/sbin/nginx
+          COOL_NGINX_TEST: '1'
+          COOL_NGINX_BIN: /usr/sbin/nginx
       - run: npm run test:unit
       - run: node apps/backend/dist/seed.js
       - run: npx playwright install --with-deps chromium

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t, localePath, contentLang } = useCmsI18n();
+const { t, localePath, contentLang } = useCoolI18n();
 import { socialIcon } from '~/utils/social-icon';
 const route = useRoute();
 const store = useSiteStore();
@@ -283,7 +283,7 @@ useHead(() => ({
       </div>
       <div class="footer-copyright">
         <p>
-          {{ t('由 Personal CMS 驱动') }} · <span class="footer-heart">♥</span>
+          {{ t('由 Cool 驱动') }} · <span class="footer-heart">♥</span>
           {{ t('主题设计') }}
           <a
             href="https://github.com/LIlGG/halo-theme-sakura"

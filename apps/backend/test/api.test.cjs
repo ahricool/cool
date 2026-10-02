@@ -39,8 +39,8 @@ before(async () => {
     /_test$/,
     'Integration tests require a dedicated *_test database',
   );
-  process.env.TRUST_PROXY_HOPS = '1';
-  process.env.CORS_ORIGINS = 'http://cms.test:43210';
+  // Exercise the fixed production ingress trust and secure cookie policy.
+  process.env.NODE_ENV = 'production';
   app = await createApp();
   await app.init();
   db = app.get(Database);
@@ -80,15 +80,20 @@ test('Owner login and full post publication lifecycle', async (t) => {
         .expect(400);
       await http
         .post('/api/v1/admin/auth/setup')
-        .set('Origin', 'https://attacker.test')
+        .set('Origin', 'https://other.test')
+        .type('form')
         .send({ password })
-        .expect(403);
+        .expect(415);
       assert.equal(
         (await db.user.findUnique({ where: { id: owner.id } })).passwordHash,
         null,
       );
       const setups = await Promise.all([
-        http.post('/api/v1/admin/auth/setup').send({ password }),
+        http
+          .post('/api/v1/admin/auth/setup')
+          .set('Origin', 'https://other.test')
+          .set('Sec-Fetch-Site', 'cross-site')
+          .send({ password }),
         http
           .post('/api/v1/admin/auth/setup')
           .send({ password: 'losing-or-winning-test-password' }),
@@ -271,7 +276,13 @@ test('Owner login and full post publication lifecycle', async (t) => {
     assert.equal(response.body['private-test'], undefined);
     await http.get('/api/v1/public/zh/site').expect(200);
     await http.get('/api/v1/health').expect(200);
-    await http.get('/api/openapi.json').expect(200);
+    const document = await http.get('/api/openapi.json').expect(200);
+    assert.equal(document.body.info.title, 'Cool API');
+    assert.deepEqual(document.body.components.securitySchemes.cookie, {
+      type: 'apiKey',
+      in: 'cookie',
+      name: 'cool_session',
+    });
   });
   await t.test(
     'seed never changes an initialized owner or creates extra accounts',
@@ -304,15 +315,16 @@ test('Owner login and full post publication lifecycle', async (t) => {
       await http
         .post('/api/v1/admin/auth/login')
         .set('X-Forwarded-For', '198.51.100.52')
-        .set('Origin', 'https://attacker.test')
+        .set('Origin', 'https://other.test')
         .send({ email: ADMIN_EMAIL, password })
-        .expect(403);
+        .expect('Access-Control-Allow-Origin', '*')
+        .expect(201);
       await http
         .post('/api/v1/admin/auth/login')
         .set('X-Forwarded-For', '198.51.100.52')
         .set('Sec-Fetch-Site', 'cross-site')
         .send({ email: ADMIN_EMAIL, password })
-        .expect(403);
+        .expect(201);
       await http
         .post('/api/v1/admin/auth/login')
         .set('X-Forwarded-For', '198.51.100.52')
@@ -333,10 +345,18 @@ test('Owner login and full post publication lifecycle', async (t) => {
       ])
         assert.ok(setCookie.includes(attribute), attribute);
       assert.equal(signedIn.headers['cache-control'], 'no-store');
+      assert.ok(setCookie.startsWith('cool_session='));
+      assert.equal(signedIn.headers['access-control-allow-origin'], '*');
+      assert.equal(
+        signedIn.headers['access-control-allow-credentials'],
+        undefined,
+      );
       const cookie = setCookie.split(';')[0];
       const csrf = signedIn.body.csrfToken;
       const jwt = app.get(JwtService);
       const claims = jwt.decode(signedIn.body.accessToken);
+      assert.equal(claims.iss, 'cool');
+      assert.equal(claims.aud, 'cool-admin');
       assert.equal(claims.exp - claims.iat, 15 * 24 * 60 * 60);
       assert.equal(signedIn.body.expiresIn, 1296000);
       assert.equal(
@@ -391,14 +411,17 @@ test('Owner login and full post publication lifecycle', async (t) => {
         .put('/api/v1/admin/auth/profile')
         .set('Cookie', cookie)
         .set('X-CSRF-Token', csrf)
-        .set('Origin', 'https://attacker.test')
+        .set('Origin', 'https://other.test')
+        .set('Sec-Fetch-Site', 'cross-site')
         .send({ displayName: 'Owner' })
-        .expect(403);
+        .expect(200);
       await http
         .put('/api/v1/admin/auth/profile')
         .set('Cookie', cookie)
         .set('X-CSRF-Token', csrf)
-        .set('Origin', 'http://cms.test:43210')
+        .set('Origin', 'https://cool.test:43210')
+        .set('Host', 'cool.test:43210')
+        .set('X-Forwarded-Proto', 'http')
         .send({ displayName: 'Owner' })
         .expect(200);
       await http
@@ -428,7 +451,7 @@ test('Owner login and full post publication lifecycle', async (t) => {
         .expect(201);
       assert.match(
         signedOut.headers['set-cookie'][0],
-        /cms_session=;.*Expires=Thu, 01 Jan 1970/,
+        /cool_session=;.*Expires=Thu, 01 Jan 1970/,
       );
       await http
         .get('/api/v1/admin/auth/session')

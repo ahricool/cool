@@ -16,10 +16,15 @@ import {
   type RouteLocationNormalized,
 } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import type { AdminPost, AdminPage, AdminTaxonomy, Status } from '@cms/content';
+import type {
+  AdminPost,
+  AdminPage,
+  AdminTaxonomy,
+  Status,
+} from '@cool/content';
 import { api, errorText } from '../api';
 import { takeEditorDraft, transferEditorDraft } from '../editor-drafts';
-import { pathForLocale, isLocale, type CmsLocale } from '~/i18n/locale';
+import { pathForLocale, isLocale, type CoolLocale } from '~/i18n/locale';
 import { displayTranslation } from '../content';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
@@ -28,24 +33,24 @@ import AssetPicker from '../components/AssetPicker.vue';
 const props = withDefaults(defineProps<{ kind?: 'posts' | 'pages' }>(), {
   kind: 'posts',
 });
-const { t, locale, contentLang } = useCmsI18n();
+const { t, locale, contentLang } = useCoolI18n();
 const route = useRoute();
 const router = useRouter();
 const id = String(route.params.id);
 const isNew = id === 'new';
 let remembered: string | null = null;
 try {
-  remembered = sessionStorage.getItem('cms-editor-locale');
+  remembered = sessionStorage.getItem('cool-editor-locale');
 } catch {
   /* Storage may be unavailable. */
 }
-const contentLocale = ref<CmsLocale>(
+const contentLocale = ref<CoolLocale>(
   isLocale(remembered) ? remembered : locale.value,
 );
 const key = computed(
-  () => `cms-draft-${props.kind}-${id}-${contentLocale.value}`,
+  () => `cool-draft-${props.kind}-${id}-${contentLocale.value}`,
 );
-const sharedKey = computed(() => `cms-draft-shared-${props.kind}-${id}`);
+const sharedKey = computed(() => `cool-draft-shared-${props.kind}-${id}`);
 const applyingLanguage = ref(false);
 const document = ref<AdminPost | AdminPage>();
 const emptyTranslation = () => ({
@@ -214,7 +219,7 @@ function persistDraft() {
 function applyTranslationDraft(serialized: string) {
   Object.assign(form, draftTranslation(serialized));
 }
-async function switchLanguage(value: CmsLocale) {
+async function switchLanguage(value: CoolLocale) {
   if (
     !loaded.value ||
     value === contentLocale.value ||
@@ -242,7 +247,7 @@ async function switchLanguage(value: CmsLocale) {
     applyingLanguage.value = true;
     loaded.value = false;
     contentLocale.value = value;
-    sessionStorage.setItem('cms-editor-locale', value);
+    sessionStorage.setItem('cool-editor-locale', value);
     applyLanguage();
     const pending = sessionStorage.getItem(key.value);
     if (pending) {
@@ -279,7 +284,7 @@ async function discard() {
     sessionStorage.removeItem(key.value);
     const otherLocale = contentLocale.value === 'zh' ? 'en' : 'zh';
     const otherDraft = sessionStorage.getItem(
-      `cms-draft-${props.kind}-${id}-${otherLocale}`,
+      `cool-draft-${props.kind}-${id}-${otherLocale}`,
     );
     const shared = otherDraft ? readSharedDraft() : undefined;
     applyLanguage();
@@ -361,24 +366,24 @@ async function save(status: Status) {
       for (const language of ['zh', 'en'] as const) {
         if (language === contentLocale.value) continue;
         const pending = sessionStorage.getItem(
-          `cms-draft-${props.kind}-${id}-${language}`,
+          `cool-draft-${props.kind}-${id}-${language}`,
         );
         if (pending)
           sessionStorage.setItem(
-            `cms-draft-${props.kind}-${saved.id}-${language}`,
+            `cool-draft-${props.kind}-${saved.id}-${language}`,
             pending,
           );
       }
       const sharedDraft = sessionStorage.getItem(sharedKey.value);
       if (sharedDraft)
         sessionStorage.setItem(
-          `cms-draft-shared-${props.kind}-${saved.id}`,
+          `cool-draft-shared-${props.kind}-${saved.id}`,
           sharedDraft,
         );
-      sessionStorage.setItem('cms-editor-locale', contentLocale.value);
+      sessionStorage.setItem('cool-editor-locale', contentLocale.value);
       if (dirty.value)
         transferEditorDraft(
-          `cms-draft-${props.kind}-${saved.id}-${contentLocale.value}`,
+          `cool-draft-${props.kind}-${saved.id}-${contentLocale.value}`,
           JSON.stringify(form),
         );
       savedRoute = `/admin/${props.kind}/${saved.id}`;
@@ -386,7 +391,7 @@ async function save(status: Status) {
       if (!failure) {
         for (const language of ['zh', 'en'] as const)
           sessionStorage.removeItem(
-            `cms-draft-${props.kind}-${id}-${language}`,
+            `cool-draft-${props.kind}-${id}-${language}`,
           );
         sessionStorage.removeItem(sharedKey.value);
       }

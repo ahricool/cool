@@ -34,7 +34,7 @@ npm workspaces：`apps/backend`、`apps/frontend`、`packages/content`。`apps/f
 
 ## 双语路由与内容选择
 
-只支持 `zh` 和 `en`。公开页面路径为 `/:locale/...`，API 为 `/api/v1/public/:locale/...`，语言不是 query 参数；分类/标签详情使用 `/:locale/categories/:slug`、`/:locale/tags/:slug`，对应 API 子资源为 `/public/:locale/categories/:slug/posts` 和 `/tags/:slug/posts`。搜索词 q 与分页 page/pageSize 仍使用普通 query 字段。访问 `/` 时按 localStorage 的 `sakura-cms.locale`、浏览器语言、英文默认值依次选择入口；已带语言的 URL 决定公开界面语言。footer 的原生语言选择器保存偏好并切换到对应语言路径，后台 `/admin` 使用同一偏好。
+只支持 `zh` 和 `en`。公开页面路径为 `/:locale/...`，API 为 `/api/v1/public/:locale/...`，语言不是 query 参数；分类/标签详情使用 `/:locale/categories/:slug`、`/:locale/tags/:slug`，对应 API 子资源为 `/public/:locale/categories/:slug/posts` 和 `/tags/:slug/posts`。搜索词 q 与分页 page/pageSize 仍使用普通 query 字段。访问 `/` 时按 localStorage 的 `cool.locale`、浏览器语言、英文默认值依次选择入口；已带语言的 URL 决定公开界面语言。footer 的原生语言选择器保存偏好并切换到对应语言路径，后台 `/admin` 使用同一偏好。
 
 文章和页面只有一个逻辑 ID/slug、作者/封面和分类标签关联。翻译表用 `(parentId, locale)` 唯一约束保存标题、摘要（文章）、正文及各自发布状态/时间。后台界面语言与编辑器内容语言互相独立；例如英文后台可以编辑中文正文，预览链接与当前内容 tab 一致。草稿按记录与语言保存，切换语言保留未保存提醒。
 
@@ -66,13 +66,13 @@ npm workspaces：`apps/backend`、`apps/frontend`、`packages/content`。`apps/f
 
 固定站长邮箱为 `whoreahri@gmail.com`，不从 `.env` 读取账户邮箱或密码。seed 幂等创建无密码的站长与默认站点配置；登录页通过 `/admin/auth/status` 判断是否首次使用，直接提交 `/admin/auth/setup` 设置 16–256 字符密码，不使用额外初始化密钥。初始化采用事务锁及条件更新，并发请求只允许一个成功；之后 setup 关闭。**新实例应在开放公网前完成首次密码设置。** 新实例使用完整 schema migration，站长身份与会话约束直接在数据库中建立。
 
-密码使用随机盐与 Node scrypt。登录/首次设置同时返回 Bearer Token 和 `csrfToken`，并设置 `cms_session` HttpOnly Cookie；JWT 使用 HS256、固定 issuer/audience，JWT 与 Cookie 均为 15 天有效期。Cookie 使用 `SameSite=Lax`、`Path=/`，生产环境启用 `Secure`，公开部署需要 HTTPS。登录与首次设置各有每分钟 5 次的后端限流，Nginx 也对两个入口限流。
+密码使用随机盐与 Node scrypt。登录/首次设置同时返回 Bearer Token 和 `csrfToken`，并设置 `cool_session` HttpOnly Cookie；JWT 使用 HS256、固定 issuer/audience，JWT 与 Cookie 均为 15 天有效期。Cookie 使用 `SameSite=Lax`、`Path=/`，生产环境启用 `Secure`，公开部署需要 HTTPS。登录与首次设置各有每分钟 5 次的后端限流，Nginx 也对两个入口限流。
 
 每个 JWT 绑定 `admin_sessions` 记录及用户 authVersion，所有受保护请求都会检查会话是否已撤销。当前退出只撤销该会话；退出全部设备和改密递增 authVersion 并撤销该用户全部会话，同时清除当前 Cookie。改密必须验证当前密码。
 
-浏览器只使用 HttpOnly Cookie，不持久化 Bearer Token；用户资料与 CSRF 值保留在内存，刷新后通过 `/admin/auth/session` 恢复；另一标签页重新登录导致 CSRF 变化时，仅对明确的 CSRF 拒绝刷新会话并重试一次，保留原请求数据。Cookie 认证的写请求必须附带 `X-CSRF-Token`，并检查 Origin/Fetch Metadata；登录与首次设置同样检查请求来源。命令行/API 客户端可使用显式 Bearer Token；错误的 Authorization 头不会回退到 Cookie。认证响应和受保护响应禁止缓存。HTTPS 网关的允许来源与转发头配置见 [运维说明](operations.md#代理信任与访客限流)。
+浏览器只使用 HttpOnly Cookie，不持久化 Bearer Token；用户资料与 CSRF 值保留在内存，刷新后通过 `/admin/auth/session` 恢复；另一标签页重新登录导致 CSRF 变化时，仅对明确的 CSRF 拒绝刷新会话并重试一次，保留原请求数据。API 的 CORS 固定为 `*`，不允许携带凭据的跨域读取，也不校验 Origin/Fetch Metadata。Cookie 认证的写请求必须附带会话对应的 `X-CSRF-Token`；Cookie 使用 `SameSite=Lax`，登录与首次设置仅接受 `application/json`，拒绝 HTML 表单提交。命令行/API 客户端可使用显式 Bearer Token；错误的 Authorization 头不会回退到 Cookie。认证响应和受保护响应禁止缓存。HTTPS 网关与转发头说明见 [运维说明](operations.md#代理信任与访客限流)。
 
-JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大8MB，Sharp 解码验证格式与像素数量（最多4000万），旋转/缩放至最大2560像素、转为 WebP，GIF 保留首帧；不接受 SVG/HTML。文件保存到持久化卷，公开路径为 `/api/v1/media/<uuid>.webp`；删除时检查数据库内容与配置引用。更换存储后端时可以沿用公开 API。
+JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大8MB，Sharp 解码验证格式与像素数量（最多4000万），旋转/缩放至最大2560像素、转为 WebP，GIF 保留首帧；不接受 SVG/HTML。文件默认直接保存到项目根目录 `./data`（已 Git 忽略）；生产将此宿主机目录 bind mount 到 `/app/data`，媒体不使用命名卷，数据库仍使用 `postgres_data` 命名卷。公开路径为 `/api/v1/media/<uuid>.webp`；删除时检查数据库内容与配置引用。更换存储后端时可以沿用公开 API。
 
 访客评论纯文本，默认待审核，蜜罐字段和每分钟3次限流；只公开审核通过内容。审核事务锁定关联文章，维护正确的评论数。当前限流在单进程内；扩容前再引入 Redis。关闭网站评论后拒绝新评论。
 
@@ -97,4 +97,4 @@ Nuxt 当前 `ssr:false`，数据由浏览器通过 useAsyncData 和同源 API �
 
 版本锁在 package-lock.json。Prisma 使用7.x稳定线，Node24；deepmerge-ts/mysql2/js-yaml overrides 修复间接依赖问题，升级时复核是否仍需保留。
 
-`npm run audit` 对所有工作区执行 npm audit，阻断未审查的 high/critical 叶子告警。审计脚本仅精确放行 [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv)：Nuxt → listhen 开发 HTTPS 的 node-forge 1.4.0 RSA 验签问题，该例外针对锁文件中的 node-forge 版本。当前开发服务不启用 HTTPS，listhen 相关代码用于创建本地证书，CMS 不调用其 RSA 验签；后端运行镜像不安装 Nuxt，前端生产只运行 Nginx 和静态文件，不携带 Nuxt 开发 HTTPS 工具链。此例外不是忽略所有 Nuxt 告警；上游修复后应升级并移除脚本中的 URL 例外。
+`npm run audit` 对所有工作区执行 npm audit，阻断未审查的 high/critical 叶子告警。审计脚本仅精确放行 [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv)：Nuxt → listhen 开发 HTTPS 的 node-forge 1.4.0 RSA 验签问题，该例外针对锁文件中的 node-forge 版本。当前开发服务不启用 HTTPS，listhen 相关代码用于创建本地证书，Cool 不调用其 RSA 验签；后端运行镜像不安装 Nuxt，前端生产只运行 Nginx 和静态文件，不携带 Nuxt 开发 HTTPS 工具链。此例外不是忽略所有 Nuxt 告警；上游修复后应升级并移除脚本中的 URL 例外。

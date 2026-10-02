@@ -1,10 +1,10 @@
 import { ref } from 'vue';
-export type CmsLocale = 'zh' | 'en';
-export const LOCALE_STORAGE_KEY = 'sakura-cms.locale';
-export function isLocale(value: unknown): value is CmsLocale {
+export type CoolLocale = 'zh' | 'en';
+export const LOCALE_STORAGE_KEY = 'cool.locale';
+export function isLocale(value: unknown): value is CoolLocale {
   return value === 'zh' || value === 'en';
 }
-export function detectLocale(languages: readonly string[]): CmsLocale {
+export function detectLocale(languages: readonly string[]): CoolLocale {
   for (const language of languages) {
     const code = language.toLowerCase();
     if (code === 'zh' || /^zh-(cn|sg|hans)(-|$)/.test(code)) return 'zh';
@@ -15,16 +15,16 @@ export function detectLocale(languages: readonly string[]): CmsLocale {
 export function resolveLocale(
   saved: unknown,
   languages: readonly string[],
-): CmsLocale {
+): CoolLocale {
   return isLocale(saved) ? saved : detectLocale(languages);
 }
 export function effectiveLocale(
   routeLocale: unknown,
-  preference: CmsLocale,
-): CmsLocale {
+  preference: CoolLocale,
+): CoolLocale {
   return isLocale(routeLocale) ? routeLocale : preference;
 }
-export function initialLocale(): CmsLocale {
+export function initialLocale(): CoolLocale {
   if (typeof window === 'undefined') return 'en';
   let saved: unknown;
   try {
@@ -37,12 +37,12 @@ export function initialLocale(): CmsLocale {
     navigator.languages?.length ? navigator.languages : [navigator.language],
   );
 }
-export const preferredLocale = ref<CmsLocale>(initialLocale());
+export const preferredLocale = ref<CoolLocale>(initialLocale());
 // Explicit public URLs affect the current surface, not the saved preference.
-export const currentLocale = ref<CmsLocale>(preferredLocale.value);
+export const currentLocale = ref<CoolLocale>(preferredLocale.value);
 export const contentLang = (locale: unknown) =>
   locale === 'zh' ? 'zh-CN' : 'en';
-export function pathForLocale(path: string, locale: CmsLocale) {
+export function pathForLocale(path: string, locale: CoolLocale) {
   const clean = `/${path.replace(/^\/+/, '')}`.replace(
     /^\/(zh|en)(?=\/|$)/,
     '',
@@ -50,7 +50,7 @@ export function pathForLocale(path: string, locale: CmsLocale) {
   return `/${locale}${clean === '/' ? '' : clean}`;
 }
 /** Idempotent so retries keep the locale captured by the original request. */
-export function localizePublicRequest(path: string, locale: CmsLocale) {
+export function localizePublicRequest(path: string, locale: CoolLocale) {
   return path.replace(
     /^\/public(?!\/(?:zh|en)(?:\/|$))(?=\/|$)/,
     `/public/${locale}`,
@@ -58,9 +58,9 @@ export function localizePublicRequest(path: string, locale: CmsLocale) {
 }
 
 export const SITE_TIME_ZONE = 'Asia/Shanghai';
-export function formatCmsDate(
+export function formatCoolDate(
   value: string | number | Date | null | undefined,
-  locale: CmsLocale,
+  locale: CoolLocale,
   options?: Intl.DateTimeFormatOptions,
 ) {
   if (value === null || value === undefined || value === '') return '';

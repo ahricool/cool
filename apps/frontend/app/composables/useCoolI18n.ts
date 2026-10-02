@@ -2,17 +2,17 @@ import {
   currentLocale,
   preferredLocale,
   effectiveLocale,
-  formatCmsDate,
+  formatCoolDate,
   contentLang,
   isLocale,
   LOCALE_STORAGE_KEY,
   pathForLocale,
-  type CmsLocale,
+  type CoolLocale,
 } from '~/i18n/locale';
 import { translate } from '~/i18n/messages';
-export function useCmsI18n() {
+export function useCoolI18n() {
   const route = useRoute();
-  const locale = computed<CmsLocale>(() =>
+  const locale = computed<CoolLocale>(() =>
     effectiveLocale(route.params.locale, preferredLocale.value),
   );
   watch(
@@ -48,7 +48,7 @@ export function useCmsI18n() {
     value: string | number | Date | null | undefined,
     options?: Intl.DateTimeFormatOptions,
   ) {
-    return formatCmsDate(value, locale.value, options);
+    return formatCoolDate(value, locale.value, options);
   }
   return { locale, setLocale, t, localePath, formatDate, contentLang };
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const { t, locale, formatDate, localePath, contentLang } = useCmsI18n();
-import type { Pagination, Post } from '@cms/content';
+const { t, locale, formatDate, localePath, contentLang } = useCoolI18n();
+import type { Pagination, Post } from '@cool/content';
 const route = useRoute();
 const page = computed(() => Math.max(1, Number(route.query.page) || 1));
 const api = useApi();

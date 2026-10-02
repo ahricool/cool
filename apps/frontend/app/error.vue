@@ -1,11 +1,11 @@
 <script setup lang="ts">
-const { t, locale, localePath, contentLang } = useCmsI18n();
+const { t, locale, localePath, contentLang } = useCoolI18n();
 import type { NuxtError } from '#app';
 defineProps<{ error: NuxtError }>();
 const route = useRoute();
 const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
 useHead(() => ({
-  title: `${t('暂时迷路了')} · Sakura CMS`,
+  title: `${t('暂时迷路了')} · Cool`,
   htmlAttrs: {
     lang: contentLang(locale.value),
     'data-surface': isAdmin.value ? 'admin' : 'blog',

@@ -8,15 +8,15 @@ import type {
   AdminFriendLink,
   Pagination,
   Status,
-} from '@cms/content';
+} from '@cool/content';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
 import MarkdownEditor from '../components/MarkdownEditor.vue';
 import AssetPicker from '../components/AssetPicker.vue';
 import { displayTranslation } from '../content';
-import type { CmsLocale } from '~/i18n/locale';
-const { t, locale, contentLang } = useCmsI18n();
-const contentLocale = ref<CmsLocale>(locale.value);
+import type { CoolLocale } from '~/i18n/locale';
+const { t, locale, contentLang } = useCoolI18n();
+const contentLocale = ref<CoolLocale>(locale.value);
 const props = defineProps<{ kind: 'moments' | 'photos' | 'links' }>();
 type Item = AdminMoment | AdminPhoto | AdminFriendLink;
 const items = ref<Item[]>([]);
@@ -177,7 +177,7 @@ function title(item: Item) {
   const value = displayTranslation(
     item as {
       translations: {
-        locale: CmsLocale;
+        locale: CoolLocale;
         title?: string;
         content?: string;
         name?: string;

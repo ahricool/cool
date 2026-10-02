@@ -55,7 +55,7 @@ body {
 }
 .api-state button,
 .comment-form button,
-.cms-search button,
+.cool-search button,
 .post-footer button,
 .pagination button {
   border: 1px solid #eee;
@@ -168,7 +168,7 @@ body {
 }
 .comment-form input,
 .comment-form textarea,
-.cms-search input {
+.cool-search input {
   display: block;
   width: 100%;
   padding: 12px;
@@ -187,15 +187,15 @@ body {
   font-size: 13px;
   color: #999;
 }
-.cms-search {
+.cool-search {
   margin: 28px 0;
 }
-.cms-search > div {
+.cool-search > div {
   display: flex;
   gap: 10px;
   align-items: center;
 }
-.cms-search input {
+.cool-search input {
   margin: 0;
 }
 .chip.selected {

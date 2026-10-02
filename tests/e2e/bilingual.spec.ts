@@ -8,8 +8,8 @@ import { randomUUID } from 'node:crypto';
 import { admin, api, site } from './urls';
 
 const email = 'whoreahri@gmail.com';
-const password = process.env.E2E_PASSWORD ?? 'cms-e2e-owner-password';
-const storageKey = 'sakura-cms.locale';
+const password = process.env.E2E_PASSWORD ?? 'cool-e2e-owner-password';
+const storageKey = 'cool.locale';
 const publishedAt = '2024-01-02T03:04:05.000Z';
 test.use({ locale: 'en-US' });
 
@@ -258,7 +258,7 @@ for (const kind of ['posts', 'pages'] as const) {
     try {
       await context.addCookies([
         {
-          name: 'cms_session',
+          name: 'cool_session',
           value: headers.Authorization.replace(/^Bearer /, ''),
           url: site,
           httpOnly: true,

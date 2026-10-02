@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const { t, locale, localePath } = useCmsI18n();
-import type { Pagination, Post } from '@cms/content';
+const { t, locale, localePath } = useCoolI18n();
+import type { Pagination, Post } from '@cool/content';
 const route = useRoute();
 const q = ref(String(route.query.q ?? ''));
 const searchFailure = ref('');
@@ -33,7 +33,7 @@ function search() {
 </script>
 <template>
   <PageFrame :title="t('搜索')" content-class="search"
-    ><form class="cms-search" novalidate @submit.prevent="search">
+    ><form class="cool-search" novalidate @submit.prevent="search">
       <label for="query">{{ t('寻找一段文字') }}</label>
       <div>
         <input

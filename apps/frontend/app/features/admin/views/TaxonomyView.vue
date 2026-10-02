@@ -2,13 +2,13 @@
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { api, errorText } from '../api';
-import type { AdminTaxonomy } from '@cms/content';
+import type { AdminTaxonomy } from '@cool/content';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
 import { displayTranslation } from '../content';
-import type { CmsLocale } from '~/i18n/locale';
-const { t, locale, contentLang } = useCmsI18n();
-const contentLocale = ref<CmsLocale>(locale.value);
+import type { CoolLocale } from '~/i18n/locale';
+const { t, locale, contentLang } = useCoolI18n();
+const contentLocale = ref<CoolLocale>(locale.value);
 const names = reactive({ zh: '', en: '' });
 const props = defineProps<{ kind: 'categories' | 'tags' }>();
 const items = ref<AdminTaxonomy[]>([]);

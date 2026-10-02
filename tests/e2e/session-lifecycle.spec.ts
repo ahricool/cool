@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
 const email = 'whoreahri@gmail.com';
-const password = process.env.E2E_PASSWORD ?? 'cms-e2e-owner-password';
+const password = process.env.E2E_PASSWORD ?? 'cool-e2e-owner-password';
 
 test('cookie session survives reload and all-device logout revokes browser and script sessions', async ({
   page,
@@ -29,7 +29,7 @@ test('cookie session survives reload and all-device logout revokes browser and s
   await page.reload();
   await expect(page.locator('.workspace h1')).toHaveText('网站配置');
   const cookie = (await context.cookies()).find(
-    (entry) => entry.name === 'cms_session',
+    (entry) => entry.name === 'cool_session',
   );
   expect(cookie).toBeDefined();
   expect(cookie!.httpOnly).toBe(true);
@@ -68,7 +68,7 @@ test('cookie session survives reload and all-device logout revokes browser and s
     secondTab.getByRole('heading', { name: '我的账户', exact: true }),
   ).toBeVisible();
   const scriptToken = (await context.cookies()).find(
-    (entry) => entry.name === 'cms_session',
+    (entry) => entry.name === 'cool_session',
   )!.value;
   const staleCsrf = page.waitForResponse(
     (response) =>
@@ -112,7 +112,7 @@ test('cookie session survives reload and all-device logout revokes browser and s
     .click();
   await expect(page).toHaveURL((url) => url.pathname === '/admin/login');
   expect(
-    (await context.cookies()).find((entry) => entry.name === 'cms_session'),
+    (await context.cookies()).find((entry) => entry.name === 'cool_session'),
   ).toBeUndefined();
   await secondTab.reload();
   await expect(secondTab).toHaveURL((url) => url.pathname === '/admin/login');

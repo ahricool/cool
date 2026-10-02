@@ -20,7 +20,7 @@ export const publicMessages: Record<string, string> = {
   重试: 'Try again',
   搜索文章: 'Search posts',
   '搜索文章…': 'Search posts…',
-  '由 Personal CMS 驱动': 'Powered by Personal CMS',
+  '由 Cool 驱动': 'Powered by Cool',
   主题设计: 'Theme by',
   资源许可: 'Asset licenses',
   图标设计: 'Icons by',
