@@ -17,15 +17,30 @@ enum PostStatus {
 model User {
   id           String   @id @default(uuid()) @db.Uuid
   email        String   @unique @db.VarChar(254)
-  passwordHash String   @map("password_hash")
+  passwordHash String?  @map("password_hash")
   displayName  String   @map("display_name") @db.VarChar(100)
   avatarUrl    String?  @map("avatar_url")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
   authVersion  Int      @default(0) @map("auth_version")
   posts        Post[]
+  sessions     AdminSession[]
 
   @@map("users")
+}
+
+// Logout/revoke/password change invalidates the server-side session before the
+// JWT and browser cookie reach their matching 15-day expiration.
+model AdminSession {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  csrfToken String    @map("csrf_token")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("admin_sessions")
 }
 
 model Post {

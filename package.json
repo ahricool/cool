@@ -11,7 +11,7 @@
   },
   "scripts": {
     "dev": "npm run dev -w @cms/backend",
-    "build": "npm run build -w @cms/backend && npm run build -w @cms/blog && npm run build -w @cms/admin",
+    "build": "npm run build -w @cms/backend && npm run build -w @cms/frontend",
     "start": "npm run start -w @cms/backend",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -21,12 +21,12 @@
     "db:migrate": "npm run db:migrate -w @cms/backend",
     "db:deploy": "npm run db:deploy -w @cms/backend",
     "db:seed": "npm run db:seed -w @cms/backend",
-    "typecheck": "npm run typecheck -w @cms/blog && npm run typecheck -w @cms/admin",
-    "dev:blog": "npm run dev -w @cms/blog",
-    "dev:admin": "npm run dev -w @cms/admin",
+    "typecheck": "npm run typecheck -w @cms/frontend",
     "test:content": "npm test -w @cms/content",
     "test:e2e": "playwright test",
-    "audit": "node scripts/audit.mjs"
+    "audit": "node scripts/audit.mjs",
+    "dev:frontend": "npm run dev -w @cms/frontend",
+    "test:unit": "node --import tsx --test tests/unit/*.test.ts apps/frontend/build/*.test.ts apps/frontend/app/features/admin/api.test.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

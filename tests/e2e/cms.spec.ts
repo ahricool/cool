@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 const blog = process.env.E2E_BLOG_URL ?? 'http://localhost:3001';
-const admin = process.env.E2E_ADMIN_URL ?? 'http://127.0.0.1:5173/admin';
+const admin = process.env.E2E_ADMIN_URL ?? 'http://localhost:3001/admin';
 const api = process.env.E2E_API_URL ?? 'http://127.0.0.1:3000/api/v1';
-const email = process.env.ADMIN_EMAIL ?? 'owner@example.test';
-const password = process.env.ADMIN_PASSWORD ?? 'cms-e2e-owner-password';
+const email = 'whoreahri@gmail.com';
+const password = process.env.E2E_PASSWORD ?? 'cms-e2e-owner-password';
 test('owner writes, previews and publishes; visitors read and comment; owner moderates', async ({
   page,
   request,
@@ -13,7 +13,7 @@ test('owner writes, previews and publishes; visitors read and comment; owner mod
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(admin + '/login');
-  await page.getByLabel('邮箱', { exact: true }).fill(email);
+  await expect(page.getByLabel('邮箱', { exact: true })).toHaveValue(email);
   await page.getByLabel('密码', { exact: true }).fill(password);
   await page.getByRole('button', { name: '登录工作空间' }).click();
   await expect(page.getByRole('heading', { name: /你好/ })).toBeVisible();
@@ -64,7 +64,7 @@ test('owner writes, previews and publishes; visitors read and comment; owner mod
   );
   await page
     .locator('.asset-picker input[type="file"]')
-    .setInputFiles('apps/blog/public/sakura/images/default/hd.webp');
+    .setInputFiles('apps/frontend/public/sakura/images/default/hd.webp');
   const uploadResponse = await uploaded;
   expect(uploadResponse.ok()).toBeTruthy();
   const media = await uploadResponse.json();
@@ -105,7 +105,7 @@ test('owner writes, previews and publishes; visitors read and comment; owner mod
     fullPage: true,
     animations: 'disabled',
   });
-  // A fresh owner session is intentionally required after a full browser reload.
+  // The browser keeps its HttpOnly session across reloads; scripts can use bearer auth.
   const auth = await request.post(api + '/admin/auth/login', {
     data: { email, password },
   });

@@ -11,7 +11,7 @@ try {
 }
 if (report.error) throw new Error(JSON.stringify(report.error));
 // Nuxt -> listhen local HTTPS tooling; RSA signature verification is never used.
-// No patched release exists. Not shipped in backend or static Admin runtime.
+// No patched release exists. Not shipped in backend or static frontend runtime.
 // Review this exception when updating Nuxt or when upstream publishes a patch.
 const reviewed = new Set(['https://github.com/advisories/GHSA-86w9-cpqp-85rv']);
 const findings = new Map();

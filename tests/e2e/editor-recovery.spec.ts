@@ -1,6 +1,6 @@
 import { test, expect, type Page, type Route } from '@playwright/test';
 
-const admin = process.env.E2E_ADMIN_URL ?? 'http://127.0.0.1:5173/admin';
+const admin = process.env.E2E_ADMIN_URL ?? 'http://localhost:3001/admin';
 const id = 'a1111111-1111-4111-8111-111111111111';
 const initial = {
   id,
@@ -15,29 +15,43 @@ const initial = {
   tags: [],
 };
 
-type SaveHandler = (route: Route, body: typeof initial) => Promise<void>;
+type SaveHandler = (
+  route: Route,
+  body: typeof initial,
+) => Promise<void | false>;
 async function editor(page: Page, path: string, save: SaveHandler) {
   let stored = { ...initial };
+  let authenticated = false;
+  const owner = {
+    id: 'owner',
+    displayName: 'Owner',
+    email: 'whoreahri@gmail.com',
+  };
+  const auth = { user: owner, csrfToken: 'editor-test-csrf' };
   await page.route('**/api/v1/admin/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const endpoint = url.pathname.replace('/api/v1/admin', '');
-    if (endpoint === '/auth/login')
-      return route.fulfill({ json: { accessToken: 'editor-test-token' } });
-    if (endpoint === '/auth/me')
+    if (endpoint === '/auth/status')
       return route.fulfill({
-        json: {
-          id: 'owner',
-          displayName: 'Owner',
-          email: 'owner@example.test',
-        },
+        json: { email: owner.email, initialized: true, setupAvailable: false },
       });
+    if (endpoint === '/auth/session')
+      return authenticated
+        ? route.fulfill({ json: auth })
+        : route.fulfill({ status: 401, json: { message: 'Not signed in' } });
+    if (endpoint === '/auth/login') {
+      authenticated = true;
+      return route.fulfill({ json: auth });
+    }
+    if (endpoint === '/auth/me') return route.fulfill({ json: owner });
     if (endpoint === '/categories' || endpoint === '/tags')
       return route.fulfill({ json: [] });
     if (/^\/(posts|pages)(\/[^/]+)?$/.test(endpoint)) {
       if (['POST', 'PUT'].includes(request.method())) {
         const body = { ...stored, ...request.postDataJSON(), id };
-        await save(route, body);
+        const result = await save(route, body);
+        if (result === false) authenticated = false;
         stored = body;
         return;
       }
@@ -45,14 +59,16 @@ async function editor(page: Page, path: string, save: SaveHandler) {
     }
     return route.fulfill({ json: {} });
   });
-  await page.goto(admin + '/login?next=' + encodeURIComponent(path));
+  await page.goto(admin + '/login?next=' + encodeURIComponent('/admin' + path));
   await login(page);
   await expect(
     page.getByRole('textbox', { name: '标题', exact: true }),
   ).toBeVisible();
 }
 async function login(page: Page) {
-  await page.getByLabel('邮箱', { exact: true }).fill('owner@example.test');
+  await expect(page.getByLabel('邮箱', { exact: true })).toHaveValue(
+    'whoreahri@gmail.com',
+  );
   await page.getByLabel('密码', { exact: true }).fill('test-only-password');
   await page.getByRole('button', { name: '登录工作空间' }).click();
 }
@@ -163,6 +179,7 @@ test('expired session returns to login and restores unsaved work after login', a
         status: 401,
         json: { message: 'Session expired' },
       });
+      return false;
     } else await route.fulfill({ json: body });
   });
   await page
@@ -208,7 +225,7 @@ for (const target of ['cover', 'content']) {
     const selector = target === 'cover' ? '.asset-picker' : '.markdown-editor';
     await page
       .locator(`${selector} input[type="file"]`)
-      .setInputFiles('apps/blog/public/sakura/images/default/hd.webp');
+      .setInputFiles('apps/frontend/public/sakura/images/default/hd.webp');
     await expect.poll(() => uploadStarted).toBe(true);
     const save = page.getByRole('button', { name: '保存草稿', exact: true });
     await expect(save).toBeDisabled();

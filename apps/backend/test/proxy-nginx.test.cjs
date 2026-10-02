@@ -113,6 +113,8 @@ test(
       );
       res.setHeader('X-Test-Real-IP', req.headers['x-real-ip'] ?? '');
       res.setHeader('X-Test-Hostname', req.hostname);
+      res.setHeader('X-Test-Host', req.headers.host);
+      res.setHeader('X-Test-Forwarded-Host', req.headers['x-forwarded-host']);
       res.setHeader('X-Test-Protocol', req.protocol);
       next();
     });
@@ -129,8 +131,6 @@ test(
       ['listen 80;', `listen 127.0.0.1:${port};`],
       ['resolver 127.0.0.11 valid=10s ipv6=off;', ''],
       ['http://backend:3000', `http://127.0.0.1:${backendPort}`],
-      ['http://frontend:3000', `http://127.0.0.1:${backendPort}`],
-      ['http://admin:80', `http://127.0.0.1:${backendPort}`],
     ]) {
       assert.ok(ingress.includes(from), `Production config changed: ${from}`);
       ingress = ingress.replace(from, to);
@@ -204,6 +204,48 @@ http {
             new URL(response.headers.location, origin).href,
             `${origin}/admin/`,
           );
+      },
+    );
+
+    await t.test(
+      'API forwarding preserves the external port for origin validation',
+      async () => {
+        const response = await send(
+          port,
+          '127.0.0.6',
+          '/api/v1/admin/auth/me',
+          'GET',
+          '203.0.113.99',
+          'cms.test:43210',
+        );
+        assert.equal(response.status, 401);
+        assert.equal(response.headers['x-test-host'], 'cms.test:43210');
+        assert.equal(
+          response.headers['x-test-forwarded-host'],
+          'cms.test:43210',
+        );
+      },
+    );
+    await t.test(
+      'initial setup has matching per-client rate limits',
+      async () => {
+        for (const client of ['127.0.0.4', '127.0.0.5']) {
+          for (let i = 0; i < 5; i++) {
+            const response = await send(
+              port,
+              client,
+              '/api/v1/admin/auth/setup',
+              'POST',
+            );
+            assertBoundary(response, 400, client);
+            assert.equal(response.headers['x-ratelimit-limit'], '5');
+          }
+          assertBoundary(
+            await send(port, client, '/api/v1/admin/auth/setup', 'POST'),
+            429,
+            client,
+          );
+        }
       },
     );
 

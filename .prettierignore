@@ -2,9 +2,11 @@ node_modules
 **/dist
 **/generated
 package-lock.json
-vendor/
-apps/blog/public/sakura/
+apps/frontend/public/sakura/
 **/.nuxt/
 **/.output/
 playwright-report/
 test-results/
+deployment/
+
+apps/frontend/app/assets/blog/sakura.css

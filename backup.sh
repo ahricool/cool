@@ -2,7 +2,9 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 umask 077
-COMPOSE=(docker compose --env-file "${CMS_ENV_FILE:-.env}" -f docker-compose.prod.yml)
+COMPOSE=(scripts/compose.sh)
+if [[ "${1:-}" == --images ]]; then COMPOSE+=(--images "${2:?Missing image manifest}"); shift 2; fi
+[[ $# == 0 ]] || { echo 'Usage: backup.sh [--images file|local]' >&2; exit 2; }
 mkdir -p backups
 BACKUP_DIR="backups/cms-$(date -u +%Y%m%dT%H%M%SZ)-$$"
 mkdir "${BACKUP_DIR}.partial"

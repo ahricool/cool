@@ -1,12 +1,16 @@
 import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: 'tests/e2e',
+  globalSetup: './tests/e2e/setup.ts',
   fullyParallel: false,
   workers: 1,
   timeout: 60000,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
     headless: true,
+    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+      : undefined,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
@@ -20,16 +24,10 @@ export default defineConfig({
           timeout: 60000,
         },
         {
-          command: 'npm run dev:blog',
+          command: 'npm run dev:frontend',
           url: 'http://localhost:3001',
           reuseExistingServer: !process.env.CI,
           timeout: 120000,
-        },
-        {
-          command: 'npm run dev:admin',
-          url: 'http://127.0.0.1:5173/admin/',
-          reuseExistingServer: !process.env.CI,
-          timeout: 60000,
         },
       ],
 });

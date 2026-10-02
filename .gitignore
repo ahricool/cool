@@ -1,5 +1,5 @@
 node_modules/
-**/dist/
+**/dist
 **/generated/
 .env
 .env.*
@@ -12,3 +12,4 @@ coverage/
 data/
 playwright-report/
 test-results/
+deployment/

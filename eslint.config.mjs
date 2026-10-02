@@ -9,8 +9,7 @@ export default ts.config(
       'node_modules/**',
       '**/.nuxt/**',
       '**/.output/**',
-      'vendor/**',
-      'apps/blog/public/sakura/**',
+      'apps/frontend/public/sakura/**',
       'test-results/**',
       'playwright-report/**',
     ],
@@ -25,7 +24,7 @@ export default ts.config(
     },
     rules: { 'vue/multi-word-component-names': 'off', 'no-undef': 'off' },
   },
-  { files: ['apps/blog/**/*.ts'], rules: { 'no-undef': 'off' } },
+  { files: ['apps/frontend/**/*.ts'], rules: { 'no-undef': 'off' } },
   {
     files: ['**/*.cjs', 'scripts/*.mjs'],
     rules: { '@typescript-eslint/no-require-imports': 'off' },

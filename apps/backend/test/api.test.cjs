@@ -5,9 +5,11 @@ const { randomUUID } = require('node:crypto');
 require('reflect-metadata');
 const { createApp } = require('../dist/app');
 const { Database } = require('../dist/database');
-const { hashPassword } = require('../dist/password');
+const { verifyPassword } = require('../dist/password');
+const { ADMIN_EMAIL } = require('../dist/auth.constants');
+const { JwtService } = require('@nestjs/jwt');
 const { execFileSync } = require('node:child_process');
-let app, db, http, owner, token;
+let app, db, http, owner, token, initialToken;
 const ids = [];
 const prefix = `test-${randomUUID()}`;
 const password = 'integration-test-only-password';
@@ -18,17 +20,12 @@ before(async () => {
     /_test$/,
     'Integration tests require a dedicated *_test database',
   );
+  process.env.TRUST_PROXY_HOPS = '1';
+  process.env.CORS_ORIGINS = 'http://cms.test:43210';
   app = await createApp();
   await app.init();
   db = app.get(Database);
   assert.equal(await db.user.count(), 0, 'Test database must have no owner');
-  owner = await db.user.create({
-    data: {
-      email: 'owner@example.test',
-      displayName: 'Owner',
-      passwordHash: await hashPassword(password),
-    },
-  });
   http = request(app.getHttpServer());
 });
 after(async () => {
@@ -40,6 +37,85 @@ after(async () => {
   if (app) await app.close();
 });
 test('Owner login and full post publication lifecycle', async (t) => {
+  await t.test(
+    'seed leaves password unset and concurrent first setup has one winner',
+    async () => {
+      for (let i = 0; i < 2; i++)
+        execFileSync(process.execPath, ['dist/seed.js'], {
+          env: process.env,
+          stdio: 'pipe',
+        });
+      owner = await db.user.findUnique({ where: { email: ADMIN_EMAIL } });
+      assert.equal(owner.passwordHash, null);
+      assert.equal(await db.user.count(), 1);
+      const status = await http.get('/api/v1/admin/auth/status').expect(200);
+      assert.deepEqual(status.body, {
+        email: ADMIN_EMAIL,
+        initialized: false,
+        setupAvailable: true,
+      });
+      assert.equal(status.headers['cache-control'], 'no-store');
+      await http
+        .post('/api/v1/admin/auth/setup')
+        .send({ password: 'short' })
+        .expect(400);
+      await http
+        .post('/api/v1/admin/auth/setup')
+        .set('Origin', 'https://attacker.test')
+        .send({ password })
+        .expect(403);
+      assert.equal(
+        (await db.user.findUnique({ where: { id: owner.id } })).passwordHash,
+        null,
+      );
+      const setups = await Promise.all([
+        http.post('/api/v1/admin/auth/setup').send({ password }),
+        http
+          .post('/api/v1/admin/auth/setup')
+          .send({ password: 'losing-or-winning-test-password' }),
+      ]);
+      assert.deepEqual(
+        setups.map((response) => response.status).sort(),
+        [201, 409],
+      );
+      const winner = setups.find((response) => response.status === 201);
+      initialToken = winner.body.accessToken;
+      const stored = await db.user.findUnique({ where: { id: owner.id } });
+      // Keep the common fixture password regardless of which simultaneous request won.
+      if (!(await verifyPassword(password, stored.passwordHash))) {
+        await http
+          .put('/api/v1/admin/auth/password')
+          .auth(initialToken, { type: 'bearer' })
+          .send({
+            currentPassword: 'losing-or-winning-test-password',
+            newPassword: password,
+          })
+          .expect(200);
+      }
+      assert.equal(await db.user.count(), 1);
+      assert.equal(winner.body.user.email, ADMIN_EMAIL);
+      assert.equal(winner.body.user.passwordHash, undefined);
+      assert.equal(
+        (await http.get('/api/v1/admin/auth/status')).body.initialized,
+        true,
+      );
+      await http
+        .post('/api/v1/admin/auth/setup')
+        .send({ password })
+        .expect(409);
+      await assert.rejects(
+        db.user.create({
+          data: { email: ADMIN_EMAIL, displayName: 'Duplicate' },
+        }),
+      );
+      await assert.rejects(
+        db.user.update({
+          where: { id: owner.id },
+          data: { email: 'other@example.test' },
+        }),
+      );
+    },
+  );
   await t.test('reject anonymous writes and invalid credentials', async () => {
     await http.post('/api/v1/admin/posts').send({}).expect(401);
     await http
@@ -168,22 +244,186 @@ test('Owner login and full post publication lifecycle', async (t) => {
     await http.get('/api/openapi.json').expect(200);
   });
   await t.test(
-    'seed is idempotent and cannot create another owner',
+    'seed never changes an initialized owner or creates extra accounts',
     async () => {
+      const before = await db.user.findUnique({ where: { id: owner.id } });
       const env = {
         ...process.env,
-        ADMIN_EMAIL: owner.email,
-        ADMIN_PASSWORD: password,
+        ADMIN_EMAIL: 'ignored@example.test',
+        ADMIN_PASSWORD: 'ignored-legacy-fixture-password',
       };
-      execFileSync(process.execPath, ['dist/seed.js'], { env, stdio: 'pipe' });
-      execFileSync(process.execPath, ['dist/seed.js'], { env, stdio: 'pipe' });
-      assert.equal(await db.user.count(), 1);
-      assert.throws(() =>
+      for (let i = 0; i < 2; i++)
         execFileSync(process.execPath, ['dist/seed.js'], {
-          env: { ...env, ADMIN_EMAIL: 'other@example.test' },
+          env,
           stdio: 'pipe',
-        }),
+        });
+      assert.equal(await db.user.count(), 1);
+      const after = await db.user.findUnique({ where: { id: owner.id } });
+      assert.equal(after.email, ADMIN_EMAIL);
+      assert.equal(after.passwordHash, before.passwordHash);
+    },
+  );
+  await t.test(
+    '15-day sessions have secure cookies, CSRF protection and server revocation',
+    async () => {
+      const login = (ip = '198.51.100.51') =>
+        http
+          .post('/api/v1/admin/auth/login')
+          .set('X-Forwarded-For', ip)
+          .send({ email: ADMIN_EMAIL, password });
+      await http
+        .post('/api/v1/admin/auth/login')
+        .set('X-Forwarded-For', '198.51.100.52')
+        .set('Origin', 'https://attacker.test')
+        .send({ email: ADMIN_EMAIL, password })
+        .expect(403);
+      await http
+        .post('/api/v1/admin/auth/login')
+        .set('X-Forwarded-For', '198.51.100.52')
+        .set('Sec-Fetch-Site', 'cross-site')
+        .send({ email: ADMIN_EMAIL, password })
+        .expect(403);
+      await http
+        .post('/api/v1/admin/auth/login')
+        .set('X-Forwarded-For', '198.51.100.52')
+        .send({ email: 'visitor@example.test', password })
+        .expect(401);
+      const oldEnvironment = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+      const signedIn = await login().expect(201);
+      if (oldEnvironment === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = oldEnvironment;
+      const setCookie = signedIn.headers['set-cookie'][0];
+      for (const attribute of [
+        'HttpOnly',
+        'SameSite=Lax',
+        'Secure',
+        'Path=/',
+        'Max-Age=1296000',
+      ])
+        assert.ok(setCookie.includes(attribute), attribute);
+      assert.equal(signedIn.headers['cache-control'], 'no-store');
+      const cookie = setCookie.split(';')[0];
+      const csrf = signedIn.body.csrfToken;
+      const jwt = app.get(JwtService);
+      const claims = jwt.decode(signedIn.body.accessToken);
+      assert.equal(claims.exp - claims.iat, 15 * 24 * 60 * 60);
+      assert.equal(signedIn.body.expiresIn, 1296000);
+      assert.equal(
+        jwt.verify(signedIn.body.accessToken, {
+          clockTimestamp: claims.iat + 1295999,
+        }).sid,
+        claims.sid,
       );
+      assert.throws(
+        () =>
+          jwt.verify(signedIn.body.accessToken, { clockTimestamp: claims.exp }),
+        /expired/,
+      );
+      const legacyToken = await jwt.signAsync({
+        sub: owner.id,
+        version: claims.version,
+      });
+      await http
+        .get('/api/v1/admin/auth/session')
+        .auth(legacyToken, { type: 'bearer' })
+        .expect(401);
+      const expired = await jwt.signAsync({
+        sub: owner.id,
+        sid: claims.sid,
+        version: claims.version,
+        iat: claims.iat - 1296001,
+      });
+      await http
+        .get('/api/v1/admin/auth/session')
+        .auth(expired, { type: 'bearer' })
+        .expect(401);
+      const session = await http
+        .get('/api/v1/admin/auth/session')
+        .set('Cookie', cookie)
+        .expect(200);
+      assert.equal(session.body.csrfToken, csrf);
+      assert.equal(session.body.user.email, ADMIN_EMAIL);
+      assert.equal(session.body.accessToken, undefined);
+      assert.equal(session.headers['cache-control'], 'no-store');
+      await http
+        .put('/api/v1/admin/auth/profile')
+        .set('Cookie', cookie)
+        .send({ displayName: 'Owner' })
+        .expect(403);
+      await http
+        .put('/api/v1/admin/auth/profile')
+        .set('Cookie', cookie)
+        .set('X-CSRF-Token', 'wrong')
+        .send({ displayName: 'Owner' })
+        .expect(403);
+      await http
+        .put('/api/v1/admin/auth/profile')
+        .set('Cookie', cookie)
+        .set('X-CSRF-Token', csrf)
+        .set('Origin', 'https://attacker.test')
+        .send({ displayName: 'Owner' })
+        .expect(403);
+      await http
+        .put('/api/v1/admin/auth/profile')
+        .set('Cookie', cookie)
+        .set('X-CSRF-Token', csrf)
+        .set('Origin', 'http://cms.test:43210')
+        .send({ displayName: 'Owner' })
+        .expect(200);
+      await http
+        .put('/api/v1/admin/auth/profile')
+        .set('Cookie', cookie)
+        .set('X-CSRF-Token', csrf)
+        .send({ displayName: 'Owner', email: 'other@example.test' })
+        .expect(400);
+      await http
+        .post('/api/v1/admin/posts')
+        .set('Cookie', cookie)
+        .send({ slug: prefix + '-csrf', title: 'Blocked' })
+        .expect(403);
+      await http
+        .post('/api/v1/admin/media/upload')
+        .set('Cookie', cookie)
+        .attach('file', Buffer.from('not an image'), 'test.png')
+        .expect(403);
+      await http
+        .post('/api/v1/admin/auth/logout')
+        .set('Cookie', cookie)
+        .expect(403);
+      const signedOut = await http
+        .post('/api/v1/admin/auth/logout')
+        .set('Cookie', cookie)
+        .set('X-CSRF-Token', csrf)
+        .expect(201);
+      assert.match(
+        signedOut.headers['set-cookie'][0],
+        /cms_session=;.*Expires=Thu, 01 Jan 1970/,
+      );
+      await http
+        .get('/api/v1/admin/auth/session')
+        .set('Cookie', cookie)
+        .expect(401);
+      await http
+        .get('/api/v1/admin/auth/session')
+        .auth(signedIn.body.accessToken, { type: 'bearer' })
+        .expect(401);
+      // Logging out this session must not revoke the independent content-test token.
+      await http
+        .get('/api/v1/admin/auth/session')
+        .auth(token, { type: 'bearer' })
+        .expect(200);
+      const otherSession = await login('198.51.100.53').expect(201);
+      await http
+        .post('/api/v1/admin/auth/revoke-all')
+        .auth(otherSession.body.accessToken, { type: 'bearer' })
+        .expect(201);
+      for (const revoked of [token, otherSession.body.accessToken])
+        await http
+          .get('/api/v1/admin/auth/session')
+          .auth(revoked, { type: 'bearer' })
+          .expect(401);
+      token = (await login('198.51.100.54').expect(201)).body.accessToken;
     },
   );
   await t.test('taxonomy CRUD and draft visibility work together', async () => {

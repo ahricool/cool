@@ -14,7 +14,7 @@ assert.equal(origin.protocol, 'http:');
 assert.equal(origin.hostname, '127.0.0.1', 'Smoke checks must use loopback');
 assert(origin.port, 'An isolated Compose port is required');
 const report = { mode, origin: origin.origin, checks: [], passed: false };
-const email = 'compose-smoke@example.test';
+const email = 'whoreahri@gmail.com';
 const initialPassword = 'compose-smoke-initial-password-only';
 const savedPassword = 'compose-smoke-restored-password-only';
 let token;
@@ -155,10 +155,7 @@ async function checkRoutes() {
     const response = await request(path);
     assert.match(response.headers.get('content-type') ?? '', /text\/html/);
     const html = await response.text();
-    assert.match(
-      html,
-      path.startsWith('/admin') ? /id=["']app["']/ : /id=["']__nuxt["']/,
-    );
+    assert.match(html, /id=["']__nuxt["']/);
     let scripts = 0;
     for (const match of html.matchAll(/<(script|link)\b[^>]*>/gi)) {
       const tag = match[0];
@@ -181,7 +178,6 @@ async function checkRoutes() {
     assets.size > 2 && assets.size <= 100,
     'Bounded nonempty asset manifest',
   );
-  assert([...assets].some(([path]) => path.startsWith('/admin/assets/')));
   assert([...assets].some(([path]) => path.startsWith('/_nuxt/')));
   assert([...assets.values()].includes('css'));
   const cssResources = new Set();
@@ -197,7 +193,7 @@ async function checkRoutes() {
       !/^\s*<!doctype html/i.test(bytes.toString('utf8', 0, 100)),
       `${path} must not fall back to HTML`,
     );
-    if (kind === 'css' && path.startsWith('/admin/assets/')) {
+    if (kind === 'css') {
       for (const match of bytes
         .toString('utf8')
         .matchAll(
@@ -249,12 +245,21 @@ async function checkRoutes() {
 }
 
 async function populate() {
+  const status = await json('/admin/auth/status');
+  assert.equal(status.email, email);
+  assert.equal(status.initialized, false);
+  const setup = await json('/admin/auth/setup', {
+    method: 'POST',
+    status: 201,
+    body: { password: initialPassword },
+  });
+  assert.equal(typeof setup.accessToken, 'string');
   const owner = await login(initialPassword);
   assert.equal(owner.email, email);
   const renamed = await json('/admin/auth/profile', {
     method: 'PUT',
     auth: true,
-    body: { email, displayName: 'Persisted Compose Owner' },
+    body: { displayName: 'Persisted Compose Owner' },
   });
   assert.equal(renamed.id, owner.id);
   await json('/admin/auth/password', {
@@ -265,7 +270,9 @@ async function populate() {
   await json('/admin/auth/me', { auth: true, status: 401 });
   const savedOwner = await login(savedPassword);
   assert.equal(savedOwner.displayName, 'Persisted Compose Owner');
-  passed('Seeded owner login, profile update and changed-password login');
+  passed(
+    'First password setup, fixed owner login, profile update and changed-password login',
+  );
 
   const form = new globalThis.FormData();
   form.append(

@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { socialIcon } from '../../apps/blog/app/utils/social-icon';
-import { masonryPositions } from '../../apps/blog/app/utils/masonry';
+import { socialIcon } from '../../apps/frontend/app/utils/social-icon';
+import { masonryPositions } from '../../apps/frontend/app/utils/masonry';
 
 test('social artwork matches exact or subdomain host and always remains local', () => {
   const samples = [
@@ -17,7 +17,7 @@ test('social artwork matches exact or subdomain host and always remains local', 
   for (const [url, icon] of samples) {
     assert.equal(socialIcon(url), `/sakura/images/sns/${icon}`);
     assert.ok(
-      existsSync(resolve('apps/blog/public', socialIcon(url).slice(1))),
+      existsSync(resolve('apps/frontend/public', socialIcon(url).slice(1))),
     );
   }
 });

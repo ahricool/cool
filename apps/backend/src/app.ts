@@ -41,7 +41,7 @@ class HealthController {
         secret: readConfig().jwtSecret,
         signOptions: {
           algorithm: 'HS256',
-          expiresIn: '1h',
+          expiresIn: '15d',
           issuer: 'cms',
           audience: 'cms-admin',
         },
@@ -79,7 +79,7 @@ export async function createApp() {
   app.set('trust proxy', config.trustProxyHops);
   app.use(helmet());
   app.use(json({ limit: '1mb' }));
-  app.enableCors({ origin: config.origins, credentials: false });
+  app.enableCors({ origin: config.origins, credentials: true });
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(
     new ValidationPipe({
@@ -97,6 +97,7 @@ export async function createApp() {
       .setTitle('Personal CMS API')
       .setVersion('1.0')
       .addBearerAuth()
+      .addCookieAuth('cms_session')
       .build(),
   );
   SwaggerModule.setup('api/docs', app, document, {

@@ -1,37 +1,20 @@
 import { defaultSettings } from './settings';
 import { Database } from './database';
-import { hashPassword } from './password';
+import { ADMIN_EMAIL } from './auth.constants';
 async function seed() {
-  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
-  const password = process.env.ADMIN_PASSWORD;
-  if (
-    !email ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
-    !password ||
-    password.length < 16 ||
-    password.length > 256 ||
-    password.startsWith('replace-')
-  )
-    throw new Error(
-      'Set ADMIN_EMAIL and a unique ADMIN_PASSWORD (16–256 characters)',
-    );
   const db = new Database();
   try {
     await db.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(732019)`;
-      const owner = await tx.user.findFirst();
-      if (owner && owner.email !== email)
-        throw new Error(
-          'Owner already exists; refusing to create another account',
-        );
-      if (!owner)
-        await tx.user.create({
-          data: {
-            email,
-            passwordHash: await hashPassword(password),
-            displayName: process.env.ADMIN_NAME ?? 'Administrator',
-          },
-        });
+      await tx.user.upsert({
+        where: { email: ADMIN_EMAIL },
+        update: {},
+        create: {
+          email: ADMIN_EMAIL,
+          passwordHash: null,
+          displayName: 'Administrator',
+        },
+      });
       await tx.siteSetting.upsert({
         where: { key: 'site' },
         update: {},
@@ -39,13 +22,13 @@ async function seed() {
           key: 'site',
           value: {
             ...defaultSettings.site,
-            authorName: process.env.ADMIN_NAME ?? 'Administrator',
+            authorName: 'Administrator',
           },
         },
       });
     });
     console.log(
-      'Owner and site initialized; existing credentials are unchanged.',
+      'Single author and site initialized. Set the first password at first login; existing credentials are unchanged.',
     );
   } finally {
     await db.$disconnect();
