@@ -1,12 +1,11 @@
+import { blog, admin, api } from './urls';
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-const blog = process.env.E2E_BLOG_URL ?? 'http://localhost:3001';
-const admin = process.env.E2E_ADMIN_URL ?? 'http://localhost:3001/admin';
-const api = process.env.E2E_API_URL ?? 'http://127.0.0.1:3000/api/v1';
 const email = 'whoreahri@gmail.com';
 const password = process.env.E2E_PASSWORD ?? 'cms-e2e-owner-password';
 test('owner writes, previews and publishes; visitors read and comment; owner moderates', async ({
   page,
+  context,
   request,
 }, info) => {
   const slug = `e2e-${randomUUID()}`;
@@ -77,11 +76,15 @@ test('owner writes, previews and publishes; visitors read and comment; owner mod
     animations: 'disabled',
   });
   await page.getByRole('button', { name: '保存草稿', exact: true }).click();
-  await expect(page).toHaveURL(/\/posts\/[a-f0-9-]+$/);
-  expect((await request.get(api + '/public/posts/' + slug)).status()).toBe(404);
+  await expect(page).toHaveURL((url) =>
+    /^\/admin\/posts\/[a-f0-9-]+$/.test(url.pathname),
+  );
+  expect((await request.get(api + '/public/zh/posts/' + slug)).status()).toBe(
+    404,
+  );
   await page.getByRole('button', { name: '发布', exact: true }).click();
   await expect(page.getByRole('button', { name: '撤回为草稿' })).toBeVisible();
-  const detail = await request.get(api + '/public/posts/' + slug);
+  const detail = await request.get(api + '/public/zh/posts/' + slug);
   expect(detail.ok()).toBeTruthy();
   const postId = (await detail.json()).id;
   await page.goto(blog + '/posts/' + slug);
@@ -106,11 +109,10 @@ test('owner writes, previews and publishes; visitors read and comment; owner mod
     animations: 'disabled',
   });
   // The browser keeps its HttpOnly session across reloads; scripts can use bearer auth.
-  const auth = await request.post(api + '/admin/auth/login', {
-    data: { email, password },
-  });
-  expect(auth.ok()).toBeTruthy();
-  const token = (await auth.json()).accessToken;
+  const token = (await context.cookies()).find(
+    (cookie) => cookie.name === 'cms_session',
+  )?.value;
+  expect(token).toBeDefined();
   const headers = { Authorization: `Bearer ${token}` };
   const comments = await request.get(api + '/admin/comments', { headers });
   const comment = (await comments.json()).items.find(

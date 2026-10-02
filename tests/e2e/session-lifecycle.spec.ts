@@ -1,9 +1,7 @@
+import { blog, admin, api } from './urls';
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
-const blog = process.env.E2E_BLOG_URL ?? 'http://localhost:3001';
-const admin = process.env.E2E_ADMIN_URL ?? blog + '/admin';
-const api = process.env.E2E_API_URL ?? 'http://127.0.0.1:3000/api/v1';
 const email = 'whoreahri@gmail.com';
 const password = process.env.E2E_PASSWORD ?? 'cms-e2e-owner-password';
 
@@ -13,7 +11,11 @@ test('cookie session survives reload and all-device logout revokes browser and s
   request,
 }, info) => {
   await page.goto(admin + '/settings');
-  await expect(page).toHaveURL(/\/admin\/login\?next=/);
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === '/admin/login' &&
+      url.searchParams.get('next') === '/admin/settings',
+  );
   await expect(page.getByLabel('邮箱', { exact: true })).toHaveValue(email);
   await expect(page.getByLabel('邮箱', { exact: true })).toHaveAttribute(
     'readonly',
@@ -21,7 +23,9 @@ test('cookie session survives reload and all-device logout revokes browser and s
   );
   await page.getByLabel('密码', { exact: true }).fill(password);
   await page.getByRole('button', { name: '登录工作空间' }).click();
-  await expect(page).toHaveURL(/\/admin\/settings$/);
+  // A next=/admin/settings query must not pass before login has completed.
+  await expect(page).toHaveURL((url) => url.pathname === '/admin/settings');
+  await expect(page.locator('.workspace h1')).toHaveText('网站配置');
   await page.reload();
   await expect(page.locator('.workspace h1')).toHaveText('网站配置');
   const cookie = (await context.cookies()).find(
@@ -56,7 +60,7 @@ test('cookie session survives reload and all-device logout revokes browser and s
   await secondTab
     .getByRole('button', { name: '退出登录', exact: true })
     .click();
-  await expect(secondTab).toHaveURL(/\/admin\/login/);
+  await expect(secondTab).toHaveURL((url) => url.pathname === '/admin/login');
   await secondTab.getByLabel('密码', { exact: true }).fill(password);
   await secondTab.getByRole('button', { name: '登录工作空间' }).click();
   await expect(secondTab.getByRole('heading', { name: /你好/ })).toBeVisible();
@@ -69,7 +73,9 @@ test('cookie session survives reload and all-device logout revokes browser and s
   );
   await page.getByRole('button', { name: '保存草稿', exact: true }).click();
   await staleCsrf;
-  await expect(page).toHaveURL(/\/admin\/posts\/[a-f0-9-]+$/);
+  await expect(page).toHaveURL((url) =>
+    /^\/admin\/posts\/[a-f0-9-]+$/.test(url.pathname),
+  );
   await expect(
     page.getByRole('textbox', { name: 'Markdown 内容' }),
   ).toHaveValue('切换登录也不能丢失的正文');
@@ -88,18 +94,18 @@ test('cookie session survives reload and all-device logout revokes browser and s
   await page.getByRole('button', { name: '退出所有设备', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '退出所有设备' });
   await dialog.getByRole('button', { name: '取消', exact: true }).click();
-  await expect(page).toHaveURL(/\/admin\/profile$/);
+  await expect(page).toHaveURL((url) => url.pathname === '/admin/profile');
   await page.getByRole('button', { name: '退出所有设备', exact: true }).click();
   await page
     .getByRole('dialog', { name: '退出所有设备' })
     .getByRole('button', { name: '退出所有设备', exact: true })
     .click();
-  await expect(page).toHaveURL(/\/admin\/login/);
+  await expect(page).toHaveURL((url) => url.pathname === '/admin/login');
   expect(
     (await context.cookies()).find((entry) => entry.name === 'cms_session'),
   ).toBeUndefined();
   await secondTab.reload();
-  await expect(secondTab).toHaveURL(/\/admin\/login/);
+  await expect(secondTab).toHaveURL((url) => url.pathname === '/admin/login');
   for (const token of [cookie!.value, scriptToken]) {
     expect(
       (
@@ -198,7 +204,11 @@ test('first-password screen confirms input and remains in the same Nuxt app acro
     .getByLabel('确认密码', { exact: true })
     .fill('first-setup-test-password');
   await page.getByRole('button', { name: '设置密码并进入' }).click();
-  await expect(page).toHaveURL(new RegExp(new URL(admin).pathname + '/?$'));
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname.replace(/\/$/, '') ===
+      new URL(admin).pathname.replace(/\/$/, ''),
+  );
   await expect(page.getByRole('heading', { name: /你好/ })).toBeVisible();
   expect(new URL(page.url()).origin).toBe(new URL(blog).origin);
 });

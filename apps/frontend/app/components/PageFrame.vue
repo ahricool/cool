@@ -1,11 +1,19 @@
 <script setup lang="ts">
-defineProps<{ title?: string; cover?: string | null; contentClass?: string }>();
+defineProps<{
+  title?: string;
+  titleLang?: string;
+  cover?: string | null;
+  contentClass?: string;
+}>();
 </script>
 <template>
   <div class="column">
     <header class="header">
       <slot name="header"
-        ><PageHeader :title="title || ''" :cover="cover"
+        ><PageHeader
+          :title="title || ''"
+          :cover="cover"
+          :title-lang="titleLang"
       /></slot>
     </header>
   </div>

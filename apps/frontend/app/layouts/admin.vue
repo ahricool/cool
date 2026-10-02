@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue';
+import { useCmsI18n } from '~/composables/useCmsI18n';
+import {
+  nextTick,
+  onMounted,
+  onBeforeUnmount,
+  ref,
+  watch,
+  computed,
+} from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   House,
@@ -20,6 +28,7 @@ import {
 import { api, clearSession, errorText, session } from '~/features/admin/api';
 import { ElMessage } from 'element-plus';
 import { publicUrl } from '~/features/admin/publicUrl';
+const { t } = useCmsI18n();
 const route = useRoute();
 const router = useRouter();
 const open = ref(false);
@@ -74,7 +83,7 @@ function menuKeydown(event: KeyboardEvent) {
     first?.focus();
   }
 }
-const blogUrl = publicUrl();
+const blogUrl = computed(() => publicUrl());
 const nav = [
   { path: '/admin', label: '概览', icon: House },
   { path: '/admin/posts', label: '文章', icon: Document },
@@ -112,13 +121,13 @@ async function logout() {
     clearSession();
     await router.replace('/admin/login');
   } catch (error) {
-    ElMessage.error(errorText(error));
+    ElMessage.error(t(errorText(error)));
   } finally {
     loggingOut.value = false;
   }
 }
 useHead(() => ({
-  title: `${String(route.meta.title ?? '管理')} · Sakura CMS`,
+  title: `${t(String(route.meta.title ?? '管理'))} · Sakura CMS`,
 }));
 </script>
 <template>
@@ -132,21 +141,23 @@ useHead(() => ({
       :inert="mobile && !open"
       :role="mobile ? 'dialog' : undefined"
       :aria-modal="mobile && open ? true : undefined"
-      aria-label="工作空间导航"
+      :aria-label="t('工作空间导航')"
       @keydown="menuKeydown"
     >
       <button
         ref="menuClose"
         class="sidebar-dismiss"
-        aria-label="关闭菜单"
+        :aria-label="t('关闭菜单')"
         @click="open = false"
       >
         ×
       </button>
       <RouterLink to="/admin" class="brand" @click="open = false"
         ><SakuraFlower class="brand-mark" />
-        <div>Sakura<small>你的内容，自在生长。</small></div></RouterLink
-      ><span class="nav-caption">工作空间</span>
+        <div>
+          Sakura<small>{{ t('你的内容，自在生长。') }}</small>
+        </div></RouterLink
+      ><span class="nav-caption">{{ t('工作空间') }}</span>
       <nav>
         <RouterLink
           v-for="item in nav"
@@ -160,16 +171,16 @@ useHead(() => ({
                 : route.path.startsWith(item.path),
           }"
           ><el-icon><component :is="item.icon" /></el-icon
-          >{{ item.label }}</RouterLink
+          >{{ t(item.label) }}</RouterLink
         >
       </nav>
       <div class="sidebar-bottom">
         <RouterLink to="/admin/settings" @click="open = false"
-          ><el-icon><Setting /></el-icon>网站配置</RouterLink
+          ><el-icon><Setting /></el-icon>{{ t('网站配置') }}</RouterLink
         ><RouterLink to="/admin/profile" @click="open = false"
-          ><el-icon><User /></el-icon>我的账户</RouterLink
+          ><el-icon><User /></el-icon>{{ t('我的账户') }}</RouterLink
         ><button :disabled="loggingOut" @click="logout">
-          <el-icon><SwitchButton /></el-icon>退出登录
+          <el-icon><SwitchButton /></el-icon>{{ t('退出登录') }}
         </button>
       </div>
     </aside>
@@ -177,7 +188,7 @@ useHead(() => ({
       v-if="open"
       class="sidebar-mask"
       tabindex="-1"
-      aria-label="关闭导航"
+      :aria-label="t('关闭导航')"
       @click="open = false"
     ></button>
     <div class="admin-body" :inert="mobile && open">
@@ -186,24 +197,40 @@ useHead(() => ({
           <button
             ref="menuTrigger"
             class="menu-toggle"
-            aria-label="打开导航"
+            :aria-label="t('打开导航')"
             aria-controls="admin-navigation"
             :aria-expanded="open"
             @click="open = !open"
           >
             <el-icon><Menu /></el-icon></button
-          ><span>工作空间</span><span>/</span
-          ><strong>{{ route.meta.title }}</strong>
+          ><span>{{ t('工作空间') }}</span
+          ><span>/</span
+          ><strong>{{ t(String(route.meta.title ?? '管理')) }}</strong>
         </div>
         <div class="topbar-right">
-          <a :href="blogUrl" target="_blank" rel="noopener">访问博客 ↗</a
+          <a :href="blogUrl" target="_blank" rel="noopener">{{
+            t('访问博客 ↗')
+          }}</a
           ><span class="owner-avatar">{{
             session.owner?.displayName.slice(0, 1) || 'S'
           }}</span>
         </div>
       </header>
       <main class="workspace"><slot /></main>
-      <footer class="admin-footer">Sakura CMS · 写下值得记住的事</footer>
+      <footer class="admin-footer">
+        <span>Sakura CMS · {{ t('写下值得记住的事') }}</span
+        ><LanguageSelector />
+      </footer>
     </div>
   </div>
 </template>
+
+<style scoped>
+.admin-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 24px;
+}
+</style>

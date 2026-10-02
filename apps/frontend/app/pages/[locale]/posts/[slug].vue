@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { renderMarkdown, formatDate, type Post } from '@cms/content';
+const { t, locale, formatDate, localePath, contentLang } = useCmsI18n();
+import { renderMarkdown, type Post } from '@cms/content';
 const route = useRoute();
 const store = useSiteStore();
 const api = useApi();
 const slug = computed(() => String(route.params.slug));
 const { data, pending, error, refresh } = await useAsyncData(
-  () => `post-${slug.value}`,
+  () => `post-${locale.value}-${slug.value}`,
   () => api<Post>(`/public/posts/${encodeURIComponent(slug.value)}`),
 );
 const rendered = computed(() => renderMarkdown(data.value?.content ?? ''));
@@ -27,18 +28,26 @@ useHead(() => ({
 <template>
   <PageFrame
     :cover="data?.coverUrl"
-    :title="data?.title ?? '文章'"
+    :title="data?.title ?? t('文章')"
+    :title-lang="data ? contentLang(data.contentLocale) : undefined"
     content-class="post"
     ><template #header
       ><div class="post-header">
-        <PageHeader :title="data?.title ?? '文章'" :cover="data?.coverUrl"
+        <PageHeader
+          :title="data?.title ?? t('文章')"
+          :title-lang="data ? contentLang(data.contentLocale) : undefined"
+          :cover="data?.coverUrl"
           ><div v-if="data" class="post-meta">
             <div class="meta-container">
               <span class="post-meta-item"
                 ><span
                   >{{ data.author.displayName }} ·
                   {{ formatDate(data.publishedAt) }} ·
-                  {{ data.commentCount }} 条评论</span
+                  {{
+                    t(data.commentCount === 1 ? '1 条评论' : '{count} 条评论', {
+                      count: data.commentCount,
+                    })
+                  }}</span
                 ></span
               >
             </div>
@@ -50,37 +59,46 @@ useHead(() => ({
       <aside
         v-if="rendered.toc.length"
         class="toc-sidebar"
-        aria-label="文章目录"
+        :aria-label="t('文章目录')"
       >
         <details open>
-          <summary>文章目录</summary>
+          <summary>{{ t('文章目录') }}</summary>
           <a
             v-for="heading in rendered.toc"
             :key="heading.id"
             :href="`#${heading.id}`"
+            :lang="contentLang(data.contentLocale)"
             :style="{ paddingLeft: `${(heading.level - 1) * 10}px` }"
             >{{ heading.text }}</a
           >
         </details>
       </aside>
-      <article :id="`post-${data.id}`" class="post-article">
+      <article
+        :id="`post-${data.id}`"
+        class="post-article"
+        :lang="contentLang(data.contentLocale)"
+      >
         <div
           class="entry-content fancybox-content"
+          :lang="contentLang(data.contentLocale)"
           v-html="rendered.html"
         ></div>
-        <footer class="post-footer">
-          <div><p class="flex-child-center">Q.E.D. ❀</p></div>
+        <footer class="post-footer" :lang="contentLang(locale)">
+          <div>
+            <p class="flex-child-center">{{ t('全文完') }} ❀</p>
+          </div>
           <div class="post-footer-meta">
             <div class="post-tags flex-child-center">
               <NuxtLink
                 v-for="tag in data.tags"
                 :key="tag.tag.id"
-                :to="{ path: '/tags', query: { tag: tag.tag.slug } }"
+                :lang="contentLang(tag.tag.contentLocale)"
+                :to="localePath(`/tags/${encodeURIComponent(tag.tag.slug)}`)"
                 >#{{ tag.tag.name }}</NuxtLink
               >
             </div>
             <button @click="share">
-              {{ copied ? '链接已复制' : '分享 · 复制链接' }}
+              {{ t(copied ? '链接已复制' : '分享 · 复制链接') }}
             </button>
           </div>
         </footer>
@@ -98,7 +116,9 @@ useHead(() => ({
         />
         <div>
           <h3>{{ data.author.displayName }}</h3>
-          <p>{{ store.site.authorBio }}</p>
+          <p :lang="contentLang(store.site.contentLocale)">
+            {{ store.site.authorBio }}
+          </p>
         </div>
       </section>
       <Comments :slug="slug" :enabled="store.site.commentsEnabled" />

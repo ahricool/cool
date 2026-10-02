@@ -13,6 +13,25 @@ let app, db, http, owner, token, initialToken;
 const ids = [];
 const prefix = `test-${randomUUID()}`;
 const password = 'integration-test-only-password';
+const zh = ({
+  slug,
+  coverUrl,
+  categoryIds,
+  tagIds,
+  url,
+  logoUrl,
+  published,
+  ...text
+}) => ({
+  ...(slug === undefined ? {} : { slug }),
+  ...(coverUrl === undefined ? {} : { coverUrl }),
+  ...(categoryIds === undefined ? {} : { categoryIds }),
+  ...(tagIds === undefined ? {} : { tagIds }),
+  ...(url === undefined ? {} : { url }),
+  ...(logoUrl === undefined ? {} : { logoUrl }),
+  ...(published === undefined ? {} : { published }),
+  translations: [{ locale: 'zh', ...text }],
+});
 before(async () => {
   const url = new URL(process.env.DATABASE_URL);
   assert.match(
@@ -144,16 +163,16 @@ test('Owner login and full post publication lifecycle', async (t) => {
     const response = await http
       .post('/api/v1/admin/posts')
       .auth(token, { type: 'bearer' })
-      .send({ slug: prefix, title: 'Lifecycle title', content: markdown })
+      .send(zh({ slug: prefix, title: 'Lifecycle title', content: markdown }))
       .expect(201);
     ids.push(response.body.id);
-    assert.equal(response.body.content, markdown);
-    assert.equal(response.body.status, 'DRAFT');
+    assert.equal(response.body.translations[0].content, markdown);
+    assert.equal(response.body.translations[0].status, 'DRAFT');
     assert.equal(response.body.author.passwordHash, undefined);
-    await http.get(`/api/v1/public/posts/${prefix}`).expect(404);
-    assert.equal((await http.get('/api/v1/public/posts')).body.total, 0);
+    await http.get(`/api/v1/public/zh/posts/${prefix}`).expect(404);
+    assert.equal((await http.get('/api/v1/public/zh/posts')).body.total, 0);
     assert.equal(
-      (await http.get('/api/v1/public/search?q=Lifecycle')).body.total,
+      (await http.get('/api/v1/public/zh/search?q=Lifecycle')).body.total,
       0,
     );
   });
@@ -163,23 +182,23 @@ test('Owner login and full post publication lifecycle', async (t) => {
       await http
         .post('/api/v1/admin/posts')
         .auth(token, { type: 'bearer' })
-        .send({ slug: prefix, title: 'Duplicate' })
+        .send(zh({ slug: prefix, title: 'Duplicate' }))
         .expect(409);
       await http
         .put(`/api/v1/admin/posts/${ids[0]}`)
         .auth(token, { type: 'bearer' })
-        .send({ title: null })
+        .send(zh({ title: null }))
         .expect(400);
       await http
         .put(`/api/v1/admin/posts/${ids[0]}`)
         .auth(token, { type: 'bearer' })
         .send({ authorId: owner.id })
         .expect(400);
-      await http.get('/api/v1/public/posts?pageSize=500').expect(400);
+      await http.get('/api/v1/public/zh/posts?pageSize=500').expect(400);
       await http
         .put(`/api/v1/admin/posts/${randomUUID()}`)
         .auth(token, { type: 'bearer' })
-        .send({ title: 'Missing' })
+        .send(zh({ title: 'Missing' }))
         .expect(404);
     },
   );
@@ -187,21 +206,25 @@ test('Owner login and full post publication lifecycle', async (t) => {
     await http
       .put(`/api/v1/admin/posts/${ids[0]}`)
       .auth(token, { type: 'bearer' })
-      .send({ status: 'PUBLISHED' })
+      .send(zh({ status: 'PUBLISHED' }))
       .expect(200);
-    const detail = await http.get(`/api/v1/public/posts/${prefix}`).expect(200);
+    const detail = await http
+      .get(`/api/v1/public/zh/posts/${prefix}`)
+      .expect(200);
     assert.equal(detail.body.content, markdown);
     assert.equal(detail.body.contentFormat, 'markdown');
     assert.equal(detail.body.author.email, undefined);
     assert.ok(detail.body.publishedAt);
-    const list = await http.get('/api/v1/public/posts?pageSize=1').expect(200);
+    const list = await http
+      .get('/api/v1/public/zh/posts?pageSize=1')
+      .expect(200);
     assert.equal(list.body.total, 1);
     assert.equal(list.body.items[0].content, undefined);
     assert.equal(
-      (await http.get('/api/v1/public/search?q=Lifecycle')).body.total,
+      (await http.get('/api/v1/public/zh/search?q=Lifecycle')).body.total,
       1,
     );
-    assert.equal((await http.get('/api/v1/public/archives')).body.total, 1);
+    assert.equal((await http.get('/api/v1/public/zh/archives')).body.total, 1);
   });
   await t.test(
     'future publication and withdrawal stay private on all discovery endpoints',
@@ -209,27 +232,34 @@ test('Owner login and full post publication lifecycle', async (t) => {
       await http
         .put(`/api/v1/admin/posts/${ids[0]}`)
         .auth(token, { type: 'bearer' })
-        .send({ publishedAt: '2099-01-01T00:00:00Z' })
+        .send(zh({ publishedAt: '2099-01-01T00:00:00Z' }))
         .expect(200);
-      await http.get(`/api/v1/public/posts/${prefix}`).expect(404);
+      await http.get(`/api/v1/public/zh/posts/${prefix}`).expect(404);
       for (const route of ['posts', 'search?q=Lifecycle', 'archives'])
-        assert.equal((await http.get(`/api/v1/public/${route}`)).body.total, 0);
+        assert.equal(
+          (await http.get(`/api/v1/public/zh/${route}`)).body.total,
+          0,
+        );
       await http
         .put(`/api/v1/admin/posts/${ids[0]}`)
         .auth(token, { type: 'bearer' })
-        .send({ status: 'DRAFT', publishedAt: null })
+        .send(zh({ status: 'DRAFT', publishedAt: null }))
         .expect(200);
-      await http.get(`/api/v1/public/posts/${prefix}`).expect(404);
+      await http.get(`/api/v1/public/zh/posts/${prefix}`).expect(404);
     },
   );
   await t.test('invalid taxonomy rolls back the entire update', async () => {
     await http
       .put(`/api/v1/admin/posts/${ids[0]}`)
       .auth(token, { type: 'bearer' })
-      .send({ title: 'Must roll back', categoryIds: [randomUUID()] })
+      .send(zh({ title: 'Must roll back', categoryIds: [randomUUID()] }))
       .expect(400);
     assert.equal(
-      (await db.post.findUnique({ where: { id: ids[0] } })).title,
+      (
+        await db.postTranslation.findUnique({
+          where: { postId_locale: { postId: ids[0], locale: 'zh' } },
+        })
+      ).title,
       'Lifecycle title',
     );
   });
@@ -237,9 +267,9 @@ test('Owner login and full post publication lifecycle', async (t) => {
     await db.siteSetting.create({
       data: { key: 'private-test', value: { secret: 'do-not-expose' } },
     });
-    const response = await http.get('/api/v1/public/config').expect(200);
+    const response = await http.get('/api/v1/public/zh/config').expect(200);
     assert.equal(response.body['private-test'], undefined);
-    await http.get('/api/v1/public/site').expect(200);
+    await http.get('/api/v1/public/zh/site').expect(200);
     await http.get('/api/v1/health').expect(200);
     await http.get('/api/openapi.json').expect(200);
   });
@@ -380,7 +410,7 @@ test('Owner login and full post publication lifecycle', async (t) => {
       await http
         .post('/api/v1/admin/posts')
         .set('Cookie', cookie)
-        .send({ slug: prefix + '-csrf', title: 'Blocked' })
+        .send(zh({ slug: prefix + '-csrf', title: 'Blocked' }))
         .expect(403);
       await http
         .post('/api/v1/admin/media/upload')
@@ -431,14 +461,14 @@ test('Owner login and full post publication lifecycle', async (t) => {
       await http
         .post('/api/v1/admin/categories')
         .auth(token, { type: 'bearer' })
-        .send({ name: 'Tests', slug: prefix })
+        .send(zh({ name: 'Tests', slug: prefix }))
         .expect(201)
     ).body;
     const tag = (
       await http
         .post('/api/v1/admin/tags')
         .auth(token, { type: 'bearer' })
-        .send({ name: 'Tests', slug: prefix })
+        .send(zh({ name: 'Tests', slug: prefix }))
         .expect(201)
     ).body;
     await http
@@ -446,18 +476,21 @@ test('Owner login and full post publication lifecycle', async (t) => {
       .auth(token, { type: 'bearer' })
       .send({ categoryIds: [category.id], tagIds: [tag.id] })
       .expect(200);
-    assert.equal((await http.get('/api/v1/public/categories')).body.length, 0);
+    assert.equal(
+      (await http.get('/api/v1/public/zh/categories')).body.length,
+      0,
+    );
     await http
       .put(`/api/v1/admin/posts/${ids[0]}`)
       .auth(token, { type: 'bearer' })
-      .send({ status: 'PUBLISHED', publishedAt: null })
+      .send(zh({ status: 'PUBLISHED', publishedAt: null }))
       .expect(200);
     assert.equal(
-      (await http.get('/api/v1/public/categories')).body[0].id,
+      (await http.get('/api/v1/public/zh/categories')).body[0].id,
       category.id,
     );
     assert.equal(
-      (await http.get('/api/v1/public/posts?tag=' + prefix)).body.total,
+      (await http.get('/api/v1/public/zh/posts?tag=' + prefix)).body.total,
       1,
     );
     await http
@@ -476,17 +509,17 @@ test('Owner login and full post publication lifecycle', async (t) => {
         await http
           .post('/api/v1/admin/pages')
           .auth(token, { type: 'bearer' })
-          .send({ slug: prefix, title: 'Page', content: '# Page' })
+          .send(zh({ slug: prefix, title: 'Page', content: '# Page' }))
           .expect(201)
       ).body;
-      await http.get('/api/v1/public/pages/' + prefix).expect(404);
+      await http.get('/api/v1/public/zh/pages/' + prefix).expect(404);
       await http
         .put('/api/v1/admin/pages/' + page.id)
         .auth(token, { type: 'bearer' })
-        .send({ status: 'PUBLISHED' })
+        .send(zh({ status: 'PUBLISHED' }))
         .expect(200);
       assert.equal(
-        (await http.get('/api/v1/public/pages/' + prefix).expect(200)).body
+        (await http.get('/api/v1/public/zh/pages/' + prefix).expect(200)).body
           .content,
         '# Page',
       );
@@ -494,46 +527,52 @@ test('Owner login and full post publication lifecycle', async (t) => {
         await http
           .post('/api/v1/admin/moments')
           .auth(token, { type: 'bearer' })
-          .send({
-            content: 'A moment',
-            status: 'PUBLISHED',
-            publishedAt: '2099-01-01T00:00:00Z',
-          })
+          .send(
+            zh({
+              content: 'A moment',
+              status: 'PUBLISHED',
+              publishedAt: '2099-01-01T00:00:00Z',
+            }),
+          )
           .expect(201)
       ).body;
-      assert.equal((await http.get('/api/v1/public/moments')).body.total, 0);
+      assert.equal((await http.get('/api/v1/public/zh/moments')).body.total, 0);
       await http
         .put('/api/v1/admin/moments/' + moment.id)
         .auth(token, { type: 'bearer' })
-        .send({ publishedAt: null })
+        .send(zh({ publishedAt: null }))
         .expect(200);
-      assert.equal((await http.get('/api/v1/public/moments')).body.total, 1);
+      assert.equal((await http.get('/api/v1/public/zh/moments')).body.total, 1);
       const photo = (
         await http
           .post('/api/v1/admin/photos')
           .auth(token, { type: 'bearer' })
-          .send({ title: 'A photo', url: '/sakura/images/default/temp.webp' })
+          .send(
+            zh({ title: 'A photo', url: '/sakura/images/default/temp.webp' }),
+          )
           .expect(201)
       ).body;
-      assert.equal((await http.get('/api/v1/public/photos')).body.total, 0);
+      assert.equal((await http.get('/api/v1/public/zh/photos')).body.total, 0);
       await http
         .put('/api/v1/admin/photos/' + photo.id)
         .auth(token, { type: 'bearer' })
         .send({ published: true })
         .expect(200);
-      assert.equal((await http.get('/api/v1/public/photos')).body.total, 1);
+      assert.equal((await http.get('/api/v1/public/zh/photos')).body.total, 1);
       const link = (
         await http
           .post('/api/v1/admin/links')
           .auth(token, { type: 'bearer' })
-          .send({
-            name: 'Example',
-            url: 'https://example.com',
-            published: true,
-          })
+          .send(
+            zh({
+              name: 'Example',
+              url: 'https://example.com',
+              published: true,
+            }),
+          )
           .expect(201)
       ).body;
-      assert.equal((await http.get('/api/v1/public/links')).body.total, 1);
+      assert.equal((await http.get('/api/v1/public/zh/links')).body.total, 1);
       for (const [kind, id] of [
         ['pages', page.id],
         ['moments', moment.id],
@@ -550,11 +589,26 @@ test('Owner login and full post publication lifecycle', async (t) => {
     'comments require approval, counts track moderation and deletion',
     async () => {
       await http
-        .post(`/api/v1/public/posts/${prefix}/comments`)
+        .put(`/api/v1/admin/posts/${ids[0]}`)
+        .auth(token, { type: 'bearer' })
+        .send({
+          translations: [
+            {
+              locale: 'en',
+              title: 'English moderation title',
+              content: 'Private translated body',
+              status: 'DRAFT',
+            },
+          ],
+        })
+        .expect(200);
+      await http
+        .post(`/api/v1/public/zh/posts/${prefix}/comments`)
         .send({ name: 'Visitor', content: '<script>untrusted</script>' })
         .expect(201);
       assert.equal(
-        (await http.get(`/api/v1/public/posts/${prefix}/comments`)).body.total,
+        (await http.get(`/api/v1/public/zh/posts/${prefix}/comments`)).body
+          .total,
         0,
       );
       const comment = (
@@ -563,17 +617,40 @@ test('Owner login and full post publication lifecycle', async (t) => {
           .auth(token, { type: 'bearer' })
           .expect(200)
       ).body.items[0];
+      assert.equal(comment.post.id, ids[0]);
+      assert.equal(comment.post.slug, prefix);
+      assert.equal(comment.post.title, undefined);
+      assert.deepEqual(
+        comment.post.translations.map((row) => row.locale).sort(),
+        ['en', 'zh'],
+      );
+      assert.equal(
+        comment.post.translations.find((row) => row.locale === 'en').title,
+        'English moderation title',
+      );
+      for (const translation of comment.post.translations)
+        assert.deepEqual(Object.keys(translation).sort(), ['locale', 'title']);
       await http
         .put('/api/v1/admin/comments/' + comment.id)
         .auth(token, { type: 'bearer' })
         .send({ status: 'APPROVED' })
         .expect(200);
       assert.equal(
-        (await http.get(`/api/v1/public/posts/${prefix}/comments`)).body.total,
+        (await http.get(`/api/v1/public/zh/posts/${prefix}/comments`)).body
+          .total,
         1,
       );
       assert.equal(
-        (await http.get('/api/v1/public/posts/' + prefix)).body.commentCount,
+        (await http.get('/api/v1/public/zh/posts/' + prefix)).body.commentCount,
+        1,
+      );
+      assert.equal(
+        (await http.get(`/api/v1/public/en/posts/${prefix}/comments`)).body
+          .total,
+        1,
+      );
+      assert.equal(
+        (await http.get('/api/v1/public/en/posts/' + prefix)).body.commentCount,
         1,
       );
       await http
@@ -582,7 +659,7 @@ test('Owner login and full post publication lifecycle', async (t) => {
         .send({ status: 'SPAM' })
         .expect(200);
       assert.equal(
-        (await http.get('/api/v1/public/posts/' + prefix)).body.commentCount,
+        (await http.get('/api/v1/public/zh/posts/' + prefix)).body.commentCount,
         0,
       );
       await http
@@ -631,6 +708,28 @@ test('Owner login and full post publication lifecycle', async (t) => {
         .send({ coverUrl: null })
         .expect(200);
       await http
+        .put(`/api/v1/admin/posts/${ids[0]}`)
+        .auth(token, { type: 'bearer' })
+        .send({
+          translations: [
+            {
+              locale: 'en',
+              title: 'Image draft',
+              content: `![image](${media.url})`,
+              status: 'DRAFT',
+            },
+          ],
+        })
+        .expect(200);
+      await http
+        .delete('/api/v1/admin/media/' + media.id)
+        .auth(token, { type: 'bearer' })
+        .expect(409);
+      await http
+        .delete(`/api/v1/admin/posts/${ids[0]}/translations/en`)
+        .auth(token, { type: 'bearer' })
+        .expect(200);
+      await http
         .delete('/api/v1/admin/media/' + media.id)
         .auth(token, { type: 'bearer' })
         .expect(200);
@@ -658,7 +757,7 @@ test('Owner login and full post publication lifecycle', async (t) => {
         .send(config)
         .expect(200);
       await http
-        .post(`/api/v1/public/posts/${prefix}/comments`)
+        .post(`/api/v1/public/zh/posts/${prefix}/comments`)
         .send({ name: 'Visitor', content: 'Closed' })
         .expect(403);
       await http
@@ -682,6 +781,7 @@ test('Owner login and full post publication lifecycle', async (t) => {
         .expect(200);
     },
   );
+  await require('./bilingual-checks.cjs')(t, http, token);
   await t.test(
     'delete removes content and repeated deletion returns 404',
     async () => {

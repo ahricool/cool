@@ -4,7 +4,7 @@
 
 需要 Docker Engine、Compose v2、bash 和 Git。生产只有三个常驻服务：
 
-- `frontend`：一个 Nginx 容器，提供统一 Nuxt 4 SPA（博客 `/`、后台 `/admin`），并代理 `/api/`
+- `frontend`：一个 Nginx 容器，提供统一 Nuxt 4 SPA（博客 `/zh`、`/en`，后台 `/admin`），并代理 `/api/`
 - `backend`：NestJS API，连接数据库与媒体卷，不映射宿主机端口
 - `database`：PostgreSQL 17，不映射宿主机端口
 
@@ -47,9 +47,9 @@ curl --fail http://127.0.0.1:8080/api/v1/health
 
 默认每次部署先备份；首次空库也支持备份。确实无需备份时可显式执行 `SKIP_BACKUP=1 ./deploy.sh <完整 SHA>`。已存在 current 清单时，部署前备份使用原版本镜像；首次安装使用新拉取的后端镜像创建空媒体卷。
 
-访问 `/admin/login`：空库首次直接设置至少 16 字符的密码，不需要额外初始化密钥。**先完成首次密码设置，再开放新实例的公网访问。** 已有站长升级时邮箱规范为 `whoreahri@gmail.com`，密码、用户 ID 和内容保留；seed 不重置密码。升级后的第一次登录使用固定邮箱与原密码，旧版 Token 不再有效。
+访问 `/admin/login`：空库首次直接设置至少 16 字符的密码，不需要额外初始化密钥。**先完成首次密码设置，再开放新实例的公网访问。** 此版本是全新双语 schema 基线，首次部署使用空数据库；不提供旧试验库的兼容升级或旧 URL 跳转。脚本不会自动删除旧数据库；发现旧 schema 时应保留旧实例并另外创建新实例。seed 不重置当前双语实例已设置的密码。
 
-生产会话 Cookie 带 `Secure`，公开入口必须使用 HTTPS。前置网关负责 TLS 时，将精确的公网 HTTPS origin 填入 `CORS_ORIGINS`；参见下文代理说明。需要其他环境文件时，对所有构建、部署、备份和 Compose 操作统一设置：
+生产会话 Cookie 带 `Secure`，公开入口必须使用 HTTPS。Secure 由生产环境设置决定，不依赖后端链路是否为 HTTP，因此适用于公网 Nginx/TLS 终止后转发至内部 HTTP 服务的拓扑。前置网关负责 TLS 时，将精确的公网 HTTPS origin 填入 `CORS_ORIGINS`；参见下文代理说明。需要其他环境文件时，对所有构建、部署、备份和 Compose 操作统一设置：
 
 ```bash
 export CMS_ENV_FILE=/绝对路径/cms-production.env
@@ -145,7 +145,7 @@ restore_compose up -d --wait --no-build --pull never backend frontend
 curl --fail http://127.0.0.1:18080/api/v1/health
 ```
 
-核对 `_prisma_migrations`、站长/文章/媒体 ID、Markdown 内容与图片字节，验证固定邮箱加备份时的密码能登录。通过 HTTPS 入口验证 Cookie 登录、刷新恢复和编辑；命令行可使用 Bearer Token 验证 API。恢复同版本数据无需重新 seed；若要升级，先确认恢复成功，再按正常升级流程执行新版本 migration。恢复数据库也恢复当时的会话状态，需要强制重新登录时在后台撤销全部会话。
+核对 `_prisma_migrations`、站长/逻辑文章/翻译/媒体 ID、两种语言的 Markdown 和发布状态，以及图片字节，验证固定邮箱加备份时的密码能登录。通过 HTTPS 入口验证 Cookie 登录、刷新恢复、双语编辑和 `/zh` / `/en` 已发布内容回退；命令行可使用 Bearer Token 验证 API。恢复同版本数据无需重新 seed；若要升级，先确认恢复成功，再按正常升级流程执行新版本 migration。恢复数据库也恢复当时的会话状态，需要强制重新登录时在后台撤销全部会话。
 
 恢复验证完成后再决定是否清理演练卷。不要将演练的 COMPOSE_PROJECT_NAME、HTTP_PORT、CMS_ENV_FILE 带入后续生产命令。生产恢复同样使用明确的版本清单，不能让恢复步骤意外回退到本地默认标签。
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { formatDate, type Post } from '@cms/content';
+const { t, formatDate, localePath, contentLang } = useCmsI18n();
+import type { Post } from '@cms/content';
 defineProps<{ posts: Post[] }>();
 </script>
 <template>
@@ -18,38 +19,47 @@ defineProps<{ posts: Post[] }>();
           formatDate(post.publishedAt)
         }}</time>
       </div>
-      <NuxtLink :to="`/posts/${post.slug}`" class="post-title"
-        ><h2>{{ post.title }}</h2></NuxtLink
+      <NuxtLink :to="localePath(`/posts/${post.slug}`)" class="post-title"
+        ><h2 :lang="contentLang(post.contentLocale)">
+          {{ post.title }}
+        </h2></NuxtLink
       >
       <div class="post-meta">
-        <span class="flex-child-center">{{ post.commentCount }} 条评论</span
+        <span class="flex-child-center">{{
+          t(post.commentCount === 1 ? '1 条评论' : '{count} 条评论', {
+            count: post.commentCount,
+          })
+        }}</span
         ><span v-if="post.categories[0]" class="flex-child-center"
           ><NuxtLink
-            :to="{
-              path: '/categories',
-              query: { category: post.categories[0].category.slug },
-            }"
+            :to="
+              localePath(
+                `/categories/${encodeURIComponent(post.categories[0].category.slug)}`,
+              )
+            "
+            :lang="contentLang(post.categories[0].category.contentLocale)"
             >{{ post.categories[0].category.name }}</NuxtLink
           ></span
         >
       </div>
       <div class="float-content">
-        <p>{{ post.excerpt }}</p>
+        <p :lang="contentLang(post.contentLocale)">{{ post.excerpt }}</p>
         <div class="post-bottom">
           <NuxtLink
-            :to="`/posts/${post.slug}`"
+            :to="localePath(`/posts/${post.slug}`)"
             class="button-normal flex-child-center"
-            :aria-label="`阅读 ${post.title}`"
-            >阅读全文 →</NuxtLink
+            :aria-label="t('阅读 {title}', { title: post.title })"
+            >{{ t('阅读全文 →') }}</NuxtLink
           >
         </div>
       </div>
     </div>
     <div class="post-thumb">
-      <NuxtLink :to="`/posts/${post.slug}`"
+      <NuxtLink :to="localePath(`/posts/${post.slug}`)"
         ><img
           :src="post.coverUrl || '/sakura/images/default/temp.webp'"
           :alt="post.title"
+          :lang="contentLang(post.contentLocale)"
           width="430"
           height="300"
           loading="lazy"

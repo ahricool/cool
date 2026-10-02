@@ -1,12 +1,13 @@
 <script setup lang="ts">
+const { t, locale, localePath, contentLang } = useCmsI18n();
 import type { NuxtError } from '#app';
 defineProps<{ error: NuxtError }>();
 const route = useRoute();
 const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
 useHead(() => ({
-  title: '暂时迷路了 · Sakura CMS',
+  title: `${t('暂时迷路了')} · Sakura CMS`,
   htmlAttrs: {
-    lang: 'zh-CN',
+    lang: contentLang(locale.value),
     'data-surface': isAdmin.value ? 'admin' : 'blog',
   },
   bodyAttrs: { class: isAdmin.value ? 'admin-ui' : 'sakura-ui' },
@@ -16,11 +17,13 @@ useHead(() => ({
   <main class="error-page">
     <section class="error-card" aria-labelledby="error-title">
       <SakuraFlower class="error-flower" />
-      <p class="eyebrow">A LITTLE DETOUR · {{ error.statusCode }}</p>
-      <h1 id="error-title">这个页面暂时不在这里。</h1>
-      <p>也许只是转错了一个路口，回去继续你的故事吧。</p>
-      <button @click="clearError({ redirect: isAdmin ? '/admin' : '/' })">
-        {{ isAdmin ? '返回工作空间' : '返回首页' }}
+      <p class="eyebrow">{{ t('小小的绕路') }} · {{ error.statusCode }}</p>
+      <h1 id="error-title">{{ t('这个页面暂时不在这里。') }}</h1>
+      <p>{{ t('也许只是转错了一个路口，回去继续你的故事吧。') }}</p>
+      <button
+        @click="clearError({ redirect: isAdmin ? '/admin' : localePath('/') })"
+      >
+        {{ t(isAdmin ? '返回工作空间' : '返回首页') }}
       </button>
     </section>
   </main>

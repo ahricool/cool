@@ -63,7 +63,7 @@ jobs:
   compose-smoke:
     name: Production Compose and backup restore
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     permissions:
       contents: read
     steps:
@@ -75,7 +75,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - name: Build and verify isolated production stacks
-        run: timeout --signal=TERM --kill-after=180s 25m bash scripts/compose-smoke.sh
+        run: timeout --signal=TERM --kill-after=180s 35m bash scripts/compose-smoke.sh
       - name: Publish smoke summary
         if: always()
         run: |

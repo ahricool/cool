@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useCmsI18n();
 import { onMounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { api, upload, errorText } from '../api';
@@ -30,9 +31,9 @@ async function select(event: Event) {
   try {
     for (const file of files) await upload(file);
     await load();
-    ElMessage.success('上传完成');
+    ElMessage.success(t('上传完成'));
   } catch (e) {
-    ElMessage.error(errorText(e));
+    ElMessage.error(t(errorText(e)));
     await load();
   } finally {
     busy.value = false;
@@ -42,17 +43,21 @@ async function select(event: Event) {
 async function copy(url: string) {
   try {
     await navigator.clipboard.writeText(url);
-    ElMessage.success('图片地址已复制');
+    ElMessage.success(t('图片地址已复制'));
   } catch {
-    ElMessage.error('无法访问剪贴板');
+    ElMessage.error(t('无法访问剪贴板'));
   }
 }
 async function remove(item: Media) {
   try {
     await ElMessageBox.confirm(
-      '删除这张图片？仍被内容引用的图片不能删除。',
-      '删除媒体',
-      { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' },
+      t('删除这张图片？仍被内容引用的图片不能删除。'),
+      t('删除媒体'),
+      {
+        confirmButtonText: t('删除'),
+        cancelButtonText: t('取消'),
+        type: 'warning',
+      },
     );
   } catch {
     return;
@@ -61,21 +66,21 @@ async function remove(item: Media) {
     await api(`/admin/media/${item.id}`, { method: 'DELETE' });
     await load();
   } catch (e) {
-    ElMessage.error(errorText(e));
+    ElMessage.error(t(errorText(e)));
   }
 }
 onMounted(load);
 </script>
 <template>
   <ViewHeader
-    title="媒体库"
-    description="收藏文字之外的风景。上传图片会转换为 WebP，最大 8MB。"
+    :title="t('媒体库')"
+    :description="t('收藏文字之外的风景。上传图片会转换为 WebP，最大 8MB。')"
     ><el-button
       class="upload-label primary"
       type="primary"
       :disabled="busy"
       @click="fileInput?.click()"
-      >{{ busy ? '上传中…' : '＋ 上传图片' }}</el-button
+      >{{ busy ? t('上传中…') : t('＋ 上传图片') }}</el-button
     ><input
       ref="fileInput"
       hidden
@@ -86,7 +91,7 @@ onMounted(load);
       @change="select" /></ViewHeader
   ><ErrorNotice :error="error" @retry="load" /><el-empty
     v-if="!items.length && !error"
-    description="还没有图片，上传第一张吧"
+    :description="t('还没有图片，上传第一张吧')"
   />
   <div class="media-grid">
     <article v-for="item in items" :key="item.id" class="media-card">
@@ -98,8 +103,10 @@ onMounted(load);
           {{ Math.ceil(item.size / 1024) }} KB</small
         >
         <footer>
-          <el-button text @click="copy(item.url)">复制地址</el-button
-          ><el-button type="danger" text @click="remove(item)">删除</el-button>
+          <el-button text @click="copy(item.url)">{{ t('复制地址') }}</el-button
+          ><el-button type="danger" text @click="remove(item)">{{
+            t('删除')
+          }}</el-button>
         </footer>
       </div>
     </article>

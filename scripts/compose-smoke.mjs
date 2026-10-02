@@ -141,13 +141,18 @@ async function checkRoutes() {
   const assets = new Map();
   for (const path of [
     '/',
-    '/archives',
-    '/categories',
-    '/tags',
-    '/moments',
-    '/photos',
-    '/links',
-    '/search',
+    ...['zh', 'en'].flatMap((locale) =>
+      [
+        '',
+        '/archives',
+        '/categories',
+        '/tags',
+        '/moments',
+        '/photos',
+        '/links',
+        '/search',
+      ].map((path) => `/${locale}${path}`),
+    ),
     '/admin/',
     '/admin/login',
     '/admin/posts',
@@ -302,40 +307,126 @@ async function populate() {
     auth: true,
     body: {
       slug: 'compose-backup-restore',
-      title: 'Compose draft',
-      content: 'Private draft',
-      status: 'DRAFT',
+      translations: [
+        {
+          locale: 'zh',
+          title: 'Compose draft',
+          content: 'Private draft',
+          status: 'DRAFT',
+        },
+      ],
     },
   });
   assert.equal(draft.authorId, owner.id);
-  assert.equal(
-    (await json(`/admin/posts/${draft.id}`, { auth: true })).status,
-    'DRAFT',
-  );
-  await json(`/public/posts/${draft.slug}`, { status: 404 });
+  const initial = await json(`/admin/posts/${draft.id}`, { auth: true });
+  assert.equal(initial.translations.length, 1);
+  assert.equal(initial.translations[0].locale, 'zh');
+  assert.equal(initial.translations[0].status, 'DRAFT');
+  for (const locale of ['zh', 'en'])
+    await json(`/public/${locale}/posts/${draft.slug}`, { status: 404 });
   const content = `# Backup restore verification\n\nThis exact Markdown and row ID must survive.\n\n![Restored image](${media.url})\n\nUnicode: 春日手记 🌸`;
+  const chinese = {
+    locale: 'zh',
+    title: 'Compose published and restored',
+    excerpt: 'Persistent smoke content',
+    content,
+    status: 'PUBLISHED',
+  };
+  const english = {
+    locale: 'en',
+    title: 'Compose English published and restored',
+    excerpt: 'Independent English smoke content',
+    content: `# English backup restore verification\n\nThis independent translation and its publication date must survive.\n\n![Restored image](${media.url})`,
+    status: 'DRAFT',
+  };
+  await json(`/admin/posts/${draft.id}`, {
+    method: 'PUT',
+    auth: true,
+    body: { coverUrl: media.url, translations: [chinese] },
+  });
+  const fallback = await json(`/public/en/posts/${draft.slug}`);
+  assert.equal(fallback.id, draft.id);
+  assert.equal(fallback.content, content);
+  assert.equal(fallback.contentLocale, 'zh');
+  const withDraft = await json(`/admin/posts/${draft.id}`, {
+    method: 'PUT',
+    auth: true,
+    body: { translations: [english] },
+  });
+  assert.equal(withDraft.translations.length, 2);
+  assert.equal(
+    withDraft.translations.find((item) => item.locale === 'zh').status,
+    'PUBLISHED',
+  );
+  const stillFallback = await json(`/public/en/posts/${draft.slug}`);
+  assert.equal(stillFallback.contentLocale, 'zh');
+  assert.equal(stillFallback.content, content);
+  assert(
+    !JSON.stringify(stillFallback).includes(english.title),
+    'English drafts must not leak into the fallback',
+  );
+  assert.equal(
+    (await json('/public/en/search?q=Independent%20English')).total,
+    0,
+  );
+  passed(
+    'Published fallback uses Chinese while an independent English draft remains private',
+  );
+
+  await json(`/admin/posts/${draft.id}`, {
+    method: 'PUT',
+    auth: true,
+    body: { translations: [{ locale: 'en', status: 'PUBLISHED' }] },
+  });
+  const preferred = await json(`/public/en/posts/${draft.slug}`);
+  assert.equal(preferred.id, draft.id);
+  assert.equal(preferred.contentLocale, 'en');
+  assert.equal(preferred.content, english.content);
+  assert.equal((await json(`/public/zh/posts/${draft.slug}`)).content, content);
+  for (const locale of ['zh', 'en']) {
+    const list = await json(`/public/${locale}/posts`);
+    assert.equal(
+      list.total,
+      1,
+      'Translations must share one logical post count',
+    );
+    assert.equal(list.items.length, 1);
+    assert.equal(list.items[0].id, draft.id);
+    assert.equal(list.items[0].contentLocale, locale);
+  }
+  assert.equal(
+    (await json('/public/en/search?q=Independent%20English')).total,
+    1,
+  );
+  assert.equal(
+    (await json('/public/zh/search?q=Independent%20English')).total,
+    0,
+  );
+  assert.equal((await json('/public/en/search?q=Persistent%20smoke')).total, 0);
+  passed(
+    'Independent publication selects English without duplicating IDs, counts, or cross-language search matches',
+  );
+
+  await json(`/admin/posts/${draft.id}`, {
+    method: 'PUT',
+    auth: true,
+    body: {
+      translations: ['zh', 'en'].map((locale) => ({ locale, status: 'DRAFT' })),
+    },
+  });
+  for (const locale of ['zh', 'en']) {
+    await json(`/public/${locale}/posts/${draft.slug}`, { status: 404 });
+    assert.equal((await json(`/public/${locale}/posts`)).total, 0);
+  }
   const saved = await json(`/admin/posts/${draft.id}`, {
     method: 'PUT',
     auth: true,
     body: {
-      title: 'Compose published and restored',
-      excerpt: 'Persistent smoke content',
-      content,
-      coverUrl: media.url,
-      status: 'PUBLISHED',
+      translations: ['zh', 'en'].map((locale) => ({
+        locale,
+        status: 'PUBLISHED',
+      })),
     },
-  });
-  assert.equal((await json(`/public/posts/${draft.slug}`)).content, content);
-  await json(`/admin/posts/${draft.id}`, {
-    method: 'PUT',
-    auth: true,
-    body: { status: 'DRAFT' },
-  });
-  await json(`/public/posts/${draft.slug}`, { status: 404 });
-  await json(`/admin/posts/${draft.id}`, {
-    method: 'PUT',
-    auth: true,
-    body: { status: 'PUBLISHED' },
   });
   await json(`/admin/media/${media.id}`, {
     method: 'DELETE',
@@ -346,7 +437,10 @@ async function populate() {
     method: 'POST',
     status: 201,
     auth: true,
-    body: { slug: 'compose-deleted-post', title: 'Delete this test row' },
+    body: {
+      slug: 'compose-deleted-post',
+      translations: [{ locale: 'zh', title: 'Delete this test row' }],
+    },
   });
   assert.deepEqual(
     await json(`/admin/posts/${discarded.id}`, {
@@ -357,28 +451,27 @@ async function populate() {
   );
   await json(`/admin/posts/${discarded.id}`, { auth: true, status: 404 });
   passed(
-    'Authenticated create/read/update/delete, publish/retract, and referenced-media protection',
+    'Authenticated create/read/update/delete, retract/republish both translations, and referenced-media protection',
   );
 
   const state = {
     owner: savedOwner,
-    post: {
-      id: saved.id,
-      authorId: owner.id,
-      slug: saved.slug,
-      title: saved.title,
-      excerpt: saved.excerpt,
-      content,
-      coverUrl: media.url,
-      status: 'PUBLISHED',
-      publishedAt: saved.publishedAt,
-    },
+    post: normalizePost(saved),
     media,
     mediaSha256: digest(bytes),
     deletedPostId: discarded.id,
   };
   await writeFile(statePath, JSON.stringify(state, null, 2), { mode: 0o600 });
   return state;
+}
+
+function normalizePost(post) {
+  return {
+    ...post,
+    translations: [...post.translations].sort((a, b) =>
+      a.locale.localeCompare(b.locale),
+    ),
+  };
 }
 
 async function verify(state) {
@@ -389,22 +482,48 @@ async function verify(state) {
     'Owner ID and edited profile must survive',
   );
   const post = await json(`/admin/posts/${state.post.id}`, { auth: true });
-  for (const [field, value] of Object.entries(state.post))
-    assert.deepEqual(post[field], value, `Persisted post ${field}`);
+  assert.deepEqual(
+    normalizePost(post),
+    state.post,
+    'Every shared post field and complete translation row must survive',
+  );
   assert.equal((await json('/admin/posts', { auth: true })).total, 1);
   await json(`/admin/posts/${state.deletedPostId}`, {
     auth: true,
     status: 404,
   });
-  const publicPost = await json(`/public/posts/${state.post.slug}`);
-  for (const field of ['id', 'title', 'content', 'coverUrl', 'publishedAt'])
-    assert.deepEqual(
-      publicPost[field],
-      state.post[field],
-      `Public post ${field}`,
+  for (const locale of ['zh', 'en']) {
+    const translation = state.post.translations.find(
+      (item) => item.locale === locale,
     );
-  assert.equal(publicPost.author.id, owner.id);
-  assert.equal((await json('/public/posts')).items[0].id, state.post.id);
+    assert(translation, `Persisted ${locale} translation is required`);
+    const publicPost = await json(`/public/${locale}/posts/${state.post.slug}`);
+    for (const field of ['id', 'slug', 'coverUrl'])
+      assert.deepEqual(
+        publicPost[field],
+        state.post[field],
+        `Public ${locale} post ${field}`,
+      );
+    for (const field of ['title', 'excerpt', 'content', 'publishedAt'])
+      assert.deepEqual(
+        publicPost[field],
+        translation[field],
+        `Public ${locale} translation ${field}`,
+      );
+    assert.equal(publicPost.contentLocale, locale);
+    assert.equal(publicPost.author.id, owner.id);
+    const list = await json(`/public/${locale}/posts`);
+    assert.equal(
+      list.total,
+      1,
+      'Restored translations must not duplicate logical post counts',
+    );
+    assert.equal(list.items.length, 1);
+    assert.equal(list.items[0].id, state.post.id);
+    assert.equal(list.items[0].contentLocale, locale);
+    const page = await request(`/${locale}/posts/${state.post.slug}`);
+    assert.match(page.headers.get('content-type') ?? '', /text\/html/);
+  }
   const media = await json('/admin/media', { auth: true });
   assert.equal(media.total, 1);
   assert.deepEqual(
@@ -419,10 +538,8 @@ async function verify(state) {
     state.mediaSha256,
     'Media bytes must survive exactly',
   );
-  const page = await request(`/posts/${state.post.slug}`);
-  assert.match(page.headers.get('content-type') ?? '', /text\/html/);
   passed(
-    'Saved login, owner/post/media IDs, Markdown, publication and byte-identical media',
+    'Saved login, exact owner/post/translation/media IDs, both Markdown versions and publication dates, and byte-identical media',
     {
       postId: post.id,
       mediaId: state.media.id,

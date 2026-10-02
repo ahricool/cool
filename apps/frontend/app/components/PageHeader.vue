@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{ title: string; cover?: string | null }>();
+defineProps<{ title: string; titleLang?: string; cover?: string | null }>();
 </script>
 <template>
   <div class="page-header is-decorate">
@@ -14,7 +14,7 @@ defineProps<{ title: string; cover?: string | null }>();
       </div>
     </div>
     <div class="pattern-title">
-      <h1>{{ title }}</h1>
+      <h1 :lang="titleLang">{{ title }}</h1>
       <slot />
     </div>
   </div>

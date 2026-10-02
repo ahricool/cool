@@ -183,7 +183,9 @@ run_step populate-through-production-ingress timeout 180s node scripts/compose-s
 # Persisted users/content/sessions remain intact across this restart.
 run_step restart-before-browser compose "$SOURCE_PROJECT" restart backend frontend
 run_step wait-before-browser compose "$SOURCE_PROJECT" up -d --wait --wait-timeout 120 --no-build --pull never backend frontend
-run_step production-browser-flows timeout --signal=TERM --kill-after=10s 300s env \
+# Docker may allocate a new ephemeral host port when the frontend restarts.
+SOURCE_URL=$(stack_url "$SOURCE_PROJECT")
+run_step production-browser-flows timeout --signal=TERM --kill-after=10s 600s env \
   E2E_EXTERNAL=1 E2E_BLOG_URL="$SOURCE_URL" E2E_ADMIN_URL="$SOURCE_URL/admin" \
   E2E_API_URL="$SOURCE_URL/api/v1" E2E_COOKIE_SECURE=1 \
   E2E_PASSWORD=compose-smoke-restored-password-only \

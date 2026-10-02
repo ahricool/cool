@@ -1,4 +1,5 @@
+import { currentLocale, pathForLocale } from '../../i18n/locale';
 /** Public and admin routes share one origin and one frontend build. */
 export function publicUrl(path = '/') {
-  return `/${path.replace(/^\/+/, '')}`;
+  return pathForLocale(path, currentLocale.value);
 }

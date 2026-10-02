@@ -3,9 +3,9 @@ import { onMounted, ref, reactive } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { api, errorText } from '../api';
 import type {
-  Moment,
-  Photo,
-  FriendLink,
+  AdminMoment,
+  AdminPhoto,
+  AdminFriendLink,
   Pagination,
   Status,
 } from '@cms/content';
@@ -13,14 +13,23 @@ import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
 import MarkdownEditor from '../components/MarkdownEditor.vue';
 import AssetPicker from '../components/AssetPicker.vue';
+import { displayTranslation } from '../content';
+import type { CmsLocale } from '~/i18n/locale';
+const { t, locale, contentLang } = useCmsI18n();
+const contentLocale = ref<CmsLocale>(locale.value);
 const props = defineProps<{ kind: 'moments' | 'photos' | 'links' }>();
-type Item = Moment | Photo | FriendLink;
+type Item = AdminMoment | AdminPhoto | AdminFriendLink;
 const items = ref<Item[]>([]);
 const total = ref(0);
 const page = ref(1);
 const error = ref('');
 const dialog = ref(false);
 const busy = ref(false);
+const uploads = reactive({ content: false, asset: false });
+const uploading = computed(() => uploads.content || uploads.asset);
+function beforeClose(done: () => void) {
+  if (!busy.value && !uploading.value) done();
+}
 const editId = ref('');
 const labels = { moments: '瞬间', photos: '图库', links: '友链' };
 const empty = () => ({
@@ -33,10 +42,16 @@ const empty = () => ({
   album: '',
   name: '',
   logoUrl: null as string | null,
-  group: '朋友们',
+  group: '',
   published: false,
 });
-const form = reactive(empty());
+const form = reactive({
+  url: '',
+  logoUrl: null as string | null,
+  published: false,
+});
+const translated = reactive({ zh: empty(), en: empty() });
+const translation = computed(() => translated[contentLocale.value]);
 async function load() {
   try {
     error.value = '';
@@ -50,36 +65,102 @@ async function load() {
   }
 }
 function edit(item?: Item) {
-  Object.assign(form, empty(), item ?? {});
+  if (busy.value || uploading.value) return;
+  Object.assign(form, { url: '', logoUrl: null, published: false }, item ?? {});
+  for (const language of ['zh', 'en'] as const)
+    Object.assign(
+      translated[language],
+      empty(),
+      item?.translations.find((value) => value.locale === language) ?? {},
+    );
   editId.value = item?.id ?? '';
   dialog.value = true;
 }
 async function save() {
+  if (busy.value || uploading.value) return;
+  for (const language of ['zh', 'en'] as const) {
+    const value = translated[language];
+    const incomplete =
+      props.kind === 'photos'
+        ? !value.title.trim() &&
+          !!(value.description.trim() || value.album.trim())
+        : props.kind === 'links' &&
+          !value.name.trim() &&
+          !!(value.description.trim() || value.group.trim());
+    if (incomplete) {
+      contentLocale.value = language;
+      ElMessage.warning(t('请为已填写的语言补充标题或名称'));
+      return;
+    }
+  }
+  if (props.kind !== 'moments' && !form.url.trim()) {
+    ElMessage.warning(t('请填写图片或链接地址'));
+    return;
+  }
+  if (props.kind === 'links') {
+    try {
+      const url = new URL(form.url);
+      if (!['http:', 'https:'].includes(url.protocol)) throw new Error();
+    } catch {
+      ElMessage.warning(t('请输入有效的 HTTP 或 HTTPS 网址'));
+      return;
+    }
+  }
   busy.value = true;
   try {
-    const body =
-      props.kind === 'moments'
-        ? {
-            content: form.content,
-            status: form.status,
-            publishedAt: form.publishedAt,
-          }
+    const translations = (['zh', 'en'] as const).flatMap<
+      Record<string, string | null>
+    >((locale) => {
+      const value = translated[locale];
+      if (props.kind === 'moments')
+        return value.content.trim()
+          ? [
+              {
+                locale,
+                content: value.content,
+                status: value.status,
+                publishedAt: value.publishedAt,
+              },
+            ]
+          : [];
+      if (props.kind === 'photos')
+        return value.title.trim()
+          ? [
+              {
+                locale,
+                title: value.title,
+                description: value.description,
+                album: value.album,
+              },
+            ]
+          : [];
+      return value.name.trim()
+        ? [
+            {
+              locale,
+              name: value.name,
+              description: value.description,
+              group: value.group,
+            },
+          ]
+        : [];
+    });
+    if (!translations.length) {
+      ElMessage.warning(t('请至少填写一种语言的内容'));
+      return;
+    }
+    const body = {
+      translations,
+      ...(props.kind === 'moments'
+        ? {}
         : props.kind === 'photos'
-          ? {
-              title: form.title,
-              description: form.description,
-              url: form.url,
-              album: form.album,
-              published: form.published,
-            }
+          ? { url: form.url, published: form.published }
           : {
-              name: form.name,
               url: form.url,
-              description: form.description,
               logoUrl: form.logoUrl,
-              group: form.group,
               published: form.published,
-            };
+            }),
+    };
     await api(`/admin/${props.kind}${editId.value ? '/' + editId.value : ''}`, {
       method: editId.value ? 'PUT' : 'POST',
       body: JSON.stringify(body),
@@ -87,26 +168,34 @@ async function save() {
     dialog.value = false;
     await load();
   } catch (e) {
-    ElMessage.error(errorText(e));
+    ElMessage.error(t(errorText(e)));
   } finally {
     busy.value = false;
   }
 }
 function title(item: Item) {
-  return 'content' in item
-    ? item.content.slice(0, 100)
-    : 'title' in item
-      ? item.title
-      : item.name;
+  const value = displayTranslation(
+    item as {
+      translations: {
+        locale: CmsLocale;
+        title?: string;
+        content?: string;
+        name?: string;
+      }[];
+    },
+  );
+  return value?.content?.slice(0, 100) ?? value?.title ?? value?.name ?? '';
 }
 function published(item: Item) {
-  return 'status' in item ? item.status === 'PUBLISHED' : item.published;
+  return 'published' in item
+    ? item.published
+    : item.translations.some((value) => value.status === 'PUBLISHED');
 }
 async function remove(item: Item) {
   try {
-    await ElMessageBox.confirm('此操作无法撤销，确定删除？', '删除确认', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('此操作无法撤销，确定删除？'), t('删除确认'), {
+      confirmButtonText: t('删除'),
+      cancelButtonText: t('取消'),
     });
   } catch {
     return;
@@ -115,43 +204,43 @@ async function remove(item: Item) {
     await api(`/admin/${props.kind}/${item.id}`, { method: 'DELETE' });
     await load();
   } catch (e) {
-    ElMessage.error(errorText(e));
+    ElMessage.error(t(errorText(e)));
   }
 }
 onMounted(load);
 </script>
 <template>
   <ViewHeader
-    :title="labels[kind]"
+    :title="t(labels[kind])"
     :description="
       kind === 'moments'
-        ? '短短几句，留住生活的碎片。'
+        ? t('短短几句，留住生活的碎片。')
         : kind === 'photos'
-          ? '把喜欢的画面，放进你的相册。'
-          : '那些值得一起分享的小小世界。'
+          ? t('把喜欢的画面，放进你的相册。')
+          : t('那些值得一起分享的小小世界。')
     "
     ><el-button type="primary" @click="edit()"
-      >＋ 新建{{ labels[kind] }}</el-button
+      >＋ {{ t('新建') }} {{ t(labels[kind]) }}</el-button
     ></ViewHeader
   ><ErrorNotice :error="error" @retry="load" />
   <section class="panel">
-    <el-table :data="items" empty-text="还没有内容"
-      ><el-table-column label="内容" min-width="240"
+    <el-table :data="items" :empty-text="t('还没有内容')"
+      ><el-table-column :label="t('内容')" min-width="240"
         ><template #default="{ row }">{{
           title(row as Item)
         }}</template></el-table-column
-      ><el-table-column label="状态" width="110"
+      ><el-table-column :label="t('状态')" width="110"
         ><template #default="{ row }"
           ><el-tag :type="published(row as Item) ? 'success' : 'info'">{{
-            published(row as Item) ? '已公开' : '未公开'
+            published(row as Item) ? t('已公开') : t('未公开')
           }}</el-tag></template
         ></el-table-column
-      ><el-table-column label="操作" width="150"
+      ><el-table-column :label="t('操作')" width="150"
         ><template #default="{ row }"
-          ><el-button text @click="edit(row as Item)">编辑</el-button
-          ><el-button text type="danger" @click="remove(row as Item)"
-            >删除</el-button
-          ></template
+          ><el-button text @click="edit(row as Item)">{{ t('编辑') }}</el-button
+          ><el-button text type="danger" @click="remove(row as Item)">{{
+            t('删除')
+          }}</el-button></template
         ></el-table-column
       ></el-table
     ><el-pagination
@@ -164,64 +253,109 @@ onMounted(load);
   </section>
   <el-dialog
     v-model="dialog"
-    :title="(editId ? '编辑' : '新建') + labels[kind]"
+    :title="`${editId ? t('编辑') : t('新建')} ${t(labels[kind])}`"
     width="min(850px,94vw)"
     :close-on-click-modal="false"
-    ><el-form label-position="top" @submit.prevent="save"
+    :close-on-press-escape="!busy && !uploading"
+    :show-close="!busy && !uploading"
+    :before-close="beforeClose"
+    ><div
+      class="content-language-tabs"
+      role="group"
+      :aria-label="t('内容语言')"
+    >
+      <button
+        type="button"
+        :aria-pressed="contentLocale === 'zh'"
+        :disabled="busy || uploading"
+        @click="contentLocale = 'zh'"
+      >
+        简体中文</button
+      ><button
+        type="button"
+        :aria-pressed="contentLocale === 'en'"
+        :disabled="busy || uploading"
+        @click="contentLocale = 'en'"
+      >
+        English
+      </button>
+    </div>
+    <el-form novalidate label-position="top" @submit.prevent="save"
       ><template v-if="kind === 'moments'"
-        ><MarkdownEditor v-model="form.content" /><el-form-item label="状态"
-          ><el-select v-model="form.status"
-            ><el-option label="草稿" value="DRAFT" /><el-option
-              label="发布"
+        ><MarkdownEditor
+          v-model="translation.content"
+          :content-locale="contentLocale"
+          :disabled="busy"
+          @busy-change="uploads.content = $event" /><el-form-item
+          :label="t('状态')"
+          ><el-select v-model="translation.status"
+            ><el-option :label="t('草稿')" value="DRAFT" /><el-option
+              :label="t('发布')"
               value="PUBLISHED" /><el-option
-              label="归档"
+              :label="t('归档')"
               value="ARCHIVED" /></el-select></el-form-item
-        ><el-form-item label="发布时间"
+        ><el-form-item :label="t('发布时间')"
           ><el-date-picker
-            v-model="form.publishedAt"
+            v-model="translation.publishedAt"
             type="datetime"
             value-format="YYYY-MM-DDTHH:mm:ssZ"
-            placeholder="发布时自动填入" /></el-form-item></template
+            :placeholder="t('发布时自动填入')" /></el-form-item></template
       ><template v-else-if="kind === 'photos'"
-        ><el-form-item label="标题"
+        ><el-form-item :label="t('标题')"
           ><el-input
-            v-model="form.title"
+            v-model="translation.title"
+            :lang="contentLang(contentLocale)"
             maxlength="200"
             required /></el-form-item
-        ><el-form-item label="图片"
+        ><el-form-item :label="t('图片')"
           ><AssetPicker
             :model-value="form.url"
+            :disabled="busy"
+            @busy-change="uploads.asset = $event"
             @update:model-value="form.url = $event ?? ''" /></el-form-item
-        ><el-form-item label="相册"
+        ><el-form-item :label="t('相册')"
           ><el-input
-            v-model="form.album"
+            v-model="translation.album"
+            :lang="contentLang(contentLocale)"
             maxlength="100" /></el-form-item></template
       ><template v-else
-        ><el-form-item label="名称"
+        ><el-form-item :label="t('名称')"
           ><el-input
-            v-model="form.name"
+            v-model="translation.name"
+            :lang="contentLang(contentLocale)"
             maxlength="100"
             required /></el-form-item
-        ><el-form-item label="网址"
+        ><el-form-item :label="t('网址')"
           ><el-input
             v-model="form.url"
             type="url"
             placeholder="https://"
             required /></el-form-item
-        ><el-form-item label="分组"
-          ><el-input v-model="form.group" maxlength="100" /></el-form-item
-        ><el-form-item label="头像"
-          ><AssetPicker v-model="form.logoUrl" /></el-form-item></template
-      ><template v-if="kind !== 'moments'"
-        ><el-form-item label="描述"
+        ><el-form-item :label="t('分组')"
           ><el-input
-            v-model="form.description"
+            v-model="translation.group"
+            :lang="contentLang(contentLocale)"
+            maxlength="100" /></el-form-item
+        ><el-form-item :label="t('头像')"
+          ><AssetPicker
+            v-model="form.logoUrl"
+            :disabled="busy"
+            @busy-change="uploads.asset = $event" /></el-form-item></template
+      ><template v-if="kind !== 'moments'"
+        ><el-form-item :label="t('描述')"
+          ><el-input
+            v-model="translation.description"
+            :lang="contentLang(contentLocale)"
             type="textarea"
             maxlength="500" /></el-form-item
-        ><el-form-item label="公开展示"
+        ><el-form-item :label="t('公开展示')"
           ><el-switch v-model="form.published" /></el-form-item></template
-      ><el-button type="primary" native-type="submit" :loading="busy"
-        >保存</el-button
+      ><el-button
+        type="primary"
+        native-type="submit"
+        :loading="busy"
+        :disabled="uploading"
+        >{{ t('保存') }}</el-button
       ></el-form
     ></el-dialog
   >

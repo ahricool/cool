@@ -109,12 +109,24 @@ export class MediaController {
     const url = mediaUrl(m.key);
     const used = await Promise.all([
       this.db.post.count({
-        where: { OR: [{ coverUrl: url }, { content: { contains: url } }] },
+        where: {
+          OR: [
+            { coverUrl: url },
+            { translations: { some: { content: { contains: url } } } },
+          ],
+        },
       }),
       this.db.page.count({
-        where: { OR: [{ coverUrl: url }, { content: { contains: url } }] },
+        where: {
+          OR: [
+            { coverUrl: url },
+            { translations: { some: { content: { contains: url } } } },
+          ],
+        },
       }),
-      this.db.moment.count({ where: { content: { contains: url } } }),
+      this.db.moment.count({
+        where: { translations: { some: { content: { contains: url } } } },
+      }),
       this.db.photo.count({ where: { url } }),
       this.db.link.count({ where: { logoUrl: url } }),
       this.db.user.count({ where: { avatarUrl: url } }),

@@ -1,10 +1,11 @@
 <script setup lang="ts">
+const { t, locale, contentLang } = useCmsI18n();
 import type { Pagination, FriendLink } from '@cms/content';
 const route = useRoute();
 const api = useApi();
 const page = computed(() => Math.max(1, Number(route.query.page) || 1));
 const { data, pending, error, refresh } = await useAsyncData(
-  () => `links-${page.value}`,
+  () => `links-${locale.value}-${page.value}`,
   () =>
     api<Pagination<FriendLink>>('/public/links', {
       query: { page: page.value, pageSize: 30 },
@@ -15,7 +16,7 @@ const groups = computed(() =>
 );
 </script>
 <template>
-  <PageFrame title="友链" content-class="links"
+  <PageFrame :title="t('友链')" content-class="links"
     ><ApiState
       :pending="pending"
       :error="error"
@@ -25,12 +26,17 @@ const groups = computed(() =>
       <div class="links">
         <section v-for="(links, group) in groups" :key="group">
           <h3 class="link-title">
-            <span class="fake-title">{{ group }}</span>
+            <span
+              class="fake-title"
+              :lang="contentLang(links?.[0]?.contentLocale)"
+              >{{ group }}</span
+            >
           </h3>
           <ul class="link-items">
             <li v-for="link in links" :key="link.id" class="link-item">
               <a
                 class="link-item-inner"
+                :lang="contentLang(link.contentLocale)"
                 :href="link.url"
                 target="_blank"
                 rel="noopener noreferrer"

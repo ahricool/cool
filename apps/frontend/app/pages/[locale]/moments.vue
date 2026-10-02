@@ -1,16 +1,12 @@
 <script setup lang="ts">
-import {
-  renderMarkdown,
-  formatDate,
-  type Pagination,
-  type Moment,
-} from '@cms/content';
+const { t, locale, formatDate, contentLang } = useCmsI18n();
+import { renderMarkdown, type Pagination, type Moment } from '@cms/content';
 const route = useRoute();
 const store = useSiteStore();
 const api = useApi();
 const page = computed(() => Math.max(1, Number(route.query.page) || 1));
 const { data, pending, error, refresh } = await useAsyncData(
-  () => `moments-${page.value}`,
+  () => `moments-${locale.value}-${page.value}`,
   () =>
     api<Pagination<Moment>>('/public/moments', {
       query: { page: page.value, pageSize: 10 },
@@ -18,7 +14,7 @@ const { data, pending, error, refresh } = await useAsyncData(
 );
 </script>
 <template>
-  <PageFrame title="瞬间" content-class="moments"
+  <PageFrame :title="t('瞬间')" content-class="moments"
     ><ApiState
       :pending="pending"
       :error="error"
@@ -44,6 +40,7 @@ const { data, pending, error, refresh } = await useAsyncData(
             <div class="moment-inner">
               <div
                 class="moment-content entry-content"
+                :lang="contentLang(moment.contentLocale)"
                 v-html="renderMarkdown(moment.content).html"
               ></div>
               <div class="moment-footer">

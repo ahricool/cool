@@ -1165,3 +1165,36 @@ textarea:focus-visible {
   height: 20px;
   background: url('/sakura/images/footer/sakura.svg') center / contain no-repeat;
 }
+
+.content-language-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+.content-language-tabs button {
+  min-height: 38px;
+  padding: 7px 16px;
+  border: 1px solid var(--border, #e8dfe5);
+  border-radius: 8px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+.content-language-tabs button[aria-pressed='true'] {
+  color: #a84069;
+  background: #fff0f5;
+  border-color: #eac0d0;
+}
+.content-language-tabs button:focus-visible {
+  outline: 2px solid #d87a9d;
+  outline-offset: 3px;
+}
+.content-language-tabs small {
+  color: #827b84;
+}
+.translation-status + .translation-status {
+  margin-top: 5px;
+}

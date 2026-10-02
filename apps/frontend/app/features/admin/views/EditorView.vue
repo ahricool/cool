@@ -6,6 +6,7 @@ import {
   ref,
   watch,
   onBeforeUnmount,
+  nextTick,
 } from 'vue';
 import {
   onBeforeRouteLeave,
@@ -15,10 +16,11 @@ import {
   type RouteLocationNormalized,
 } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import type { Post, Page, Taxonomy, Status } from '@cms/content';
+import type { AdminPost, AdminPage, AdminTaxonomy, Status } from '@cms/content';
 import { api, errorText } from '../api';
 import { takeEditorDraft, transferEditorDraft } from '../editor-drafts';
-import { publicUrl } from '../publicUrl';
+import { pathForLocale, isLocale, type CmsLocale } from '~/i18n/locale';
+import { displayTranslation } from '../content';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
 import MarkdownEditor from '../components/MarkdownEditor.vue';
@@ -26,11 +28,33 @@ import AssetPicker from '../components/AssetPicker.vue';
 const props = withDefaults(defineProps<{ kind?: 'posts' | 'pages' }>(), {
   kind: 'posts',
 });
+const { t, locale, contentLang } = useCmsI18n();
 const route = useRoute();
 const router = useRouter();
 const id = String(route.params.id);
 const isNew = id === 'new';
-const key = `cms-draft-${props.kind}-${id}`;
+let remembered: string | null = null;
+try {
+  remembered = sessionStorage.getItem('cms-editor-locale');
+} catch {
+  /* Storage may be unavailable. */
+}
+const contentLocale = ref<CmsLocale>(
+  isLocale(remembered) ? remembered : locale.value,
+);
+const key = computed(
+  () => `cms-draft-${props.kind}-${id}-${contentLocale.value}`,
+);
+const sharedKey = computed(() => `cms-draft-shared-${props.kind}-${id}`);
+const applyingLanguage = ref(false);
+const document = ref<AdminPost | AdminPage>();
+const emptyTranslation = () => ({
+  title: '',
+  excerpt: '',
+  content: '',
+  status: 'DRAFT' as Status,
+  publishedAt: null as string | null,
+});
 const form = reactive({
   title: '',
   slug: '',
@@ -45,79 +69,244 @@ const form = reactive({
 const baseline = ref('');
 const loaded = ref(false);
 const busy = ref(false);
+const switching = ref(false);
 const uploads = reactive({ content: false, cover: false });
 const uploading = computed(() => uploads.content || uploads.cover);
 const error = ref('');
 const draft = ref<string | null>(null);
-const categories = ref<Taxonomy[]>([]);
-const tags = ref<Taxonomy[]>([]);
+const categories = ref<AdminTaxonomy[]>([]);
+const tags = ref<AdminTaxonomy[]>([]);
 let savedRoute = '';
 let active = true;
 const dirty = computed(
   () => loaded.value && JSON.stringify(form) !== baseline.value,
 );
 async function load() {
+  applyingLanguage.value = true;
+  loaded.value = false;
   error.value = '';
   try {
     if (props.kind === 'posts') {
       [categories.value, tags.value] = await Promise.all([
-        api<Taxonomy[]>('/admin/categories'),
-        api<Taxonomy[]>('/admin/tags'),
+        api<AdminTaxonomy[]>('/admin/categories'),
+        api<AdminTaxonomy[]>('/admin/tags'),
       ]);
     }
-    if (!isNew) {
-      const d = await api<Post | Page>(`/admin/${props.kind}/${id}`);
-      Object.assign(form, {
-        title: d.title,
-        slug: d.slug,
-        content: d.content ?? '',
-        coverUrl: d.coverUrl,
-        status: d.status ?? 'DRAFT',
-        publishedAt: d.publishedAt,
-      });
-      if ('excerpt' in d) {
-        form.excerpt = d.excerpt;
-        form.categoryIds = d.categories.map((c) => c.category.id);
-        form.tagIds = d.tags.map((t) => t.tag.id);
-      }
-    }
+    if (!isNew)
+      document.value = await api<AdminPost | AdminPage>(
+        `/admin/${props.kind}/${id}`,
+      );
+    if (!active) return;
+    applyLanguage();
     baseline.value = JSON.stringify(form);
-    loaded.value = true;
-    draft.value = sessionStorage.getItem(key);
-    const transferred = takeEditorDraft(key);
+    // Common fields belong to the logical document, not an individual language.
+    const shared = readSharedDraft();
+    if (shared) Object.assign(form, shared);
+    draft.value = sessionStorage.getItem(key.value);
+    const transferred = takeEditorDraft(key.value);
     if (transferred) {
       Object.assign(form, JSON.parse(transferred));
       draft.value = null;
     }
+    await nextTick();
+    loaded.value = true;
   } catch (e) {
     error.value = errorText(e);
+  } finally {
+    applyingLanguage.value = false;
+  }
+}
+function applyLanguage() {
+  const d = document.value;
+  const translation = d?.translations.find(
+    (item) => item.locale === contentLocale.value,
+  );
+  Object.assign(form, emptyTranslation(), {
+    title: translation?.title ?? '',
+    content: translation?.content ?? '',
+    excerpt: translation && 'excerpt' in translation ? translation.excerpt : '',
+    status: translation?.status ?? 'DRAFT',
+    publishedAt: translation?.publishedAt ?? null,
+    slug: d?.slug ?? '',
+    coverUrl: d?.coverUrl ?? null,
+    categoryIds:
+      d && 'categories' in d ? d.categories.map((c) => c.category.id) : [],
+    tagIds: d && 'tags' in d ? d.tags.map((item) => item.tag.id) : [],
+  });
+  baseline.value = JSON.stringify(form);
+}
+function sharedFields(value: typeof form = form) {
+  return {
+    slug: value.slug,
+    coverUrl: value.coverUrl,
+    categoryIds: [...value.categoryIds],
+    tagIds: [...value.tagIds],
+  };
+}
+function readSharedDraft() {
+  const stored = sessionStorage.getItem(sharedKey.value);
+  if (!stored) return undefined;
+  try {
+    const value = JSON.parse(stored) as ReturnType<typeof sharedFields>;
+    if (
+      !value ||
+      typeof value.slug !== 'string' ||
+      !(value.coverUrl === null || typeof value.coverUrl === 'string') ||
+      !Array.isArray(value.categoryIds) ||
+      !Array.isArray(value.tagIds)
+    )
+      throw new Error('Invalid draft');
+    return {
+      slug: value.slug,
+      coverUrl: value.coverUrl,
+      categoryIds: value.categoryIds.filter((id) => typeof id === 'string'),
+      tagIds: value.tagIds.filter((id) => typeof id === 'string'),
+    };
+  } catch {
+    sessionStorage.removeItem(sharedKey.value);
+    return undefined;
+  }
+}
+function draftTranslation(serialized: string) {
+  const value = JSON.parse(serialized) as typeof form;
+  if (
+    !value ||
+    typeof value.title !== 'string' ||
+    typeof value.content !== 'string'
+  )
+    throw new Error('Invalid draft');
+  return {
+    title: value.title,
+    content: value.content,
+    excerpt: value.excerpt ?? '',
+    status: value.status ?? 'DRAFT',
+    publishedAt: value.publishedAt ?? null,
+  };
+}
+function persistDraft() {
+  // Pending recovery text and common edits are independent. Shared-only edits
+  // cannot replace or create an empty language draft behind the recovery notice.
+  let pending: ReturnType<typeof draftTranslation> | undefined;
+  if (draft.value) {
+    try {
+      pending = draftTranslation(draft.value);
+    } catch {
+      draft.value = null;
+    }
+  }
+  const translated = pending ?? draftTranslation(JSON.stringify(form));
+  const baselineForm = JSON.parse(baseline.value) as typeof form;
+  if (
+    pending ||
+    JSON.stringify(translated) !==
+      JSON.stringify(draftTranslation(baseline.value))
+  ) {
+    sessionStorage.setItem(
+      key.value,
+      JSON.stringify({ ...form, ...translated }),
+    );
+  } else sessionStorage.removeItem(key.value);
+  const shared = JSON.stringify(sharedFields());
+  if (shared !== JSON.stringify(sharedFields(baselineForm)))
+    sessionStorage.setItem(sharedKey.value, shared);
+  else sessionStorage.removeItem(sharedKey.value);
+}
+function applyTranslationDraft(serialized: string) {
+  Object.assign(form, draftTranslation(serialized));
+}
+async function switchLanguage(value: CmsLocale) {
+  if (
+    !loaded.value ||
+    value === contentLocale.value ||
+    busy.value ||
+    uploading.value ||
+    switching.value
+  )
+    return;
+  switching.value = true;
+  try {
+    if (dirty.value) {
+      try {
+        await ElMessageBox.confirm(
+          t('当前语言有未保存修改，草稿已保留。切换语言？'),
+          t('切换内容语言'),
+          { confirmButtonText: t('切换'), cancelButtonText: t('继续编辑') },
+        );
+      } catch {
+        return;
+      }
+    }
+    if (!active) return;
+    if (dirty.value) persistDraft();
+    const shared = sharedFields();
+    applyingLanguage.value = true;
+    loaded.value = false;
+    contentLocale.value = value;
+    sessionStorage.setItem('cms-editor-locale', value);
+    applyLanguage();
+    const pending = sessionStorage.getItem(key.value);
+    if (pending) {
+      try {
+        applyTranslationDraft(pending);
+      } catch {
+        sessionStorage.removeItem(key.value);
+      }
+    }
+    // Shared identity fields never come from an older per-language snapshot.
+    Object.assign(form, shared);
+    draft.value = null;
+    // Flush the deep form watcher while persistence is explicitly suppressed.
+    await nextTick();
+    loaded.value = true;
+  } finally {
+    applyingLanguage.value = false;
+    switching.value = false;
   }
 }
 function restore() {
   if (draft.value) {
     try {
-      Object.assign(form, JSON.parse(draft.value));
+      applyTranslationDraft(draft.value);
     } catch {
-      sessionStorage.removeItem(key);
+      sessionStorage.removeItem(key.value);
     }
     draft.value = null;
   }
 }
-function discard() {
-  sessionStorage.removeItem(key);
-  draft.value = null;
+async function discard() {
+  applyingLanguage.value = true;
+  try {
+    sessionStorage.removeItem(key.value);
+    const otherLocale = contentLocale.value === 'zh' ? 'en' : 'zh';
+    const otherDraft = sessionStorage.getItem(
+      `cms-draft-${props.kind}-${id}-${otherLocale}`,
+    );
+    const shared = otherDraft ? readSharedDraft() : undefined;
+    applyLanguage();
+    // A remaining language draft still owns the common edits. Discarding the
+    // last language draft also discards the shared browser-only edits.
+    if (shared) Object.assign(form, shared);
+    else sessionStorage.removeItem(sharedKey.value);
+    draft.value = null;
+    await nextTick();
+  } finally {
+    applyingLanguage.value = false;
+  }
 }
+
 watch(
   form,
   () => {
-    if (dirty.value) sessionStorage.setItem(key, JSON.stringify(form));
+    if (!applyingLanguage.value && loaded.value) persistDraft();
   },
   { deep: true },
 );
 async function save(status: Status) {
-  if (busy.value || uploading.value || !loaded.value) return;
+  if (busy.value || uploading.value || !loaded.value || draft.value) return;
   if (!form.title.trim() || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug)) {
-    ElMessage.warning('请填写标题和有效的 URL 标识（小写字母、数字、连字符）');
+    ElMessage.warning(
+      t('请填写标题和有效的 URL 标识（小写字母、数字、连字符）'),
+    );
     return;
   }
   busy.value = true;
@@ -126,42 +315,81 @@ async function save(status: Status) {
   // typing (or an image upload may finish) while this request is in flight.
   const submitted = JSON.parse(JSON.stringify(form)) as typeof form;
   try {
-    const body =
-      props.kind === 'posts'
-        ? { ...submitted, status }
-        : {
-            title: submitted.title,
-            slug: submitted.slug,
-            content: submitted.content,
-            coverUrl: submitted.coverUrl,
-            status,
-            publishedAt: submitted.publishedAt,
-          };
-    const saved = await api<Post | Page>(
+    const translated = {
+      locale: contentLocale.value,
+      title: submitted.title,
+      content: submitted.content,
+      status,
+      publishedAt: submitted.publishedAt,
+      ...(props.kind === 'posts' ? { excerpt: submitted.excerpt } : {}),
+    };
+    const body = {
+      slug: submitted.slug,
+      coverUrl: submitted.coverUrl,
+      translations: [translated],
+      ...(props.kind === 'posts'
+        ? { categoryIds: submitted.categoryIds, tagIds: submitted.tagIds }
+        : {}),
+    };
+    const saved = await api<AdminPost | AdminPage>(
       `/admin/${props.kind}${isNew ? '' : '/' + id}`,
       { method: isNew ? 'POST' : 'PUT', body: JSON.stringify(body) },
     );
     if (!active) return;
-    form.status = saved.status ?? 'DRAFT';
+    document.value = saved;
+    const savedTranslation = saved.translations.find(
+      (item) => item.locale === contentLocale.value,
+    )!;
+    form.status = savedTranslation.status ?? 'DRAFT';
     if (form.publishedAt === submitted.publishedAt)
-      form.publishedAt = saved.publishedAt;
+      form.publishedAt = savedTranslation.publishedAt;
     baseline.value = JSON.stringify({
       ...submitted,
-      status: saved.status ?? 'DRAFT',
-      publishedAt: saved.publishedAt,
+      status: savedTranslation.status ?? 'DRAFT',
+      publishedAt: savedTranslation.publishedAt,
     });
-    if (dirty.value) sessionStorage.setItem(key, JSON.stringify(form));
-    else sessionStorage.removeItem(key);
-    ElMessage.success(status === 'PUBLISHED' ? '已保存发布状态' : '已保存');
+    if (dirty.value) persistDraft();
+    else {
+      sessionStorage.removeItem(key.value);
+      sessionStorage.removeItem(sharedKey.value);
+    }
+    ElMessage.success(
+      status === 'PUBLISHED' ? t('已保存发布状态') : t('已保存'),
+    );
     if (isNew) {
+      // Associate drafts in the other language with the newly created identity.
+      for (const language of ['zh', 'en'] as const) {
+        if (language === contentLocale.value) continue;
+        const pending = sessionStorage.getItem(
+          `cms-draft-${props.kind}-${id}-${language}`,
+        );
+        if (pending)
+          sessionStorage.setItem(
+            `cms-draft-${props.kind}-${saved.id}-${language}`,
+            pending,
+          );
+      }
+      const sharedDraft = sessionStorage.getItem(sharedKey.value);
+      if (sharedDraft)
+        sessionStorage.setItem(
+          `cms-draft-shared-${props.kind}-${saved.id}`,
+          sharedDraft,
+        );
+      sessionStorage.setItem('cms-editor-locale', contentLocale.value);
       if (dirty.value)
         transferEditorDraft(
-          `cms-draft-${props.kind}-${saved.id}`,
+          `cms-draft-${props.kind}-${saved.id}-${contentLocale.value}`,
           JSON.stringify(form),
         );
       savedRoute = `/admin/${props.kind}/${saved.id}`;
       const failure = await router.replace(savedRoute);
-      if (!failure) sessionStorage.removeItem(key);
+      if (!failure) {
+        for (const language of ['zh', 'en'] as const)
+          sessionStorage.removeItem(
+            `cms-draft-${props.kind}-${id}-${language}`,
+          );
+        sessionStorage.removeItem(sharedKey.value);
+      }
       savedRoute = '';
     }
   } catch (e) {
@@ -189,15 +417,15 @@ async function confirmNavigation(to: RouteLocationNormalized) {
   // author behind a stale authenticated screen or a leave-confirm dialog.
   if (to.path === '/admin/login' || to.path === savedRoute) return true;
   if (busy.value || uploading.value) {
-    ElMessage.info('正在保存或上传，请稍候再离开');
+    ElMessage.info(t('正在保存或上传，请稍候再离开'));
     return false;
   }
   if (!dirty.value) return true;
   try {
     await ElMessageBox.confirm(
-      '有未保存的修改。浏览器草稿已保留，确定离开？',
-      '离开编辑器',
-      { confirmButtonText: '离开', cancelButtonText: '继续编辑' },
+      t('有未保存的修改。浏览器草稿已保留，确定离开？'),
+      t('离开编辑器'),
+      { confirmButtonText: t('离开'), cancelButtonText: t('继续编辑') },
     );
     return true;
   } catch {
@@ -210,108 +438,146 @@ onBeforeRouteUpdate(confirmNavigation);
 <template>
   <ViewHeader
     :title="
-      isNew ? (kind === 'posts' ? '写一篇新文章' : '新建独立页面') : '继续编辑'
+      isNew
+        ? kind === 'posts'
+          ? t('写一篇新文章')
+          : t('新建独立页面')
+        : t('继续编辑')
     "
     :description="
-      dirty ? '有未保存的修改 · 浏览器草稿已保留' : '让文字保持你的温度。'
+      dirty ? t('有未保存的修改 · 浏览器草稿已保留') : t('让文字保持你的温度。')
     "
     ><el-button
-      :disabled="!loaded || uploading"
+      :disabled="!loaded || uploading || !!draft"
       :loading="busy"
       @click="save(form.status)"
-      >保存{{ form.status === 'DRAFT' ? '草稿' : '' }}</el-button
+      >{{ form.status === 'DRAFT' ? t('保存草稿') : t('保存') }}</el-button
     ><el-button
       v-if="form.status === 'PUBLISHED'"
-      :disabled="uploading"
+      :disabled="uploading || !!draft"
       :loading="busy"
       @click="save('DRAFT')"
-      >撤回为草稿</el-button
+      >{{ t('撤回为草稿') }}</el-button
     ><el-button
       v-else
       type="primary"
-      :disabled="!loaded || uploading"
+      :disabled="!loaded || uploading || !!draft"
       :loading="busy"
       @click="save('PUBLISHED')"
-      >发布</el-button
+      >{{ t('发布') }}</el-button
     ></ViewHeader
-  ><ErrorNotice :error="error" @retry="load" /><el-alert
+  ><ErrorNotice
+    :error="error"
+    @retry="loaded ? save(form.status) : load()"
+  /><el-alert
     v-if="draft"
     type="warning"
     :closable="false"
-    title="发现此页面的浏览器草稿"
-    ><el-button text @click="restore">恢复草稿</el-button
-    ><el-button text @click="discard">丢弃草稿</el-button></el-alert
+    :title="t('发现此页面的浏览器草稿')"
+    ><el-button text @click="restore">{{ t('恢复草稿') }}</el-button
+    ><el-button text @click="discard">{{ t('丢弃草稿') }}</el-button></el-alert
   >
+  <div class="content-language-tabs" role="group" :aria-label="t('内容语言')">
+    <button
+      type="button"
+      :aria-pressed="contentLocale === 'zh'"
+      :disabled="!loaded || busy || uploading || switching"
+      @click="switchLanguage('zh')"
+    >
+      简体中文
+    </button>
+    <button
+      type="button"
+      :aria-pressed="contentLocale === 'en'"
+      :disabled="!loaded || busy || uploading || switching"
+      @click="switchLanguage('en')"
+    >
+      English
+    </button>
+    <small>{{ t('每种语言独立保存和发布') }}</small>
+  </div>
   <div v-if="loaded" class="edit-layout">
     <section class="panel editor-main">
       <el-input
         v-model="form.title"
+        :readonly="!!draft"
+        :lang="contentLang(contentLocale)"
         class="title-input"
-        placeholder="给文章一个标题"
+        :placeholder="t('给文章一个标题')"
         maxlength="200"
-        aria-label="标题"
+        :aria-label="t('标题')"
       /><MarkdownEditor
         v-model="form.content"
+        :content-locale="contentLocale"
+        :read-only="!!draft"
         :disabled="busy"
         @busy-change="uploads.content = $event"
       />
     </section>
     <aside class="editor-settings panel">
-      <h2>发布设置</h2>
+      <h2>{{ t('发布设置') }}</h2>
       <el-form label-position="top"
-        ><el-form-item label="URL 标识"
+        ><el-form-item :label="t('URL 标识')"
           ><el-input
             v-model="form.slug"
             maxlength="160"
             placeholder="my-first-story"
           /><small class="muted"
-            >/{{ kind }}/{{ form.slug || 'slug' }}</small
+            >/{{ contentLocale }}/{{ kind }}/{{ form.slug || 'slug' }}</small
           ></el-form-item
-        ><el-form-item label="发布时间"
+        ><el-form-item :label="t('发布时间')"
           ><el-date-picker
             v-model="form.publishedAt"
+            :disabled="!!draft"
             type="datetime"
             value-format="YYYY-MM-DDTHH:mm:ssZ"
-            placeholder="发布时自动填入"
+            :placeholder="t('发布时自动填入')"
             clearable
         /></el-form-item>
-        <p class="muted">设置未来时间后，访客会在该时间开始看到内容。</p>
-        <el-form-item v-if="kind === 'posts'" label="摘要"
+        <p class="muted">
+          {{ t('设置未来时间后，访客会在该时间开始看到内容。') }}
+        </p>
+        <el-form-item v-if="kind === 'posts'" :label="t('摘要')"
           ><el-input
             v-model="form.excerpt"
+            :readonly="!!draft"
+            :lang="contentLang(contentLocale)"
             type="textarea"
             :rows="4"
             maxlength="500"
             show-word-limit /></el-form-item
-        ><el-form-item label="封面"
+        ><el-form-item :label="t('封面')"
           ><AssetPicker
             v-model="form.coverUrl"
             :disabled="busy"
             @busy-change="uploads.cover = $event" /></el-form-item
         ><template v-if="kind === 'posts'"
-          ><el-form-item label="分类"
+          ><el-form-item :label="t('分类')"
             ><el-select
               v-model="form.categoryIds"
               multiple
-              placeholder="选择分类"
+              :placeholder="t('选择分类')"
               ><el-option
                 v-for="term in categories"
                 :key="term.id"
-                :label="term.name"
+                :label="displayTranslation(term)?.name ?? term.slug"
                 :value="term.id" /></el-select></el-form-item
-          ><el-form-item label="标签"
-            ><el-select v-model="form.tagIds" multiple placeholder="选择标签"
+          ><el-form-item :label="t('标签')"
+            ><el-select
+              v-model="form.tagIds"
+              multiple
+              :placeholder="t('选择标签')"
               ><el-option
                 v-for="term in tags"
                 :key="term.id"
-                :label="term.name"
+                :label="displayTranslation(term)?.name ?? term.slug"
                 :value="term.id" /></el-select></el-form-item></template
         ><a
           v-if="!isNew && form.status === 'PUBLISHED'"
-          :href="publicUrl(`/${kind}/${form.slug}`)"
+          :href="pathForLocale(`/${kind}/${form.slug}`, contentLocale)"
           target="_blank"
           rel="noopener"
-          >查看公开页面 ↗</a
+          >{{ t('查看公开页面 ↗') }}</a
         ></el-form
       >
     </aside>

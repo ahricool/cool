@@ -1,16 +1,27 @@
-import { test, expect, type Page, type Route } from '@playwright/test';
+import { admin } from './urls';
+import {
+  test,
+  expect,
+  type Dialog,
+  type Page,
+  type Route,
+} from '@playwright/test';
 
-const admin = process.env.E2E_ADMIN_URL ?? 'http://localhost:3001/admin';
 const id = 'a1111111-1111-4111-8111-111111111111';
 const initial = {
   id,
-  title: '已保存的标题',
   slug: 'editor-regression',
-  content: '已保存的正文',
-  excerpt: '',
   coverUrl: null,
-  status: 'DRAFT',
-  publishedAt: null,
+  translations: [
+    {
+      locale: 'zh',
+      title: '已保存的标题',
+      content: '已保存的正文',
+      excerpt: '',
+      status: 'DRAFT',
+      publishedAt: null,
+    },
+  ],
   categories: [],
   tags: [],
 };
@@ -20,7 +31,8 @@ type SaveHandler = (
   body: typeof initial,
 ) => Promise<void | false>;
 async function editor(page: Page, path: string, save: SaveHandler) {
-  let stored = { ...initial };
+  let stored = structuredClone(initial);
+  if (path.endsWith('/new')) stored.translations = [];
   let authenticated = false;
   const owner = {
     id: 'owner',
@@ -49,7 +61,24 @@ async function editor(page: Page, path: string, save: SaveHandler) {
       return route.fulfill({ json: [] });
     if (/^\/(posts|pages)(\/[^/]+)?$/.test(endpoint)) {
       if (['POST', 'PUT'].includes(request.method())) {
-        const body = { ...stored, ...request.postDataJSON(), id };
+        const input = request.postDataJSON();
+        const translations = new Map(
+          stored.translations.map((translation) => [
+            translation.locale,
+            translation,
+          ]),
+        );
+        for (const translation of input.translations ?? [])
+          translations.set(translation.locale, {
+            ...translations.get(translation.locale),
+            ...translation,
+          });
+        const body = {
+          ...stored,
+          ...input,
+          id,
+          translations: [...translations.values()],
+        };
         const result = await save(route, body);
         if (result === false) authenticated = false;
         stored = body;
@@ -112,14 +141,18 @@ for (const kind of ['posts', 'pages']) {
       await title.fill('保存期间继续写的新标题');
       await content.fill('保存期间继续写的新正文');
       delay.release();
-      await expect(page).toHaveURL(new RegExp(`/admin/${kind}/${id}$`));
+      await expect(page).toHaveURL(
+        (url) => url.pathname === `/admin/${kind}/${id}`,
+      );
       await expect(title).toHaveValue('保存期间继续写的新标题');
       await expect(content).toHaveValue('保存期间继续写的新正文');
       await expect(
         page.getByText('有未保存的修改 · 浏览器草稿已保留'),
       ).toBeVisible();
-      expect(delay.submitted[0].content).toBe('请求发送时的正文');
-      const draftKey = `cms-draft-${kind}-${id}`;
+      expect(delay.submitted[0].translations[0].content).toBe(
+        '请求发送时的正文',
+      );
+      const draftKey = `cms-draft-${kind}-${id}-zh`;
       await expect
         .poll(() =>
           page.evaluate((key) => sessionStorage.getItem(key), draftKey),
@@ -130,7 +163,9 @@ for (const kind of ['posts', 'pages']) {
         page.getByText('有未保存的修改 · 浏览器草稿已保留'),
       ).toHaveCount(0);
       expect(delay.submitted).toHaveLength(2);
-      expect(delay.submitted[1].content).toBe('保存期间继续写的新正文');
+      expect(delay.submitted[1].translations[0].content).toBe(
+        '保存期间继续写的新正文',
+      );
       await expect
         .poll(() =>
           page.evaluate((key) => sessionStorage.getItem(key), draftKey),
@@ -154,7 +189,7 @@ test('canceling navigation preserves the editor, URL, and local draft', async ({
     .getByRole('link', { name: '概览', exact: true })
     .click();
   await page.getByRole('button', { name: '继续编辑', exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`/admin/posts/${id}$`));
+  await expect(page).toHaveURL((url) => url.pathname === `/admin/posts/${id}`);
   await expect(
     page.getByRole('textbox', { name: 'Markdown 内容' }),
   ).toHaveValue('尚未保存的重要内容');
@@ -162,7 +197,7 @@ test('canceling navigation preserves the editor, URL, and local draft', async ({
     .poll(() =>
       page.evaluate(
         (key) => sessionStorage.getItem(key),
-        `cms-draft-posts-${id}`,
+        `cms-draft-posts-${id}-zh`,
       ),
     )
     .toContain('尚未保存的重要内容');
@@ -186,7 +221,11 @@ test('expired session returns to login and restores unsaved work after login', a
     .getByRole('textbox', { name: 'Markdown 内容' })
     .fill('登录失效也不能丢失的正文');
   await page.getByRole('button', { name: '保存草稿', exact: true }).click();
-  await expect(page).toHaveURL(/\/admin\/login\?next=/);
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === '/admin/login' &&
+      url.searchParams.get('next') === `/admin/posts/${id}`,
+  );
   await login(page);
   await page.getByRole('button', { name: '恢复草稿', exact: true }).click();
   await expect(
@@ -233,7 +272,7 @@ for (const target of ['cover', 'content']) {
       .locator('.sidebar')
       .getByRole('link', { name: '概览', exact: true })
       .click();
-    await expect(page).toHaveURL(/\/admin\/posts\/new$/);
+    await expect(page).toHaveURL((url) => url.pathname === '/admin/posts/new');
     expect(delay.submitted).toHaveLength(0);
     releaseUpload();
     await expect(save).toBeEnabled();
@@ -248,9 +287,220 @@ for (const target of ['cover', 'content']) {
     expect(
       target === 'cover'
         ? delay.submitted[0].coverUrl
-        : delay.submitted[0].content,
+        : delay.submitted[0].translations[0].content,
     ).toContain('/api/v1/media/test.webp');
     delay.release();
-    await expect(page).toHaveURL(new RegExp(`/admin/posts/${id}$`));
+    await expect(page).toHaveURL(
+      (url) => url.pathname === `/admin/posts/${id}`,
+    );
+  });
+}
+
+for (const kind of ['posts', 'pages']) {
+  test(`new ${kind} preserve both language drafts through repeated switching, reload, restoration, and creation`, async ({
+    page,
+  }) => {
+    const submitted: {
+      method: string;
+      body: {
+        slug: string;
+        coverUrl: string | null;
+        translations: typeof initial.translations;
+      };
+    }[] = [];
+    await editor(page, `/${kind}/new`, async (route, body) => {
+      submitted.push({
+        method: route.request().method(),
+        body: route.request().postDataJSON(),
+      });
+      await route.fulfill({ json: body });
+    });
+    const slug = `${kind}-bilingual-recovery`;
+    let currentSlug = slug;
+    const coverUrl = '/sakura/images/default/temp.webp';
+    let currentCover = '/sakura/images/default/hd.webp';
+    await page.route('**/api/v1/admin/media/upload', (route) =>
+      route.fulfill({ json: { id: 'bilingual-cover', url: currentCover } }),
+    );
+    const drafts = {
+      zh: {
+        slug,
+        title: '反复切换也要保留的中文标题',
+        content: '# 中文手记\n\n这一段中文只属于中文草稿。',
+      },
+      en: {
+        slug,
+        title: 'An independent English draft',
+        content:
+          '# English journal\n\nThis exact paragraph belongs only to the English draft.',
+      },
+    };
+    const title = page.getByRole('textbox', { name: '标题', exact: true });
+    const content = page.getByRole('textbox', {
+      name: 'Markdown 内容',
+      exact: true,
+    });
+    const slugInput = page.getByLabel('URL 标识', { exact: true });
+    async function expectFields(locale: 'zh' | 'en') {
+      await expect(title).toHaveValue(drafts[locale].title);
+      await expect(content).toHaveValue(drafts[locale].content);
+      await expect(slugInput).toHaveValue(currentSlug);
+      await expect(page.getByAltText('所选图片')).toHaveAttribute(
+        'src',
+        currentCover,
+      );
+    }
+    async function expectStoredDraft(locale: 'zh' | 'en', record = 'new') {
+      await expect
+        .poll(() =>
+          page.evaluate((key) => {
+            const stored = sessionStorage.getItem(key);
+            return stored ? JSON.parse(stored) : null;
+          }, `cms-draft-${kind}-${record}-${locale}`),
+        )
+        .toMatchObject(drafts[locale]);
+    }
+    async function switchLanguage(locale: 'zh' | 'en', dirty = true) {
+      const tab = page
+        .getByRole('group', { name: '内容语言' })
+        .getByRole('button', {
+          name: locale === 'zh' ? '简体中文' : 'English',
+          exact: true,
+        });
+      await tab.click();
+      if (dirty) {
+        const dialog = page.getByRole('dialog', { name: '切换内容语言' });
+        await dialog.getByRole('button', { name: '切换', exact: true }).click();
+        await expect(dialog).toBeHidden();
+      }
+      await expect(tab).toHaveAttribute('aria-pressed', 'true');
+      await expect(slugInput).toHaveValue(currentSlug);
+      await expect(page.getByAltText('所选图片')).toHaveAttribute(
+        'src',
+        currentCover,
+      );
+    }
+    await slugInput.fill(slug);
+    await title.fill(drafts.zh.title);
+    await content.fill(drafts.zh.content);
+    await page
+      .locator('.asset-picker input[type="file"]')
+      .setInputFiles('apps/frontend/public/sakura/images/default/hd.webp');
+    await expect(page.getByAltText('所选图片')).toHaveAttribute(
+      'src',
+      currentCover,
+    );
+    await expectStoredDraft('zh');
+    await switchLanguage('en');
+    await expectStoredDraft('zh');
+    await title.fill(drafts.en.title);
+    await content.fill(drafts.en.content);
+    await expectStoredDraft('en');
+    await switchLanguage('zh');
+    await expectFields('zh');
+    await expectStoredDraft('zh');
+    await expectStoredDraft('en');
+    await switchLanguage('en');
+    await expectFields('en');
+    await expectStoredDraft('zh');
+    await expectStoredDraft('en');
+
+    // Accept only the expected native reload warning; the saved browser drafts
+    // must survive even though neither translation has reached the server yet.
+    const allowReload = async (dialog: Dialog) => {
+      expect(dialog.type()).toBe('beforeunload');
+      await dialog.accept();
+    };
+    async function reloadKeepingDrafts() {
+      page.on('dialog', allowReload);
+      try {
+        await page.reload();
+      } finally {
+        page.off('dialog', allowReload);
+      }
+    }
+    await reloadKeepingDrafts();
+    // Switching before using the initial Restore banner must hydrate the
+    // target language and common fields without erasing the pending source.
+    await expect(
+      page.getByRole('button', { name: '恢复草稿', exact: true }),
+    ).toBeVisible();
+    await switchLanguage('zh');
+    await expectFields('zh');
+    await expectStoredDraft('zh');
+    await expectStoredDraft('en');
+    await switchLanguage('en');
+    await expectFields('en');
+    await expectStoredDraft('zh');
+    await expectStoredDraft('en');
+    await reloadKeepingDrafts();
+    await page.getByRole('button', { name: '恢复草稿', exact: true }).click();
+    await expectFields('en');
+    await expectStoredDraft('zh');
+    await expectStoredDraft('en');
+    // The Chinese draft still contains the old common fields. Restoring it
+    // after English creates the row must keep these newer shared values.
+    currentSlug = `${slug}-updated`;
+    await slugInput.fill(currentSlug);
+    currentCover = coverUrl;
+    await page
+      .locator('.asset-picker input[type="file"]')
+      .setInputFiles('apps/frontend/public/sakura/images/default/hd.webp');
+    await expect(page.getByAltText('所选图片')).toHaveAttribute(
+      'src',
+      coverUrl,
+    );
+    await page.getByRole('button', { name: '保存草稿', exact: true }).click();
+    await expect(page).toHaveURL(
+      (url) => url.pathname === `/admin/${kind}/${id}`,
+    );
+    await expectFields('en');
+    expect(submitted).toHaveLength(1);
+    expect(submitted[0].method).toBe('POST');
+    expect(submitted[0].body.slug).toBe(currentSlug);
+    expect(submitted[0].body.coverUrl).toBe(coverUrl);
+    expect(submitted[0].body.translations).toEqual([
+      {
+        locale: 'en',
+        title: drafts.en.title,
+        content: drafts.en.content,
+        status: 'DRAFT',
+        publishedAt: null,
+        ...(kind === 'posts' ? { excerpt: '' } : {}),
+      },
+    ]);
+    // Creating in English must migrate the unsaved Chinese draft to the same ID.
+    await expectStoredDraft('zh', id);
+    await switchLanguage('zh', false);
+    await expectFields('zh');
+    await expect(page.getByAltText('所选图片')).toHaveAttribute(
+      'src',
+      coverUrl,
+    );
+    await page.getByRole('button', { name: '保存草稿', exact: true }).click();
+    await expect(
+      page.getByText('有未保存的修改 · 浏览器草稿已保留'),
+    ).toHaveCount(0);
+    expect(submitted).toHaveLength(2);
+    expect(submitted[1].method).toBe('PUT');
+    expect(submitted[1].body.slug).toBe(currentSlug);
+    expect(submitted[1].body.coverUrl).toBe(coverUrl);
+    expect(submitted[1].body.translations).toEqual([
+      {
+        locale: 'zh',
+        title: drafts.zh.title,
+        content: drafts.zh.content,
+        status: 'DRAFT',
+        publishedAt: null,
+        ...(kind === 'posts' ? { excerpt: '' } : {}),
+      },
+    ]);
+    await page.reload();
+    await expectFields('zh');
+    await switchLanguage('en', false);
+    await expectFields('en');
+    await expect(
+      page.getByRole('button', { name: '恢复草稿', exact: true }),
+    ).toHaveCount(0);
   });
 }

@@ -1,10 +1,10 @@
+import { blog } from './urls';
 import { test, expect } from '@playwright/test';
-const blog = process.env.E2E_BLOG_URL ?? 'http://localhost:3001';
 
 test('Sakura hero uses bundled social icons with accessible names', async ({
   page,
 }, info) => {
-  await page.route('**/api/v1/public/config', async (route) => {
+  await page.route('**/api/v1/public/zh/config', async (route) => {
     const response = await route.fetch();
     const config = await response.json();
     await route.fulfill({
@@ -67,12 +67,13 @@ test('Sakura gallery is full-width masonry with uncropped images and one mobile 
   page,
 }, info) => {
   const urls = ['hd.webp', 'temp.webp', 'avatar.webp', 'hd.webp'];
-  await page.route('**/api/v1/public/photos*', (route) =>
+  await page.route('**/api/v1/public/zh/photos*', (route) =>
     route.fulfill({
       json: {
         items: urls.map((file, index) => ({
           id: `photo-${index}`,
           title: `画面 ${index + 1}`,
+          contentLocale: 'zh',
           description: '保留图片原始比例',
           album: 'Sakura',
           published: true,

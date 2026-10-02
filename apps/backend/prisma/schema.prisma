@@ -8,6 +8,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ContentLocale {
+  zh
+  en
+}
+
 enum PostStatus {
   DRAFT
   PUBLISHED
@@ -15,14 +20,14 @@ enum PostStatus {
 }
 
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  email        String   @unique @db.VarChar(254)
-  passwordHash String?  @map("password_hash")
-  displayName  String   @map("display_name") @db.VarChar(100)
-  avatarUrl    String?  @map("avatar_url")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
-  authVersion  Int      @default(0) @map("auth_version")
+  id           String         @id @default(uuid()) @db.Uuid
+  email        String         @unique @db.VarChar(254)
+  passwordHash String?        @map("password_hash")
+  displayName  String         @map("display_name") @db.VarChar(100)
+  avatarUrl    String?        @map("avatar_url")
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  authVersion  Int            @default(0) @map("auth_version")
   posts        Post[]
   sessions     AdminSession[]
 
@@ -44,43 +49,37 @@ model AdminSession {
 }
 
 model Post {
-  id            String         @id @default(uuid()) @db.Uuid
-  slug          String         @unique @db.VarChar(160)
-  title         String         @db.VarChar(200)
-  excerpt       String         @default("") @db.VarChar(500)
-  content       String         @default("")
-  contentFormat String         @default("markdown") @map("content_format")
-  coverUrl      String?        @map("cover_url")
-  status        PostStatus     @default(DRAFT)
-  publishedAt   DateTime?      @map("published_at") @db.Timestamptz(3)
-  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
-  authorId      String         @map("author_id") @db.Uuid
-  author        User           @relation(fields: [authorId], references: [id], onDelete: Restrict)
-  viewCount     Int            @default(0) @map("view_count")
-  commentCount  Int            @default(0) @map("comment_count")
-  comments      Comment[]
-  categories    PostCategory[]
-  tags          PostTag[]
+  translations PostTranslation[]
+  id           String            @id @default(uuid()) @db.Uuid
+  slug         String            @unique @db.VarChar(160)
+  coverUrl     String?           @map("cover_url")
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  authorId     String            @map("author_id") @db.Uuid
+  author       User              @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  viewCount    Int               @default(0) @map("view_count")
+  commentCount Int               @default(0) @map("comment_count")
+  comments     Comment[]
+  categories   PostCategory[]
+  tags         PostTag[]
 
-  @@index([status, publishedAt, id])
   @@map("posts")
 }
 
 model Category {
-  id    String         @id @default(uuid()) @db.Uuid
-  name  String         @db.VarChar(100)
-  slug  String         @unique @db.VarChar(160)
-  posts PostCategory[]
+  translations CategoryTranslation[]
+  id           String                @id @default(uuid()) @db.Uuid
+  slug         String                @unique @db.VarChar(160)
+  posts        PostCategory[]
 
   @@map("categories")
 }
 
 model Tag {
-  id    String    @id @default(uuid()) @db.Uuid
-  name  String    @db.VarChar(100)
-  slug  String    @unique @db.VarChar(160)
-  posts PostTag[]
+  translations TagTranslation[]
+  id           String           @id @default(uuid()) @db.Uuid
+  slug         String           @unique @db.VarChar(160)
+  posts        PostTag[]
 
   @@map("tags")
 }
@@ -116,56 +115,45 @@ model SiteSetting {
 }
 
 model Page {
-  id          String     @id @default(uuid()) @db.Uuid
-  slug        String     @unique @db.VarChar(160)
-  title       String     @db.VarChar(200)
-  content     String     @default("")
-  coverUrl    String?    @map("cover_url")
-  status      PostStatus @default(DRAFT)
-  publishedAt DateTime?  @map("published_at") @db.Timestamptz(3)
-  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  translations PageTranslation[]
+  id           String            @id @default(uuid()) @db.Uuid
+  slug         String            @unique @db.VarChar(160)
+  coverUrl     String?           @map("cover_url")
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  @@index([status, publishedAt])
   @@map("pages")
 }
 
 model Moment {
-  id          String     @id @default(uuid()) @db.Uuid
-  content     String
-  status      PostStatus @default(DRAFT)
-  publishedAt DateTime?  @map("published_at") @db.Timestamptz(3)
-  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  translations MomentTranslation[]
+  id           String              @id @default(uuid()) @db.Uuid
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  @@index([status, publishedAt])
   @@map("moments")
 }
 
 model Photo {
-  id          String   @id @default(uuid()) @db.Uuid
-  title       String   @db.VarChar(200)
-  description String   @default("") @db.VarChar(500)
-  url         String
-  album       String   @default("") @db.VarChar(100)
-  published   Boolean  @default(false)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  translations PhotoTranslation[]
+  id           String             @id @default(uuid()) @db.Uuid
+  url          String
+  published    Boolean            @default(false)
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([published, createdAt])
   @@map("photos")
 }
 
 model Link {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String   @db.VarChar(100)
-  url         String
-  logoUrl     String?  @map("logo_url")
-  description String   @default("") @db.VarChar(500)
-  group       String   @default("朋友们") @db.VarChar(100)
-  published   Boolean  @default(false)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  translations LinkTranslation[]
+  id           String            @id @default(uuid()) @db.Uuid
+  url          String
+  logoUrl      String?           @map("logo_url")
+  published    Boolean           @default(false)
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([published, createdAt])
   @@map("links")
@@ -201,4 +189,94 @@ model Comment {
 
   @@index([postId, status, createdAt])
   @@map("comments")
+}
+
+model PostTranslation {
+  postId        String        @map("post_id") @db.Uuid
+  post          Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  locale        ContentLocale
+  title         String        @db.VarChar(200)
+  excerpt       String        @default("") @db.VarChar(500)
+  content       String        @default("")
+  contentFormat String        @default("markdown") @map("content_format")
+  status        PostStatus    @default(DRAFT)
+  publishedAt   DateTime?     @map("published_at") @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([postId, locale])
+  @@index([locale, status, publishedAt])
+  @@map("post_translations")
+}
+
+model PageTranslation {
+  pageId      String        @map("page_id") @db.Uuid
+  page        Page          @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  locale      ContentLocale
+  title       String        @db.VarChar(200)
+  content     String        @default("")
+  status      PostStatus    @default(DRAFT)
+  publishedAt DateTime?     @map("published_at") @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([pageId, locale])
+  @@index([locale, status, publishedAt])
+  @@map("page_translations")
+}
+
+model MomentTranslation {
+  momentId    String        @map("moment_id") @db.Uuid
+  moment      Moment        @relation(fields: [momentId], references: [id], onDelete: Cascade)
+  locale      ContentLocale
+  content     String
+  status      PostStatus    @default(DRAFT)
+  publishedAt DateTime?     @map("published_at") @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([momentId, locale])
+  @@index([locale, status, publishedAt])
+  @@map("moment_translations")
+}
+
+model CategoryTranslation {
+  categoryId String        @map("category_id") @db.Uuid
+  category   Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  locale     ContentLocale
+  name       String        @db.VarChar(100)
+
+  @@id([categoryId, locale])
+  @@map("category_translations")
+}
+
+model TagTranslation {
+  tagId  String        @map("tag_id") @db.Uuid
+  tag    Tag           @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  locale ContentLocale
+  name   String        @db.VarChar(100)
+
+  @@id([tagId, locale])
+  @@map("tag_translations")
+}
+
+model PhotoTranslation {
+  photoId     String        @map("photo_id") @db.Uuid
+  photo       Photo         @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  locale      ContentLocale
+  title       String        @db.VarChar(200)
+  description String        @default("") @db.VarChar(500)
+  album       String        @default("") @db.VarChar(100)
+
+  @@id([photoId, locale])
+  @@map("photo_translations")
+}
+
+model LinkTranslation {
+  linkId      String        @map("link_id") @db.Uuid
+  link        Link          @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  locale      ContentLocale
+  name        String        @db.VarChar(100)
+  description String        @default("") @db.VarChar(500)
+  group       String        @default("") @db.VarChar(100)
+
+  @@id([linkId, locale])
+  @@map("link_translations")
 }

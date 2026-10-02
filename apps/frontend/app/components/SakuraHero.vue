@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t, localePath, contentLang } = useCmsI18n();
 import { socialIcon } from '~/utils/social-icon';
 const store = useSiteStore();
 function scrollDown() {
@@ -16,7 +17,7 @@ function scrollDown() {
         ><img
           class="cover-bg"
           :src="store.homepage.coverUrl"
-          alt="首页背景"
+          :alt="t('首页背景')"
           width="1920"
           height="1080"
           fetchpriority="high"
@@ -26,7 +27,7 @@ function scrollDown() {
           v-if="store.homepage.focusMode === 'avatar'"
           class="header-tou no-select"
         >
-          <NuxtLink to="/"
+          <NuxtLink :to="localePath('/')"
             ><img
               :src="
                 store.site.avatarUrl || '/sakura/images/default/avatar.webp'
@@ -40,13 +41,17 @@ function scrollDown() {
           v-else
           class="center-text glitch"
           :data-text="store.homepage.greeting"
+          :lang="contentLang(store.homepage.contentLocale)"
         >
           {{ store.homepage.greeting }}
         </h1>
         <div class="header-info no-select">
           <p class="flex-child-center">
             <span aria-hidden="true">❝</span
-            ><span class="desc">{{ store.homepage.description }}</span
+            ><span
+              class="desc"
+              :lang="contentLang(store.homepage.contentLocale)"
+              >{{ store.homepage.description }}</span
             ><span aria-hidden="true">❞</span>
           </p>
           <div v-if="store.social.length" class="top-social">
@@ -56,6 +61,7 @@ function scrollDown() {
                   :href="link.url"
                   :aria-label="link.label"
                   :title="link.label"
+                  :lang="contentLang(link.contentLocale)"
                   target="_blank"
                   rel="noopener noreferrer"
                   ><img
@@ -80,7 +86,11 @@ function scrollDown() {
         style="background: url('/sakura/images/wave/wave2.png') repeat-x"
       ></div>
     </div>
-    <button class="headertop-down" aria-label="浏览文章" @click="scrollDown">
+    <button
+      class="headertop-down"
+      :aria-label="t('浏览文章')"
+      @click="scrollDown"
+    >
       <SakuraIcon name="alt-arrow-down-linear" />
     </button>
   </div>

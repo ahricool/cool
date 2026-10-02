@@ -8,6 +8,8 @@ export default defineConfig({
   reporter: process.env.CI ? 'github' : 'list',
   use: {
     headless: true,
+    // Keep the original Chinese regressions deterministic; bilingual tests override this.
+    locale: 'zh-CN',
     launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
       ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
       : undefined,

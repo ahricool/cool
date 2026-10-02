@@ -1,11 +1,12 @@
 <script setup lang="ts">
+const { t, locale, contentLang } = useCmsI18n();
 import type { Pagination, Photo } from '@cms/content';
 import { masonryPositions } from '~/utils/masonry';
 const route = useRoute();
 const api = useApi();
 const page = computed(() => Math.max(1, Number(route.query.page) || 1));
 const { data, pending, error, refresh } = await useAsyncData(
-  () => `photos-${page.value}`,
+  () => `photos-${locale.value}-${page.value}`,
   () =>
     api<Pagination<Photo>>('/public/photos', {
       query: { page: page.value, pageSize: 24 },
@@ -66,7 +67,7 @@ function open(photo: Photo) {
 }
 </script>
 <template>
-  <PageFrame title="图库" content-class="photos"
+  <PageFrame :title="t('图库')" content-class="photos"
     ><ApiState
       :pending="pending"
       :error="error"
@@ -99,12 +100,13 @@ function open(photo: Photo) {
               >
                 <header class="gallery-icon">
                   <button
-                    :aria-label="`查看 ${photo.title}`"
+                    :aria-label="t('查看 {title}', { title: photo.title })"
                     @click="open(photo)"
                   >
                     <img
                       :src="photo.url"
                       :alt="photo.title"
+                      :lang="contentLang(photo.contentLocale)"
                       loading="lazy"
                       width="500"
                       height="500"
@@ -114,7 +116,10 @@ function open(photo: Photo) {
                   </button>
                 </header>
                 <figcaption class="gallery-caption">
-                  <div class="entry-summary">
+                  <div
+                    class="entry-summary"
+                    :lang="contentLang(photo.contentLocale)"
+                  >
                     <h3>{{ photo.title }}</h3>
                     <p>{{ photo.description }}</p>
                     <small>{{ photo.album }}</small>
@@ -130,11 +135,23 @@ function open(photo: Photo) {
     <dialog
       ref="dialog"
       class="photo-dialog"
-      :aria-label="selected?.title || '查看图片'"
+      aria-labelledby="photo-dialog-title"
     >
-      <button aria-label="关闭图片" @click="dialog?.close()">×</button
-      ><img v-if="selected" :src="selected.url" :alt="selected.title" />
-      <p>{{ selected?.title }}</p>
+      <button :aria-label="t('关闭图片')" @click="dialog?.close()">×</button
+      ><img
+        v-if="selected"
+        :src="selected.url"
+        :alt="selected.title"
+        :lang="contentLang(selected.contentLocale)"
+      />
+      <p
+        id="photo-dialog-title"
+        :lang="
+          selected ? contentLang(selected.contentLocale) : contentLang(locale)
+        "
+      >
+        {{ selected?.title || t('查看图片') }}
+      </p>
     </dialog></PageFrame
   >
 </template>

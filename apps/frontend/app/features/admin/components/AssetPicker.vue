@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useCmsI18n();
 import { ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { api, upload, errorText } from '../api';
@@ -27,7 +28,7 @@ async function fileChanged(event: Event) {
     const media = await upload(file);
     emit('update:modelValue', media.url);
   } catch (e) {
-    ElMessage.error(errorText(e));
+    ElMessage.error(t(errorText(e)));
   } finally {
     busy.value = false;
     emit('busy-change', false);
@@ -43,20 +44,20 @@ async function browse() {
     items.value = data.items;
     total.value = data.total;
   } catch (e) {
-    ElMessage.error(errorText(e));
+    ElMessage.error(t(errorText(e)));
   }
 }
 </script>
 <template>
   <div class="asset-picker">
-    <img v-if="modelValue" :src="modelValue" alt="所选图片" />
+    <img v-if="modelValue" :src="modelValue" :alt="t('所选图片')" />
     <div class="asset-actions">
       <el-button
         class="upload-label"
         text
         :disabled="busy || disabled"
         @click="fileInput?.click()"
-        >{{ busy ? '上传中…' : '上传图片' }}</el-button
+        >{{ busy ? t('上传中…') : t('上传图片') }}</el-button
       ><input
         ref="fileInput"
         hidden
@@ -65,22 +66,23 @@ async function browse() {
         :disabled="busy || disabled"
         @change="fileChanged"
       />
-      <el-button text :disabled="busy || disabled" @click="browse"
-        >从媒体库选择</el-button
+      <el-button text :disabled="busy || disabled" @click="browse">{{
+        t('从媒体库选择')
+      }}</el-button
       ><el-button
         v-if="modelValue"
         text
         type="danger"
         :disabled="busy || disabled"
         @click="emit('update:modelValue', null)"
-        >移除</el-button
+        >{{ t('移除') }}</el-button
       >
     </div>
-    <small class="muted"
-      >JPEG / PNG / WebP / GIF，最大 8MB；统一转为 WebP，GIF 保留首帧。</small
-    >
+    <small class="muted">{{
+      t('JPEG / PNG / WebP / GIF，最大 8MB；统一转为 WebP，GIF 保留首帧。')
+    }}</small>
   </div>
-  <el-dialog v-model="dialog" title="选择图片" width="min(720px, 92vw)"
+  <el-dialog v-model="dialog" :title="t('选择图片')" width="min(720px, 92vw)"
     ><div class="media-picker-grid">
       <button
         v-for="item in items"
@@ -96,7 +98,9 @@ async function browse() {
         }}</span>
       </button>
     </div>
-    <el-empty v-if="!items.length" description="媒体库还是空的" /><el-pagination
+    <el-empty
+      v-if="!items.length"
+      :description="t('媒体库还是空的')" /><el-pagination
       v-model:current-page="page"
       :total="total"
       :page-size="12"

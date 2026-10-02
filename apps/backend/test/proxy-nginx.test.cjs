@@ -288,7 +288,7 @@ http {
             const response = await send(
               port,
               client,
-              '/api/v1/public/posts?page=0',
+              '/api/v1/public/zh/posts?page=0',
               'GET',
               `203.0.113.${(i % 250) + 1}`,
             );
@@ -296,7 +296,7 @@ http {
             assert.equal(response.headers['x-ratelimit-limit'], '120');
           }
           assertBoundary(
-            await send(port, client, '/api/v1/public/posts?page=0'),
+            await send(port, client, '/api/v1/public/zh/posts?page=0'),
             429,
             client,
           );

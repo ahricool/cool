@@ -1,11 +1,11 @@
 <script setup lang="ts">
+const { t, locale, formatDate, localePath, contentLang } = useCmsI18n();
 import type { Pagination, Post } from '@cms/content';
-import { formatDate } from '@cms/content';
 const route = useRoute();
 const page = computed(() => Math.max(1, Number(route.query.page) || 1));
 const api = useApi();
 const { data, pending, error, refresh } = await useAsyncData(
-  () => `archives-${page.value}`,
+  () => `archives-${locale.value}-${page.value}`,
   () =>
     api<Pagination<Post>>('/public/archives', {
       query: { page: page.value, pageSize: 30 },
@@ -13,12 +13,12 @@ const { data, pending, error, refresh } = await useAsyncData(
 );
 const groups = computed(() =>
   Object.groupBy(data.value?.items ?? [], (p) =>
-    formatDate(p.publishedAt).slice(0, 7),
+    formatDate(p.publishedAt, { year: 'numeric', month: 'long' }),
   ),
 );
 </script>
 <template>
-  <PageFrame title="归档" content-class="archives"
+  <PageFrame :title="t('归档')" content-class="archives"
     ><ApiState
       :pending="pending"
       :error="error"
@@ -45,11 +45,16 @@ const groups = computed(() =>
                 <span class="archive-post-circle"></span>
                 <div class="arrow-left-ar"></div>
                 <div class="brick">
-                  <NuxtLink :to="`/posts/${post.slug}`"
+                  <NuxtLink :to="localePath(`/posts/${post.slug}`)"
                     ><span class="time flex-child-center">{{
-                      formatDate(post.publishedAt).slice(5)
+                      formatDate(post.publishedAt, {
+                        month: 'short',
+                        day: 'numeric',
+                      })
                     }}</span
-                    >{{ post.title }}</NuxtLink
+                    ><span :lang="contentLang(post.contentLocale)">{{
+                      post.title
+                    }}</span></NuxtLink
                   >
                 </div>
               </div>
