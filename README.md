@@ -107,4 +107,4 @@ GitHub Actions 仅在 push 到 `main` 时运行，非 main 分支和 PR 不触�
 - `ghcr.io/ahricool/cool-backend`
 - `ghcr.io/ahricool/cool-frontend`
 
-镜像提供 `latest`、`main` 和 `sha-<完整 commit SHA>` 标签。正常部署固定使用 `latest`，无需配置镜像变量或生成版本清单；SHA 标签保留用于故障恢复。流水线不自动部署服务器。
+镜像提供 `latest`、`main` 和 `sha-<完整 commit SHA>` 标签；同一标签包含 `linux/amd64`（Intel/AMD）与 `linux/arm64`（ARM64）两个平台，Docker 自动选择服务器原生架构。首次启用 ARM64 时，必须先合入本次修改并等待 main 的两个镜像任务发布成功，再执行 `bash deploy.sh`；仅更新源码不会为旧镜像补充 ARM64，历史 SHA 标签也不会自动重建。正常部署固定使用 `latest`，无需配置镜像变量或生成版本清单；SHA 标签保留用于故障恢复。流水线不自动部署服务器。

@@ -108,6 +108,9 @@ jobs:
             dockerfile: Dockerfile.frontend
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         if: github.event_name == 'push'
@@ -124,12 +127,21 @@ jobs:
             type=raw,value=main,enable=${{ github.event_name == 'push' }}
             type=sha,format=long
       - uses: docker/build-push-action@v6
+        id: build
         with:
           context: .
           file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.service }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          # One multi-platform build per service; BuildKit keys layers by platform.
+          cache-from: type=gha,scope=${{ matrix.service }}-multiarch
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}-multiarch
+      - name: Verify published image platforms
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}-${{ matrix.service }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          docker buildx imagetools inspect "$IMAGE@$DIGEST" --raw \
+            | jq --exit-status '[.manifests[].platform | .os + "/" + .architecture] | contains(["linux/amd64", "linux/arm64"])'
