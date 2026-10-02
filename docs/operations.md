@@ -22,30 +22,31 @@ checkout 项目到 `~/svr/cms`，复制 `.env.example` 为 `.env` 并执行 `chm
 
 生产 Compose 固定 `NODE_ENV=production`、`PORT=3000`、`TRUST_PROXY_HOPS=1`、`MEDIA_ROOT=/app/data/uploads`，后者映射媒体卷。`.env.example` 的相对媒体路径和 `localhost:5433` 数据库地址用于宿主机本地开发。
 
-`.env` 只保存运行环境与秘密，不放应用镜像版本或站长账户密码。唯一站长邮箱固定为 `whoreahri@gmail.com`，没有 `ADMIN_EMAIL` / `ADMIN_PASSWORD` 配置。应用镜像版本在独立的 `deployment/` 清单中：
+`.env` 只保存运行环境与秘密，不放应用镜像版本或站长账户密码。唯一站长邮箱固定为 `whoreahri@gmail.com`，没有 `ADMIN_EMAIL` / `ADMIN_PASSWORD` 配置。`docker-compose.prod.yml` 直接写死：
 
-- `deployment/sha-<完整 SHA>.yml`：该版本两个应用镜像的 SHA 标签；migrate/seed 使用同一后端版本
-- `deployment/current.yml`：最近成功部署的清单
-- `deployment/previous.yml`：成功切换前的清单，用于排查与回滚参考
+- backend / migrate / seed：`ghcr.io/ahricool/cool-backend:latest`
+- frontend：`ghcr.io/ahricool/cool-frontend:latest`
 
-`./scripts/compose.sh <参数>` 统一加载 `docker-compose.prod.yml`、`${CMS_ENV_FILE:-.env}` 和 `deployment/current.yml`。`--images <路径>` 显式选择清单，`--images local` 使用基础 Compose 的 `cool-backend:local` / `cool-frontend:local`。尚无 current 清单时默认使用本地标签；显式指定不存在的其他清单会报错。环境文件和清单路径相对于项目根目录，也可传绝对路径。
+日常部署不生成、不读取 `deployment/current.yml` 或其他版本清单；之前留下的清单也不会覆盖 latest。`./scripts/compose.sh <参数>` 只加载生产 Compose 与 `${CMS_ENV_FILE:-.env}`。本地构建和隔离恢复才显式使用 `--images local` / `--images <覆盖文件>`；环境文件与覆盖文件路径相对于项目根目录，也可用绝对路径。
 
 GHCR 镜像若私有，先 `docker login ghcr.io`（read:packages 权限）。Actions 使用具有 packages 写权限的 GITHUB_TOKEN，无需提交个人 Token。
 
 ## 首次安装与版本更新
 
-先取得 CI 已发布的完整 40 位 commit SHA，将 checkout 切换到该提交，并保持已跟踪文件无未提交修改。脚本不会隐式 git pull，也不接受短 SHA 或 `main` 作为部署参数。
+配置好容器版 `.env` 后，保持工作区干净（未提交或未跟踪的文件请先提交、移走或暂存；被忽略的 `.env` 和备份不受影响），直接运行：
 
 ```bash
-# <完整 SHA> 必须与当前 clean checkout 及已发布镜像完全一致
-./deploy.sh <完整 SHA>
-./scripts/compose.sh ps
+bash deploy.sh
+bash deploy.sh ps
+bash deploy.sh logs --tail=100 backend frontend
 curl --fail http://127.0.0.1:8080/api/v1/health
 ```
 
-部署依次执行：生成该 SHA 的版本清单 → 校验 Compose → 拉取后端/前端/数据库镜像 → 等待数据库健康 → 备份 → migration → 幂等 seed → 启动后端和前端并等待健康 → 保存 previous/current 清单。任一步失败即停止；失败候选清单保留供排查，current/previous 仍指向上次成功部署。脚本不会自动回滚已经运行的迁移或部分替换的容器，失败后应检查 `ps`、日志和实际镜像。
+无参数时参考 FA 的流程：切换 main → `git pull --ff-only origin main` → 校验 Compose → 拉取 latest 后端/前端及 PostgreSQL → 检查前后端镜像都对应更新后的 main → 等待数据库健康 → 备份 → migration → 幂等 seed → 启动后端和前端并等待健康。有参数时直接转发给 Compose，不更新代码或自动部署。
 
-默认每次部署先备份；首次空库也支持备份。确实无需备份时可显式执行 `SKIP_BACKUP=1 ./deploy.sh <完整 SHA>`。已存在 current 清单时，部署前备份使用原版本镜像；首次安装使用新拉取的后端镜像创建空媒体卷。
+main 的两个镜像任务是分别发布的；若 CI 尚未完成、其中一个发布失败，或拉取到不同版本，脚本会在修改容器、备份或迁移前停止，等两个镜像任务成功后重新运行即可。拉取失败也不会停止现有服务，不会回退使用缓存旧镜像。之后的步骤禁止隐式拉取或构建，继续使用刚检查过的镜像。无需手动输入 commit SHA，也无需配置镜像环境变量。
+
+默认每次部署先备份；首次空库也支持备份。确实无需备份时可显式执行 `SKIP_BACKUP=1 bash deploy.sh`。备份失败则不会执行迁移。迁移或健康检查失败时脚本立即报错，不输出成功信息；它不会自动回滚数据库或部分替换的容器，失败后应检查 `ps`、日志和实际运行版本。不要并发执行部署或操作这些 latest 标签。
 
 访问 `/admin/login`：空库首次直接设置至少 16 字符的密码，不需要额外初始化密钥。**先完成首次密码设置，再开放新实例的公网访问。** 此版本是全新双语 schema 基线，首次部署使用空数据库；不提供旧试验库的兼容升级或旧 URL 跳转。脚本不会自动删除旧数据库；发现旧 schema 时应保留旧实例并另外创建新实例。seed 不重置当前双语实例已设置的密码。
 
@@ -55,7 +56,7 @@ curl --fail http://127.0.0.1:8080/api/v1/health
 export CMS_ENV_FILE=/绝对路径/cms-production.env
 ```
 
-更新必须配套使用同一 SHA 的前后端镜像和该提交的 Compose/Nginx 配置。日常 SQL 迁移应兼容前一应用版本；破坏性迁移需要停机方案。回滚先检查 schema 兼容性，再 checkout 对应旧提交、检查其版本清单并重启；`previous.yml` 只记录应用镜像，不会回滚数据库或恢复旧配置。不要重新标记 SHA 镜像或将 `main` 标签用于生产定版。
+日常 SQL 迁移应兼容前一应用版本；破坏性迁移需要停机方案。latest 会随 main 的成功发布更新，并不是历史版本记录。回滚应先核对数据库 schema 兼容性，再使用对应旧提交和保留的 `sha-<完整 SHA>` 镜像；不要只改标签就假定数据库也已回滚。
 
 ## 本地构建与运行生产栈
 
@@ -70,7 +71,7 @@ export CMS_ENV_FILE=/绝对路径/cms-production.env
 curl --fail http://127.0.0.1:8080/api/v1/health
 ```
 
-`build.sh` 默认始终构建本地标签，不采用 current 发布版本清单。后续查看日志、停机、备份等操作也使用 `--images local`，避免选中此前的发布清单。首次构建仍需要下载基础镜像和 npm 依赖。`build.sh --images <清单路径>` 用于隔离验收等需要自定义镜像名的构建；不要用它覆盖已发布的 SHA 标签。
+`build.sh` 默认加载 `docker-compose.local.yml`，使用 `cool-backend:local` / `cool-frontend:local`，不会覆盖拉取的生产 latest 标签。后续日志、停机和备份也显式使用 `--images local`。首次构建仍需要下载基础镜像和 npm 依赖。`build.sh --images <覆盖文件>` 供隔离验收自定义镜像名；不要用它覆盖生产标签。
 
 ```bash
 ./scripts/compose.sh --images local logs --tail=100 backend
@@ -105,17 +106,30 @@ backups/cms-<UTC时间>-<进程号>/
 
 umask 077 限制权限；失败留下 `.partial`，不冒充成功备份。检查脚本退出状态和恢复后的健康状态。应定时执行并复制整个备份目录到另一台机器；当前不自动清理历史备份。
 
-备份脚本只保存数据库与媒体，**不自动保存应用清单、checkout 或 `.env`**。为每份可恢复的发布备份，另存备份时实际运行的版本清单及其完整 commit SHA；使用该版本的 Git checkout 保留部署配置。独立保管运行环境与秘密，不将它们提交 Git。以下操作应在同一版本稳定运行、没有并发部署时完成：
+备份脚本只保存数据库与媒体，**不自动保存镜像版本、checkout 或 `.env`**。长期保留的备份应另外归档备份时的实际运行版本；latest 会移动，不能作为旧备份的版本记录。独立保管运行环境与秘密，不将它们提交 Git。请在同一版本稳定运行、没有并发部署时记录后端和前端的 revision 标签：
 
 ```bash
-# 替换为 backup.sh 刚输出的成功目录
-export CMS_BACKUP_DIR="$PWD/backups/cms-<UTC时间>-<进程号>"
-cp deployment/current.yml "$CMS_BACKUP_DIR/release.yml"
-# 记录 release.yml 中 sha- 标签的完整 SHA，与该版本 checkout 一起保管
-chmod 600 "$CMS_BACKUP_DIR/release.yml"
+for service in backend frontend; do
+  docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' \
+    "$(./scripts/compose.sh ps -q "$service")"
+done
 ```
 
-部署脚本生成的升级前备份对应**旧版 current**，不是即将部署的候选 SHA。成功更新后可用 `deployment/previous.yml` 找到紧邻这次更新前的版本，但后续部署会覆盖 previous，应及时将版本记录与对应备份一起归档。本地标签不标识不可变版本；本地恢复演练应使用同一次构建的镜像，长期备份则保留可重新取得的固定镜像及源码版本。
+确认两个完整 SHA 一致，并与备份一起保存。使用该 SHA 的 Git checkout 保留部署配置；在备份目录手动保存以下 `release.yml`（把 `<备份对应的完整 SHA>` 替换为上述实际运行版本）：
+
+```yaml
+services:
+  backend:
+    image: ghcr.io/ahricool/cool-backend:sha-<备份对应的完整 SHA>
+  migrate:
+    image: ghcr.io/ahricool/cool-backend:sha-<备份对应的完整 SHA>
+  seed:
+    image: ghcr.io/ahricool/cool-backend:sha-<备份对应的完整 SHA>
+  frontend:
+    image: ghcr.io/ahricool/cool-frontend:sha-<备份对应的完整 SHA>
+```
+
+部署前自动备份对应**升级前正在运行的版本**，不是刚 git pull 得到的新版本。需要长期保存该备份时，应在升级前记下旧容器 revision。本地标签同样不是不可变版本；本地演练使用同一次构建的镜像，长期备份则保留可重新取得的固定镜像及源码版本。
 
 ## 隔离恢复演练
 
@@ -147,7 +161,7 @@ curl --fail http://127.0.0.1:18080/api/v1/health
 
 核对 `_prisma_migrations`、站长/逻辑文章/翻译/媒体 ID、两种语言的 Markdown 和发布状态，以及图片字节，验证固定邮箱加备份时的密码能登录。通过 HTTPS 入口验证 Cookie 登录、刷新恢复、双语编辑和 `/zh` / `/en` 已发布内容回退；命令行可使用 Bearer Token 验证 API。恢复同版本数据无需重新 seed；若要升级，先确认恢复成功，再按正常升级流程执行新版本 migration。恢复数据库也恢复当时的会话状态，需要强制重新登录时在后台撤销全部会话。
 
-恢复验证完成后再决定是否清理演练卷。不要将演练的 COMPOSE_PROJECT_NAME、HTTP_PORT、CMS_ENV_FILE 带入后续生产命令。生产恢复同样使用明确的版本清单，不能让恢复步骤意外回退到本地默认标签。
+恢复验证完成后再决定是否清理演练卷。不要将演练的 COMPOSE_PROJECT_NAME、HTTP_PORT、CMS_ENV_FILE 带入后续生产命令。生产恢复同样使用明确的版本覆盖文件，不能让旧备份意外配上新的 latest。
 
 ## 站长凭证与会话维护
 
@@ -159,7 +173,7 @@ curl --fail http://127.0.0.1:18080/api/v1/health
 
 - `verify` 执行类型检查、静态生成、lint、格式、审计、真实数据库/API/迁移测试、真实 Nginx 边界测试和浏览器测试
 - `compose-smoke` 运行 `scripts/compose-smoke.sh`，构建当前代码的两个应用镜像，验证空库备份、迁移、seed 幂等、首次密码设置、静态路由/资源、内容发布、上传、改密，并通过生产 Nginx 运行完整 Playwright 浏览器流程和桌面/移动截图，再验证有内容备份；移除源项目和源卷后，在另一项目恢复并比对迁移、ID、Markdown 与媒体 SHA-256
-- `images` 等待以上两个任务成功，再构建两个应用镜像；PR 不推送，合入 main 后推送 GHCR 的 main 与完整 SHA 标签，不自动部署服务器
+- `images` 等待以上两个任务成功，再构建两个应用镜像；PR 不推送，合入 main 后推送 GHCR 的 latest、main 与完整 SHA 标签，不自动部署服务器
 - 可在具备 Docker 的 Linux 环境先运行 `npm ci`、`npx playwright install --with-deps chromium`，再运行 `bash scripts/compose-smoke.sh`。它只使用隔离项目，清理自身测试容器/卷，保留受限长度且已脱敏的报告与日志，不上传秘密、数据库 dump 或媒体备份
 - 三个常驻服务均有健康检查；API 健康接口检查数据库，frontend 检查静态入口。日志：`./scripts/compose.sh logs --tail=100 backend frontend`
 - 后端以非 root 用户运行；前端使用 Nginx 官方运行镜像。PostgreSQL 无宿主机映射，媒体不会随容器重建丢失

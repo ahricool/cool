@@ -99,11 +99,11 @@ docker rm -f cms-test
 
 ## 部署与 CI
 
-详见 [部署、备份与恢复](docs/operations.md)。`.env` 只保存运行环境与秘密；应用版本保存在独立的 `deployment/sha-<完整 SHA>.yml` 清单中。`./deploy.sh <完整 SHA>` 要求 checkout 与镜像版本一致、已跟踪文件无未提交修改；成功发布后通过 `./scripts/compose.sh` 管理当前版本。`./scripts/build.sh` 构建本地镜像，配合 `./scripts/compose.sh --images local` 使用。
+详见 [部署、备份与恢复](docs/operations.md)。配置好 `.env` 后，直接运行 `bash deploy.sh`：自动更新 main、拉取 latest 镜像、备份、迁移并等待服务健康。无需输入 SHA；两个应用镜像的 `:latest` 地址直接写在 `docker-compose.prod.yml` 中，`.env` 只保存运行环境与秘密。更新时保持工作区干净，并等待 main 的两个镜像发布完成；脚本会检查拉取的前后端与 main 版本一致。`bash deploy.sh ps` / `bash deploy.sh logs --tail=100 backend` 可直接执行 Compose 命令。`./scripts/build.sh` 构建独立的本地标签，配合 `./scripts/compose.sh --images local` 使用。
 
 PR 执行类型检查、构建、lint、格式、依赖审计、真实数据库测试、浏览器测试，以及两个应用镜像的构建。独立 Compose 验收用当前代码构建本地镜像，通过真实 Nginx 对生成的静态前端执行浏览器流程和截图，并验证空库首次启动、空库/有内容备份、删除源卷后恢复到新项目，以及媒体字节和迁移记录一致性。镜像构建/发布等待两类验证通过；合入 `main` 后推送：
 
 - `ghcr.io/ahricool/cool-backend`
 - `ghcr.io/ahricool/cool-frontend`
 
-镜像提供 `main` 和 `sha-<完整 commit SHA>` 标签。生产用同一 SHA 固定两个应用镜像；流水线不自动部署服务器。
+镜像提供 `latest`、`main` 和 `sha-<完整 commit SHA>` 标签。正常部署固定使用 `latest`，无需配置镜像变量或生成版本清单；SHA 标签保留用于故障恢复。流水线不自动部署服务器。

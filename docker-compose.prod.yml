@@ -1,8 +1,7 @@
 name: personal-cms
+# Published application images are fixed here, never selected through .env.
 x-backend: &backend
-  # Local builds use these names. deploy.sh pins both application images in a
-  # separate release manifest, never in the runtime environment file.
-  image: cool-backend:local
+  image: ghcr.io/ahricool/cool-backend:latest
   environment: &environment
     NODE_ENV: production
     PORT: 3000
@@ -63,7 +62,7 @@ services:
       timeout: 5s
       retries: 10
   frontend:
-    image: cool-frontend:local
+    image: ghcr.io/ahricool/cool-frontend:latest
     build:
       context: .
       dockerfile: Dockerfile.frontend
