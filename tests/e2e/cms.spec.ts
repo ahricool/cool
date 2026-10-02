@@ -186,6 +186,13 @@ test('all blog routes load on desktop and mobile without external resources', as
       }),
     )
     .toBe(true);
+  const notice = page.locator('.notice');
+  if (await notice.count()) {
+    const bounds = await notice.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+  }
   await page.screenshot({
     path: info.outputPath('blog-home-mobile.png'),
     fullPage: true,
