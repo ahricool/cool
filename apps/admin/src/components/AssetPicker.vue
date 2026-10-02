@@ -3,17 +3,26 @@ import { ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { api, upload, errorText } from '../api';
 import type { Media, Pagination } from '@cms/content';
-defineProps<{ modelValue: string | null | undefined }>();
-const emit = defineEmits<{ 'update:modelValue': [value: string | null] }>();
+const props = defineProps<{
+  modelValue: string | null | undefined;
+  disabled?: boolean;
+}>();
+const emit = defineEmits<{
+  'update:modelValue': [value: string | null];
+  'busy-change': [value: boolean];
+}>();
 const busy = ref(false);
+const fileInput = ref<HTMLInputElement>();
 const dialog = ref(false);
 const items = ref<Media[]>([]);
 const page = ref(1);
 const total = ref(0);
 async function fileChanged(event: Event) {
+  if (busy.value || props.disabled) return;
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
   busy.value = true;
+  emit('busy-change', true);
   try {
     const media = await upload(file);
     emit('update:modelValue', media.url);
@@ -21,6 +30,7 @@ async function fileChanged(event: Event) {
     ElMessage.error(errorText(e));
   } finally {
     busy.value = false;
+    emit('busy-change', false);
     (event.target as HTMLInputElement).value = '';
   }
 }
@@ -41,18 +51,27 @@ async function browse() {
   <div class="asset-picker">
     <img v-if="modelValue" :src="modelValue" alt="所选图片" />
     <div class="asset-actions">
-      <label class="upload-label"
-        >{{ busy ? '上传中…' : '上传图片'
-        }}<input
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          :disabled="busy"
-          @change="fileChanged" /></label
-      ><el-button text @click="browse">从媒体库选择</el-button
+      <el-button
+        class="upload-label"
+        text
+        :disabled="busy || disabled"
+        @click="fileInput?.click()"
+        >{{ busy ? '上传中…' : '上传图片' }}</el-button
+      ><input
+        ref="fileInput"
+        hidden
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        :disabled="busy || disabled"
+        @change="fileChanged"
+      />
+      <el-button text :disabled="busy || disabled" @click="browse"
+        >从媒体库选择</el-button
       ><el-button
         v-if="modelValue"
         text
         type="danger"
+        :disabled="busy || disabled"
         @click="emit('update:modelValue', null)"
         >移除</el-button
       >
@@ -66,6 +85,7 @@ async function browse() {
       <button
         v-for="item in items"
         :key="item.id"
+        :disabled="busy || disabled"
         @click="
           emit('update:modelValue', item.url);
           dialog = false;

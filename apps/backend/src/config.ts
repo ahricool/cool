@@ -8,6 +8,9 @@ export function readConfig() {
   const port = Number(process.env.PORT ?? 3000);
   if (!Number.isInteger(port) || port < 1 || port > 65535)
     throw new Error('Invalid PORT');
+  const trustProxyHops = process.env.TRUST_PROXY_HOPS ?? '0';
+  if (trustProxyHops !== '0' && trustProxyHops !== '1')
+    throw new Error('TRUST_PROXY_HOPS must be 0 (direct) or 1 (single proxy)');
   const origins = (process.env.CORS_ORIGINS ?? '')
     .split(',')
     .map((v) => v.trim())
@@ -15,5 +18,11 @@ export function readConfig() {
   for (const origin of origins)
     if (new URL(origin).origin !== origin)
       throw new Error('CORS_ORIGINS requires exact origins');
-  return { databaseUrl, jwtSecret, port, origins };
+  return {
+    databaseUrl,
+    jwtSecret,
+    port,
+    origins,
+    trustProxyHops: Number(trustProxyHops),
+  };
 }

@@ -2,6 +2,11 @@
 const route = useRoute();
 const store = useSiteStore();
 const menuOpen = ref(false);
+const menuTrigger = ref<HTMLButtonElement>();
+const sidebar = ref<HTMLElement>();
+const sidebarClose = ref<HTMLButtonElement>();
+const mobileQuery = ref('');
+let previousOverflow = '';
 const scrolled = ref(false);
 const dark = ref(false);
 const menu = [
@@ -20,10 +25,64 @@ onMounted(() => {
   };
   scroll();
   window.addEventListener('scroll', scroll, { passive: true });
-  onUnmounted(() => window.removeEventListener('scroll', scroll));
+  const resize = () => {
+    if (window.innerWidth > 768) menuOpen.value = false;
+  };
+  window.addEventListener('resize', resize);
+  onUnmounted(() => {
+    window.removeEventListener('scroll', scroll);
+    window.removeEventListener('resize', resize);
+    if (menuOpen.value) document.body.style.overflow = previousOverflow;
+  });
 });
+watch(menuOpen, async (open) => {
+  if (open) {
+    previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    await nextTick();
+    sidebarClose.value?.focus();
+  } else {
+    document.body.style.overflow = previousOverflow;
+    await nextTick();
+    menuTrigger.value?.focus();
+  }
+});
+function sidebarKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    menuOpen.value = false;
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const items = sidebar.value?.querySelectorAll<HTMLElement>(
+    'button, a[href], input',
+  );
+  if (!items?.length) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last?.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first?.focus();
+  }
+}
+function mobileSearch() {
+  if (mobileQuery.value.trim()) {
+    menuOpen.value = false;
+    void navigateTo({
+      path: '/search',
+      query: { q: mobileQuery.value.trim() },
+    });
+  }
+}
 function toTop() {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({
+    top: 0,
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'auto'
+      : 'smooth',
+  });
 }
 watch(
   () => route.fullPath,
@@ -37,22 +96,25 @@ useHead(() => ({
 }));
 </script>
 <template>
-  <a class="skip-link" href="#content">跳到正文</a>
+  <a class="skip-link" href="#content" :inert="menuOpen">跳到正文</a>
   <section
     id="main-container"
     class="container"
-    :class="{ 'is-homepage': route.path === '/' }"
+    :class="{ 'is-homepage': route.path === '/', 'sidebar-open': menuOpen }"
+    :inert="menuOpen"
   >
     <header class="site-header" :class="{ yya: scrolled }">
       <div class="header-inner">
         <div class="header-before">
           <button
-            class="mobile-toggle"
+            ref="menuTrigger"
+            class="site-nav-toggle"
             aria-label="打开导航"
+            aria-controls="mobile-sidebar"
             :aria-expanded="menuOpen"
             @click="menuOpen = !menuOpen"
           >
-            <SakuraIcon name="hamburger-menu-linear" />
+            <span class="nav-toggle"><span class="icon"></span></span>
           </button>
           <div class="site-branding">
             <h1 class="site-title">
@@ -86,12 +148,6 @@ useHead(() => ({
         </div>
       </div>
     </header>
-    <nav v-if="menuOpen" class="mobile-menu" aria-label="移动端导航">
-      <NuxtLink v-for="item in menu" :key="item[0]" :to="item[0]!">{{
-        item[1]
-      }}</NuxtLink
-      ><NuxtLink to="/search">搜索</NuxtLink>
-    </nav>
     <main id="page" class="main site wrapper">
       <div v-if="store.failed" class="site-error" role="alert">
         网站配置加载失败 <button @click="store.load">重试</button>
@@ -99,7 +155,86 @@ useHead(() => ({
       <slot />
     </main>
   </section>
-  <footer class="site-footer">
+  <button
+    v-if="menuOpen"
+    class="sidebar-backdrop"
+    tabindex="-1"
+    aria-label="关闭导航"
+    @click="menuOpen = false"
+  ></button>
+  <section
+    id="mobile-sidebar"
+    ref="sidebar"
+    class="site-sidebar"
+    :class="{ open: menuOpen }"
+    :inert="!menuOpen"
+    :aria-hidden="!menuOpen"
+    role="dialog"
+    aria-modal="true"
+    aria-label="移动端菜单"
+    @keydown="sidebarKeydown"
+  >
+    <button
+      ref="sidebarClose"
+      class="sidebar-close"
+      aria-label="关闭菜单"
+      @click="menuOpen = false"
+    ></button>
+    <div class="sidebar-inner">
+      <div class="mobile-sidebar">
+        <div class="avatar">
+          <img
+            :src="store.site.avatarUrl || '/sakura/images/default/avatar.webp'"
+            :alt="store.site.authorName"
+            width="90"
+            height="90"
+          />
+        </div>
+        <p class="glitch-text">{{ store.homepage.greeting }}</p>
+        <div v-if="store.social.length" class="socials">
+          <a
+            v-for="link in store.social"
+            :key="link.url"
+            class="social-item"
+            :href="link.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            >{{ link.label }}</a
+          >
+        </div>
+        <div class="search">
+          <form
+            class="search-form"
+            role="search"
+            @submit.prevent="mobileSearch"
+          >
+            <input
+              v-model="mobileQuery"
+              class="m-search-input"
+              type="search"
+              aria-label="搜索文章"
+              placeholder="搜索文章…"
+              maxlength="100"
+              required
+            />
+          </form>
+        </div>
+        <nav class="navbar" aria-label="移动端导航">
+          <ul class="menu-root">
+            <li v-for="item in menu" :key="item[0]" class="menu-item">
+              <NuxtLink :to="item[0]!" @click="menuOpen = false">{{
+                item[1]
+              }}</NuxtLink>
+            </li>
+          </ul>
+        </nav>
+        <div class="footer">
+          <p>© {{ new Date().getFullYear() }} {{ store.site.title }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <footer class="site-footer" :inert="menuOpen">
     <div class="site-info">
       <div class="footer-logo">
         <p
@@ -133,7 +268,22 @@ useHead(() => ({
       </div>
     </div>
   </footer>
-  <button v-if="scrolled" class="back-top" aria-label="回到顶部" @click="toTop">
+  <button
+    class="cd-top"
+    :class="{ 'cd-is-visible': scrolled }"
+    :tabindex="scrolled ? 0 : -1"
+    aria-label="回到顶部"
+    :inert="menuOpen"
+    @click="toTop"
+  ></button>
+  <button
+    class="m-cd-top"
+    :class="{ 'cd-is-visible': scrolled }"
+    :tabindex="scrolled ? 0 : -1"
+    aria-label="回到顶部"
+    :inert="menuOpen"
+    @click="toTop"
+  >
     <SakuraIcon name="alt-arrow-up-linear" />
   </button>
 </template>

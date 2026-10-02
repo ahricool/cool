@@ -7,10 +7,18 @@ import {
   watch,
   onBeforeUnmount,
 } from 'vue';
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
+import {
+  onBeforeRouteLeave,
+  onBeforeRouteUpdate,
+  useRoute,
+  useRouter,
+  type RouteLocationNormalized,
+} from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { Post, Page, Taxonomy, Status } from '@cms/content';
 import { api, errorText } from '../api';
+import { takeEditorDraft, transferEditorDraft } from '../editor-drafts';
+import { publicUrl } from '../publicUrl';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
 import MarkdownEditor from '../components/MarkdownEditor.vue';
@@ -37,10 +45,14 @@ const form = reactive({
 const baseline = ref('');
 const loaded = ref(false);
 const busy = ref(false);
+const uploads = reactive({ content: false, cover: false });
+const uploading = computed(() => uploads.content || uploads.cover);
 const error = ref('');
 const draft = ref<string | null>(null);
 const categories = ref<Taxonomy[]>([]);
 const tags = ref<Taxonomy[]>([]);
+let savedRoute = '';
+let active = true;
 const dirty = computed(
   () => loaded.value && JSON.stringify(form) !== baseline.value,
 );
@@ -72,6 +84,11 @@ async function load() {
     baseline.value = JSON.stringify(form);
     loaded.value = true;
     draft.value = sessionStorage.getItem(key);
+    const transferred = takeEditorDraft(key);
+    if (transferred) {
+      Object.assign(form, JSON.parse(transferred));
+      draft.value = null;
+    }
   } catch (e) {
     error.value = errorText(e);
   }
@@ -98,34 +115,55 @@ watch(
   { deep: true },
 );
 async function save(status: Status) {
+  if (busy.value || uploading.value || !loaded.value) return;
   if (!form.title.trim() || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug)) {
     ElMessage.warning('请填写标题和有效的 URL 标识（小写字母、数字、连字符）');
     return;
   }
   busy.value = true;
   error.value = '';
+  // Never compare the response against the live form: the author may keep
+  // typing (or an image upload may finish) while this request is in flight.
+  const submitted = JSON.parse(JSON.stringify(form)) as typeof form;
   try {
     const body =
       props.kind === 'posts'
-        ? { ...form, status }
+        ? { ...submitted, status }
         : {
-            title: form.title,
-            slug: form.slug,
-            content: form.content,
-            coverUrl: form.coverUrl,
+            title: submitted.title,
+            slug: submitted.slug,
+            content: submitted.content,
+            coverUrl: submitted.coverUrl,
             status,
-            publishedAt: form.publishedAt,
+            publishedAt: submitted.publishedAt,
           };
     const saved = await api<Post | Page>(
       `/admin/${props.kind}${isNew ? '' : '/' + id}`,
       { method: isNew ? 'POST' : 'PUT', body: JSON.stringify(body) },
     );
+    if (!active) return;
     form.status = saved.status ?? 'DRAFT';
-    form.publishedAt = saved.publishedAt;
-    baseline.value = JSON.stringify(form);
-    sessionStorage.removeItem(key);
+    if (form.publishedAt === submitted.publishedAt)
+      form.publishedAt = saved.publishedAt;
+    baseline.value = JSON.stringify({
+      ...submitted,
+      status: saved.status ?? 'DRAFT',
+      publishedAt: saved.publishedAt,
+    });
+    if (dirty.value) sessionStorage.setItem(key, JSON.stringify(form));
+    else sessionStorage.removeItem(key);
     ElMessage.success(status === 'PUBLISHED' ? '已保存发布状态' : '已保存');
-    if (isNew) await router.replace(`/${props.kind}/${saved.id}`);
+    if (isNew) {
+      if (dirty.value)
+        transferEditorDraft(
+          `cms-draft-${props.kind}-${saved.id}`,
+          JSON.stringify(form),
+        );
+      savedRoute = `/${props.kind}/${saved.id}`;
+      const failure = await router.replace(savedRoute);
+      if (!failure) sessionStorage.removeItem(key);
+      savedRoute = '';
+    }
   } catch (e) {
     error.value = errorText(e);
   } finally {
@@ -133,7 +171,7 @@ async function save(status: Status) {
   }
 }
 function beforeUnload(e: BeforeUnloadEvent) {
-  if (dirty.value) {
+  if (dirty.value || busy.value || uploading.value) {
     e.preventDefault();
     e.returnValue = '';
   }
@@ -142,8 +180,18 @@ onMounted(() => {
   void load();
   window.addEventListener('beforeunload', beforeUnload);
 });
-onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload));
-onBeforeRouteLeave(async () => {
+onBeforeUnmount(() => {
+  active = false;
+  window.removeEventListener('beforeunload', beforeUnload);
+});
+async function confirmNavigation(to: RouteLocationNormalized) {
+  // Authentication expiry keeps the browser draft and must not strand the
+  // author behind a stale authenticated screen or a leave-confirm dialog.
+  if (to.path === '/login' || to.path === savedRoute) return true;
+  if (busy.value || uploading.value) {
+    ElMessage.info('正在保存或上传，请稍候再离开');
+    return false;
+  }
   if (!dirty.value) return true;
   try {
     await ElMessageBox.confirm(
@@ -155,7 +203,9 @@ onBeforeRouteLeave(async () => {
   } catch {
     return false;
   }
-});
+}
+onBeforeRouteLeave(confirmNavigation);
+onBeforeRouteUpdate(confirmNavigation);
 </script>
 <template>
   <ViewHeader
@@ -165,17 +215,21 @@ onBeforeRouteLeave(async () => {
     :description="
       dirty ? '有未保存的修改 · 浏览器草稿已保留' : '让文字保持你的温度。'
     "
-    ><el-button :disabled="!loaded" :loading="busy" @click="save(form.status)"
+    ><el-button
+      :disabled="!loaded || uploading"
+      :loading="busy"
+      @click="save(form.status)"
       >保存{{ form.status === 'DRAFT' ? '草稿' : '' }}</el-button
     ><el-button
       v-if="form.status === 'PUBLISHED'"
+      :disabled="uploading"
       :loading="busy"
       @click="save('DRAFT')"
       >撤回为草稿</el-button
     ><el-button
       v-else
       type="primary"
-      :disabled="!loaded"
+      :disabled="!loaded || uploading"
       :loading="busy"
       @click="save('PUBLISHED')"
       >发布</el-button
@@ -196,7 +250,11 @@ onBeforeRouteLeave(async () => {
         placeholder="给文章一个标题"
         maxlength="200"
         aria-label="标题"
-      /><MarkdownEditor v-model="form.content" />
+      /><MarkdownEditor
+        v-model="form.content"
+        :disabled="busy"
+        @busy-change="uploads.content = $event"
+      />
     </section>
     <aside class="editor-settings panel">
       <h2>发布设置</h2>
@@ -226,7 +284,10 @@ onBeforeRouteLeave(async () => {
             maxlength="500"
             show-word-limit /></el-form-item
         ><el-form-item label="封面"
-          ><AssetPicker v-model="form.coverUrl" /></el-form-item
+          ><AssetPicker
+            v-model="form.coverUrl"
+            :disabled="busy"
+            @busy-change="uploads.cover = $event" /></el-form-item
         ><template v-if="kind === 'posts'"
           ><el-form-item label="分类"
             ><el-select
@@ -247,7 +308,7 @@ onBeforeRouteLeave(async () => {
                 :value="term.id" /></el-select></el-form-item></template
         ><a
           v-if="!isNew && form.status === 'PUBLISHED'"
-          :href="`/${kind}/${form.slug}`"
+          :href="publicUrl(`/${kind}/${form.slug}`)"
           target="_blank"
           rel="noopener"
           >查看公开页面 ↗</a

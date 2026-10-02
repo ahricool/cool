@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, session, errorText } from '../api';
+import { publicUrl } from '../publicUrl';
 const email = ref('');
 const password = ref('');
 const busy = ref(false);
@@ -71,7 +72,7 @@ async function login() {
           class="login-submit"
           >登录工作空间</el-button
         ></el-form
-      ><a href="/" class="muted">← 返回博客</a>
+      ><a :href="publicUrl()" class="muted">← 返回博客</a>
     </section>
   </main>
 </template>

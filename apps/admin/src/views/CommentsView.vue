@@ -6,6 +6,7 @@ import type { Comment, Pagination } from '@cms/content';
 import { formatDate } from '@cms/content';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
+import { publicUrl } from '../publicUrl';
 const items = ref<Comment[]>([]);
 const total = ref(0);
 const page = ref(1);
@@ -81,7 +82,10 @@ onMounted(load);
       </header>
       <p>{{ item.content }}</p>
       <footer>
-        <a :href="`/posts/${item.post?.slug}`" target="_blank" rel="noopener"
+        <a
+          :href="publicUrl(`/posts/${item.post?.slug}`)"
+          target="_blank"
+          rel="noopener"
           >{{ item.post?.title }} ↗</a
         >
         <div>

@@ -42,6 +42,14 @@ docker compose -f docker-compose.prod.yml up -d --wait backend frontend admin pr
 
 更新必须配套使用同一 SHA 的三端镜像与 checkout 中的 Compose/Nginx 配置。日常 SQL 迁移应兼容前一应用版本；破坏性迁移需要停机方案。回滚先检查 schema 兼容性，再切旧 SHA；更换镜像不会自动回滚数据库。
 
+## 代理信任与访客限流
+
+后端默认 `TRUST_PROXY_HOPS=0`，使用直接连接的 IP，忽略客户端自填的转发头。生产 Compose 固定为 `1`，仅信任紧邻后端的一跳代理；Nginx 在登录和所有 API 路由中用 `$remote_addr` **覆盖** `X-Forwarded-For`，并覆盖 `X-Forwarded-Host` / `X-Forwarded-Proto`。这样访客分别计入后端限流额度，伪造的转发链不会改变额度归属。不要改成无限信任或使用 `$proxy_add_x_forwarded_for` 传递未经验证的客户端头。
+
+此配置的信任边界是私有 Compose 网络：后端不得映射公网端口，也不得让不可信容器或其他客户端直接连接后端；数字跳数不会校验代理身份。自定义直连部署保持 `0`；只有能保证请求必经受控、覆盖转发头的唯一入口时才设为 `1`。配置只接受 `0` 或 `1`，错误值会阻止后端启动。
+
+如果 Nginx 前还有 HTTPS 网关、CDN 或负载均衡器，默认 `$remote_addr` 是该上游地址，同一上游下的访客仍会共享 Nginx 和后端限流。上线前按实际拓扑配置 Nginx 的 Real IP 模块：`set_real_ip_from` 只列出受信上游的准确 IP/CIDR，由这些上游覆盖访客地址头，再配置相应的 `real_ip_header`（多层代理还需审核 `real_ip_recursive`）。同时限制入口只能被指定上游访问；不得使用 `0.0.0.0/0` 或 `::/0` 信任任意来源。后端仍保持一跳信任，并由 Nginx 继续输出已验证的单一访客地址。HTTPS 协议头也须在这个受控边界内处理，不能直接相信公网传入的值。部署验证应确认两个实际客户端各自有独立额度，且更换伪造的 `X-Forwarded-For` 不会重置额度。
+
 ## 一致性备份
 
 ```bash

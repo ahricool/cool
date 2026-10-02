@@ -10,6 +10,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { APP_GUARD, NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -71,7 +72,11 @@ class HealthController {
 export class AppModule {}
 export async function createApp() {
   const config = readConfig();
-  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
+  // Enable only behind the sole ingress proxy, which overwrites forwarding headers.
+  app.set('trust proxy', config.trustProxyHops);
   app.use(helmet());
   app.use(json({ limit: '1mb' }));
   app.enableCors({ origin: config.origins, credentials: false });

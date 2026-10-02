@@ -10,6 +10,7 @@ const total = ref(0);
 const page = ref(1);
 const error = ref('');
 const busy = ref(false);
+const fileInput = ref<HTMLInputElement>();
 async function load() {
   try {
     error.value = '';
@@ -69,14 +70,20 @@ onMounted(load);
   <ViewHeader
     title="媒体库"
     description="收藏文字之外的风景。上传图片会转换为 WebP，最大 8MB。"
-    ><label class="upload-label primary"
-      >{{ busy ? '上传中…' : '＋ 上传图片'
-      }}<input
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        multiple
-        :disabled="busy"
-        @change="select" /></label></ViewHeader
+    ><el-button
+      class="upload-label primary"
+      type="primary"
+      :disabled="busy"
+      @click="fileInput?.click()"
+      >{{ busy ? '上传中…' : '＋ 上传图片' }}</el-button
+    ><input
+      ref="fileInput"
+      hidden
+      type="file"
+      accept="image/jpeg,image/png,image/webp,image/gif"
+      multiple
+      :disabled="busy"
+      @change="select" /></ViewHeader
   ><ErrorNotice :error="error" @retry="load" /><el-empty
     v-if="!items.length && !error"
     description="还没有图片，上传第一张吧"

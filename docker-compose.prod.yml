@@ -8,6 +8,8 @@ x-backend: &backend
     JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
     CORS_ORIGINS: ${CORS_ORIGINS:-}
     MEDIA_ROOT: /app/data/uploads
+    # Only proxy publishes a host port; it replaces all forwarding headers.
+    TRUST_PROXY_HOPS: '1'
   init: true
 services:
   database:

@@ -788,3 +788,352 @@ textarea {
     font-size: 9px;
   }
 }
+
+/* A quiet Sakura workspace: local illustration, petal accents, clear surfaces. */
+:root {
+  --el-color-primary: #b34272;
+  --el-color-primary-light-3: #c97497;
+  --el-color-primary-light-5: #dfa6bd;
+  --el-color-primary-light-7: #efcedc;
+  --el-color-primary-light-8: #f6e2eb;
+  --el-color-primary-light-9: #fff1f6;
+  --el-color-primary-dark-2: #92335c;
+  --el-color-danger: #c23d5a;
+  --el-border-radius-base: 10px;
+  --el-text-color-primary: #403649;
+  --el-text-color-regular: #615466;
+  --el-text-color-secondary: #766779;
+  --el-border-color: #e4d7e0;
+  --el-border-color-light: #eee3eb;
+  --el-fill-color-light: #fff5f9;
+  --el-menu-hover-bg-color: #fff1f6;
+  background: #fcf8fb;
+  color: #403649;
+}
+body {
+  background:
+    radial-gradient(ellipse at top right, #f7eaf5 0, transparent 55%), #fcf8fb;
+}
+.sidebar {
+  background: linear-gradient(180deg, #fff9fc, #fff 58%, #fcf4fb);
+  border-color: #eadde6;
+}
+.brand {
+  color: #713951;
+}
+.brand-mark {
+  color: #c7658f;
+  text-shadow: 0 3px 12px #e9b9ce70;
+}
+.brand small,
+.nav-caption {
+  color: #786478;
+}
+.brand small {
+  font-size: 11px;
+}
+.sidebar nav > a,
+.sidebar-bottom > a,
+.sidebar-bottom > button {
+  color: #706172;
+}
+.sidebar nav > a:hover,
+.sidebar-bottom > a:hover,
+.sidebar-bottom > button:hover {
+  background: #fff0f6;
+}
+.sidebar nav > a.active,
+.sidebar-bottom > a.router-link-active {
+  background: #fbe7f0;
+  color: #98365f;
+  box-shadow: inset 3px 0 #c7658f;
+}
+.sidebar-bottom {
+  border-color: #ebdfe8;
+}
+.topbar {
+  background: #fffafdef;
+  border-color: #eadfe8;
+}
+.owner-avatar {
+  background: #f8dfeb;
+  color: #973e66;
+  border: 1px solid #efd1e0;
+}
+.breadcrumbs,
+.topbar-right,
+.view-header p,
+.muted {
+  color: #766779;
+}
+.breadcrumbs strong {
+  color: #5e4961;
+}
+.view-header h1 {
+  color: #503a54;
+}
+.panel,
+.stat-card,
+.media-card {
+  border-color: #eadfe8;
+  box-shadow: 0 4px 18px #71395104;
+}
+.panel h2 {
+  color: #68445f;
+}
+.panel-heading a,
+.recent-row small,
+.table-slug,
+.media-card small {
+  color: #796a7d;
+}
+.eyebrow {
+  color: #9c4267;
+  letter-spacing: 2px;
+}
+.welcome-card {
+  background:
+    linear-gradient(90deg, #fff1f8 0%, #fff1f8f5 45%, #fff1f815 100%),
+    url('/sakura/images/default/hd.webp') center 45% / cover;
+  border-color: #efd4e3;
+  min-height: 240px;
+}
+.welcome-card h2 {
+  color: #633b59;
+}
+.welcome-card p:not(.eyebrow) {
+  color: #795d70;
+}
+.welcome-card a {
+  color: #94375e;
+  font-weight: 700;
+}
+.welcome-flower {
+  color: #fff8fb;
+  font-size: 160px;
+  text-shadow: 0 4px 24px #ad6a9b30;
+  opacity: 0.7;
+}
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color 0.2s,
+    transform 0.2s;
+}
+.stat-card::after {
+  content: '❀';
+  position: absolute;
+  right: 12px;
+  bottom: 0;
+  color: #f3e3ee;
+  font-size: 65px;
+  pointer-events: none;
+}
+.stat-card:hover {
+  border-color: #d79ab7;
+  transform: translateY(-2px);
+}
+.stat-card > span,
+.stat-card small {
+  color: #786679;
+}
+.stat-card strong {
+  color: #9a466e;
+}
+.stat-card small,
+.recent-row small,
+.media-card small,
+.admin-footer {
+  font-size: 11px;
+}
+.admin-footer {
+  color: #877087;
+}
+.el-button {
+  min-height: 36px;
+}
+.el-button--primary {
+  box-shadow: 0 3px 9px #b342721c;
+}
+.el-table th.el-table__cell {
+  background: #fff7fb !important;
+  color: #7b647a;
+}
+.el-dialog,
+.el-message-box {
+  border: 1px solid #ead3e2;
+  border-radius: 16px;
+}
+.el-dialog__header,
+.el-message-box__header {
+  border-bottom: 1px solid #f2e4ed;
+  margin-bottom: 16px;
+}
+.el-empty {
+  padding: 42px 16px;
+}
+.el-empty__image {
+  filter: sepia(0.15) hue-rotate(280deg);
+}
+.el-empty__description p {
+  color: #81687c;
+}
+.login-page {
+  background: #fffafd;
+}
+.login-story {
+  padding: 10vh 12%;
+  background:
+    linear-gradient(180deg, #4b28433a, #382239d9),
+    url('/sakura/images/default/hd.webp') 57% center / cover;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 15vh;
+  min-height: 100vh;
+}
+.login-story .brand-mark {
+  position: absolute;
+  top: 8vh;
+  color: #ffe7f3;
+}
+.login-story .eyebrow,
+.login-story h1,
+.login-story > p:not(.eyebrow),
+.login-footnote {
+  color: #fff4fa;
+  text-shadow: 0 2px 12px #30152c66;
+}
+.login-story h1 {
+  margin: 12px 0 20px;
+  font-size: clamp(38px, 4vw, 58px);
+}
+.login-story .eyebrow {
+  margin-top: 30px;
+}
+.login-form {
+  width: 380px;
+}
+.login-form h2 {
+  color: #654057;
+}
+.login-form .eyebrow::before {
+  content: '❀ ';
+  color: #c96891;
+  font-size: 20px;
+}
+.login-form .el-input__wrapper {
+  background: #fff;
+}
+.login-footnote {
+  letter-spacing: 2px;
+}
+.editor-toolbar {
+  background: #fff9fc;
+  border-color: #eee1ea;
+}
+.editor-status {
+  color: #816c80;
+  font-size: 11px;
+}
+.title-input .el-input__inner {
+  color: #67445f;
+}
+.upload-label {
+  color: #a33f6a;
+  background: #fff0f6;
+}
+.upload-label.primary {
+  background: var(--el-color-primary);
+  color: white;
+}
+.markdown-preview pre {
+  background: #faf3f8;
+}
+.media-picker-grid button:hover,
+.media-picker-grid button:focus-visible {
+  border-color: #b34272;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #ad3c71;
+  outline-offset: 3px;
+}
+.editor-panes textarea:focus-visible {
+  outline-offset: -3px;
+}
+@media (max-width: 760px) {
+  .login-story {
+    display: none;
+  }
+  .login-page {
+    background:
+      linear-gradient(#fff7fbdc, #fff7fbf5),
+      url('/sakura/images/default/hd.webp') center / cover;
+  }
+  .login-form {
+    background: #fffcfe;
+    border: 1px solid #efdae6;
+    border-radius: 20px;
+    padding: 32px 24px;
+    width: 400px;
+    max-width: calc(100% - 32px);
+    box-shadow: 0 8px 32px #70455b10;
+  }
+  .welcome-card {
+    background:
+      linear-gradient(90deg, #fff1f8fa, #fff1f8d9 65%, #fff1f855),
+      url('/sakura/images/default/hd.webp') center / cover;
+  }
+  .welcome-flower {
+    display: none;
+  }
+  .editor-status {
+    font-size: 11px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.menu-toggle {
+  border: 0;
+  background: #fff0f6;
+  color: #a13e68;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.sidebar-dismiss {
+  display: none;
+}
+@media (max-width: 760px) {
+  .sidebar-dismiss {
+    display: block;
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    border: 0;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    background: #fff0f6;
+    color: #92335c;
+    cursor: pointer;
+    font-size: 24px;
+  }
+}

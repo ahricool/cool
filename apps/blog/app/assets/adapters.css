@@ -21,9 +21,6 @@ body {
   display: flex;
   align-items: center;
 }
-.mobile-toggle {
-  display: none;
-}
 .site-title a {
   white-space: nowrap;
 }
@@ -85,22 +82,6 @@ body {
 }
 .skip-link:focus {
   top: 10px;
-}
-.back-top {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  border: 1px solid #eee;
-  border-radius: 50%;
-  width: 42px;
-  height: 42px;
-  background: var(--background-color);
-  color: var(--theme-color);
-  z-index: 30;
-  cursor: pointer;
-}
-.mobile-menu {
-  display: none;
 }
 .entry-content img {
   max-width: 100%;
@@ -293,26 +274,8 @@ body {
   }
 }
 @media (max-width: 768px) {
-  .mobile-toggle {
-    display: block;
-    font-size: 20px;
-    padding: 10px;
-  }
   .header-content {
     display: none;
-  }
-  .mobile-menu {
-    display: grid;
-    position: fixed;
-    top: 75px;
-    left: 0;
-    right: 0;
-    padding: 24px;
-    background: var(--background-color);
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    z-index: 99;
-    box-shadow: 0 8px 18px #0001;
   }
   .center-text.glitch {
     font-size: 42px !important;
@@ -357,4 +320,98 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Preserve Sakura's original sidebar and scroll decoration; Vue owns state. */
+html:root {
+  --cd-top-image: url('/sakura/images/scroll.png') no-repeat center;
+}
+.site-nav-toggle {
+  padding: 0;
+  position: relative;
+}
+section.site-sidebar {
+  z-index: 102;
+  overflow: visible;
+}
+section.site-sidebar .sidebar-close {
+  position: absolute;
+  border: 0;
+  background: none;
+  width: 44px;
+  height: 44px;
+  top: 8px;
+  left: calc(100% + 4px);
+  cursor: pointer;
+}
+section.site-sidebar .sidebar-close::before,
+section.site-sidebar .sidebar-close::after {
+  left: 7px;
+  top: 20px;
+}
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 101;
+  border: 0;
+  background: #21152680;
+  cursor: pointer;
+}
+.mobile-sidebar .avatar {
+  flex-shrink: 0;
+}
+.mobile-sidebar .navbar {
+  min-height: 0;
+}
+.mobile-sidebar .footer {
+  flex-shrink: 0;
+}
+.mobile-sidebar .socials {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+.mobile-sidebar .search-form {
+  border-radius: 8px;
+}
+button.cd-top {
+  border: 0;
+  padding: 0;
+  background-size: contain;
+}
+@media (max-width: 768px) {
+  #main-container {
+    transition: transform 0.5s ease-out;
+  }
+  #main-container.sidebar-open {
+    transform: translateX(15.625rem);
+  }
+}
+
+section.site-sidebar:not(.open) .sidebar-close {
+  visibility: hidden;
+}
+.is-homepage .site-header:focus-within .header-inner .lower-container {
+  display: block;
+}
+.is-homepage .site-header:focus-within .header-inner {
+  background: var(--header-background);
+}
+.center-text.glitch {
+  max-width: 90vw;
+  white-space: normal;
+}
+.api-state::before {
+  content: '❀';
+  display: block;
+  font-size: 38px;
+  color: #b75a83;
+  margin-bottom: 12px;
+}
+.api-state[role='status']::before {
+  content: '';
+  height: 44px;
+  background: url('/sakura/images/load/rotating-ball-o.svg') no-repeat center /
+    contain;
 }

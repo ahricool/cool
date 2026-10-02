@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   House,
@@ -18,10 +18,62 @@ import {
   Menu,
 } from '@element-plus/icons-vue';
 import { session } from './api';
+import { publicUrl } from './publicUrl';
 const route = useRoute();
 const router = useRouter();
 const open = ref(false);
-const blogUrl = import.meta.env.DEV ? 'http://localhost:3001/' : '/';
+const mobile = ref(false);
+const sidebar = ref<HTMLElement>();
+const menuTrigger = ref<HTMLButtonElement>();
+const menuClose = ref<HTMLButtonElement>();
+let previousOverflow = '';
+function resize() {
+  mobile.value = window.innerWidth <= 760;
+  if (!mobile.value) open.value = false;
+}
+onMounted(() => {
+  resize();
+  window.addEventListener('resize', resize);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', resize);
+  if (open.value) document.body.style.overflow = previousOverflow;
+});
+watch(open, async (value) => {
+  if (value) {
+    previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    await nextTick();
+    menuClose.value?.focus();
+  } else {
+    document.body.style.overflow = previousOverflow;
+    await nextTick();
+    if (
+      document.activeElement === document.body ||
+      sidebar.value?.contains(document.activeElement)
+    )
+      menuTrigger.value?.focus();
+  }
+});
+function menuKeydown(event: KeyboardEvent) {
+  if (!mobile.value || !open.value) return;
+  if (event.key === 'Escape') {
+    open.value = false;
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const items = sidebar.value?.querySelectorAll<HTMLElement>('a[href], button');
+  const first = items?.[0];
+  const last = items?.[items.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last?.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first?.focus();
+  }
+}
+const blogUrl = publicUrl();
 const nav = [
   { path: '/', label: '概览', icon: House },
   { path: '/posts', label: '文章', icon: Document },
@@ -56,8 +108,26 @@ function logout() {
 <template>
   <RouterView v-if="route.path === '/login'" />
   <div v-else class="admin-shell">
-    <aside class="sidebar" :class="{ open }">
-      <RouterLink to="/" class="brand"
+    <aside
+      id="admin-navigation"
+      ref="sidebar"
+      class="sidebar"
+      :class="{ open }"
+      :inert="mobile && !open"
+      :role="mobile ? 'dialog' : undefined"
+      :aria-modal="mobile && open ? true : undefined"
+      aria-label="工作空间导航"
+      @keydown="menuKeydown"
+    >
+      <button
+        ref="menuClose"
+        class="sidebar-dismiss"
+        aria-label="关闭菜单"
+        @click="open = false"
+      >
+        ×
+      </button>
+      <RouterLink to="/" class="brand" @click="open = false"
         ><span class="brand-mark">❀</span>
         <div>Sakura<small>你的内容，自在生长。</small></div></RouterLink
       ><span class="nav-caption">工作空间</span>
@@ -66,6 +136,7 @@ function logout() {
           v-for="item in nav"
           :key="item.path"
           :to="item.path"
+          @click="open = false"
           :class="{
             active:
               item.path === '/'
@@ -77,9 +148,9 @@ function logout() {
         >
       </nav>
       <div class="sidebar-bottom">
-        <RouterLink to="/settings"
+        <RouterLink to="/settings" @click="open = false"
           ><el-icon><Setting /></el-icon>网站配置</RouterLink
-        ><RouterLink to="/profile"
+        ><RouterLink to="/profile" @click="open = false"
           ><el-icon><User /></el-icon>我的账户</RouterLink
         ><button @click="logout">
           <el-icon><SwitchButton /></el-icon>退出登录
@@ -89,19 +160,23 @@ function logout() {
     <button
       v-if="open"
       class="sidebar-mask"
+      tabindex="-1"
       aria-label="关闭导航"
       @click="open = false"
     ></button>
-    <div class="admin-body">
+    <div class="admin-body" :inert="mobile && open">
       <header class="topbar">
         <div class="breadcrumbs">
-          <el-button
+          <button
+            ref="menuTrigger"
             class="menu-toggle"
-            :icon="Menu"
-            text
             aria-label="打开导航"
+            aria-controls="admin-navigation"
+            :aria-expanded="open"
             @click="open = !open"
-          /><span>工作空间</span><span>/</span
+          >
+            <el-icon><Menu /></el-icon></button
+          ><span>工作空间</span><span>/</span
           ><strong>{{ route.meta.title }}</strong>
         </div>
         <div class="topbar-right">
