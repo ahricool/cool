@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Pagination, Photo } from '@cms/content';
+import { masonryPositions } from '~/utils/masonry';
 const route = useRoute();
 const api = useApi();
 const page = computed(() => Math.max(1, Number(route.query.page) || 1));
@@ -12,6 +13,53 @@ const { data, pending, error, refresh } = await useAsyncData(
 );
 const dialog = ref<HTMLDialogElement>();
 const selected = ref<Photo>();
+const gallery = ref<HTMLElement>();
+const positions = ref<ReturnType<typeof masonryPositions>>();
+let observer: ResizeObserver | undefined;
+let frame = 0;
+let observedWidth = 0;
+function layoutGallery() {
+  const element = gallery.value;
+  if (!element?.clientWidth) return;
+  const heights = Array.from(
+    element.querySelectorAll<HTMLElement>('.gallery-item'),
+    (item) => item.getBoundingClientRect().height,
+  );
+  positions.value = masonryPositions(
+    heights,
+    element.clientWidth,
+    window.innerWidth <= 768 ? 1 : 3,
+  );
+}
+function scheduleLayout() {
+  cancelAnimationFrame(frame);
+  frame = requestAnimationFrame(layoutGallery);
+}
+onMounted(() => {
+  observer = new ResizeObserver((entries) => {
+    const width = entries[0]?.contentRect.width ?? 0;
+    if (width !== observedWidth) {
+      observedWidth = width;
+      scheduleLayout();
+    }
+  });
+  if (gallery.value) observer.observe(gallery.value);
+  window.addEventListener('resize', scheduleLayout, { passive: true });
+  scheduleLayout();
+});
+onBeforeUnmount(() => {
+  observer?.disconnect();
+  cancelAnimationFrame(frame);
+  window.removeEventListener('resize', scheduleLayout);
+});
+watch(
+  () => data.value?.items,
+  async () => {
+    positions.value = undefined;
+    await nextTick();
+    scheduleLayout();
+  },
+);
 function open(photo: Photo) {
   selected.value = photo;
   dialog.value?.showModal();
@@ -28,12 +76,26 @@ function open(photo: Photo) {
     <div class="photos-container">
       <section class="photos-inner">
         <div class="masonry-container">
-          <div class="photos-content">
-            <div class="gallery masonry-gallery">
+          <div class="photos-content fancybox-content">
+            <div
+              ref="gallery"
+              class="gallery masonry-gallery"
+              :class="{ 'is-masonry': positions }"
+              :style="
+                positions ? { height: `${positions.height}px` } : undefined
+              "
+            >
               <figure
-                v-for="photo in data?.items"
+                v-for="(photo, index) in data?.items"
                 :key="photo.id"
-                class="gallery-item col-2"
+                class="gallery-item col-3"
+                :style="
+                  positions?.items[index]
+                    ? {
+                        transform: `translate3d(${positions.items[index]!.left}px, ${positions.items[index]!.top}px, 0)`,
+                      }
+                    : undefined
+                "
               >
                 <header class="gallery-icon">
                   <button
@@ -46,6 +108,8 @@ function open(photo: Photo) {
                       loading="lazy"
                       width="500"
                       height="500"
+                      @load="scheduleLayout"
+                      @error="scheduleLayout"
                     />
                   </button>
                 </header>
@@ -63,7 +127,11 @@ function open(photo: Photo) {
       </section>
     </div>
     <Pagination v-if="data" :total="data.total" :page="page" :page-size="24" />
-    <dialog ref="dialog" class="photo-dialog">
+    <dialog
+      ref="dialog"
+      class="photo-dialog"
+      :aria-label="selected?.title || '查看图片'"
+    >
       <button aria-label="关闭图片" @click="dialog?.close()">×</button
       ><img v-if="selected" :src="selected.url" :alt="selected.title" />
       <p>{{ selected?.title }}</p>

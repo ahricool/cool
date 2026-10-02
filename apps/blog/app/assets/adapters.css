@@ -28,7 +28,7 @@ body {
   overflow-wrap: anywhere;
 }
 .headertop-down {
-  font-size: 48px;
+  font-size: 1rem;
   z-index: 3;
 }
 .site-main .post-list-thumb {
@@ -199,27 +199,53 @@ body {
   background: var(--theme-color) !important;
   color: white;
 }
-.photos-content .masonry-gallery {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+/* Vue reimplements Sakura's 3-column, shortest-column masonry with a 10px gutter. */
+#content.site-content.photos {
+  max-width: none;
+  padding: 0 !important;
 }
-.photos-content .gallery-item {
-  width: 100%;
+.photos-content .masonry-gallery {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.photos-content .masonry-gallery.is-masonry {
+  display: block;
+}
+.photos-content .masonry-gallery .gallery-item {
   position: relative;
   margin: 0;
+  transition: transform 0.35s ease;
+}
+.photos-content .masonry-gallery.is-masonry .gallery-item {
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 .gallery-icon button {
+  display: block;
   border: 0;
   padding: 0;
   width: 100%;
   background: none;
   cursor: zoom-in;
 }
-.gallery-icon img {
+.photos-content .gallery-icon img {
+  display: block;
   width: 100%;
-  height: 260px;
-  object-fit: cover;
+  height: auto;
+  margin: 0 !important;
+}
+.gallery .gallery-item:focus-within .gallery-caption {
+  opacity: 0.6;
+}
+.gallery .gallery-item:focus-within .gallery-caption .entry-summary {
+  opacity: 1;
+}
+.gallery .gallery-item:focus-within .gallery-caption .entry-summary h3,
+.gallery .gallery-item:focus-within .gallery-caption .entry-summary p {
+  transform: none;
 }
 .photo-dialog {
   border: 0;
@@ -253,9 +279,10 @@ body {
   color: inherit;
 }
 .top-social ul {
-  gap: 18px;
+  gap: 0;
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   padding: 0;
 }
 .footer-logo p {
@@ -289,9 +316,6 @@ body {
   }
   .header-inner {
     padding: 0 12px !important;
-  }
-  .photos-content .masonry-gallery {
-    grid-template-columns: 1fr;
   }
   .site-content {
     padding-left: 16px !important;
@@ -414,4 +438,32 @@ section.site-sidebar:not(.open) .sidebar-close {
   height: 44px;
   background: url('/sakura/images/load/rotating-ball-o.svg') no-repeat center /
     contain;
+}
+
+.top-social {
+  height: auto;
+  min-height: 1.625rem;
+}
+.top-social a {
+  display: block;
+  border-radius: 50%;
+}
+.top-social a:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+}
+.top-social ul li:last-child {
+  margin-right: 0;
+}
+
+/* Clip the pushed mobile page to the viewport without a new scroll container. */
+#__nuxt {
+  overflow-x: clip;
+}
+.api-state::before {
+  content: '';
+  width: 38px;
+  height: 38px;
+  margin: 0 auto 12px;
+  background: url('/sakura/images/footer/sakura.svg') center / contain no-repeat;
 }

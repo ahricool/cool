@@ -176,6 +176,16 @@ test('all blog routes load on desktop and mobile without external resources', as
     .click();
   await expect(page.locator('.pattern-title h1')).toHaveText('归档');
   await page.goto(blog);
+  await expect(page.locator('#content')).toBeVisible();
+  await expect(page.locator('#page')).toHaveCSS('opacity', '1');
+  await expect
+    .poll(() =>
+      page.locator('#centerbg .cover-bg').evaluate((element) => {
+        const image = element as HTMLImageElement;
+        return image.complete && image.naturalWidth > 0;
+      }),
+    )
+    .toBe(true);
   await page.screenshot({
     path: info.outputPath('blog-home-mobile.png'),
     fullPage: true,

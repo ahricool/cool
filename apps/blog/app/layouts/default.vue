@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { socialIcon } from '~/utils/social-icon';
 const route = useRoute();
 const store = useSiteStore();
 const menuOpen = ref(false);
@@ -109,6 +110,7 @@ useHead(() => ({
           <button
             ref="menuTrigger"
             class="site-nav-toggle"
+            :class="{ open: menuOpen }"
             aria-label="打开导航"
             aria-controls="mobile-sidebar"
             :aria-expanded="menuOpen"
@@ -199,8 +201,10 @@ useHead(() => ({
             :href="link.url"
             target="_blank"
             rel="noopener noreferrer"
-            >{{ link.label }}</a
-          >
+            :aria-label="link.label"
+            :title="link.label"
+            ><img :src="socialIcon(link.url)" alt="" width="18" height="18"
+          /></a>
         </div>
         <div class="search">
           <form

@@ -95,7 +95,7 @@ async function image(event: Event) {
         ref="textarea"
         :value="modelValue"
         aria-label="Markdown 内容"
-        placeholder="从这里开始写作…\n支持 Markdown、代码高亮和图片上传。"
+        :placeholder="'从这里开始写作…\n支持 Markdown、代码高亮和图片上传。'"
         spellcheck="false"
         @input="
           emit(

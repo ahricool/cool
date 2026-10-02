@@ -59,6 +59,7 @@ npm run lint
 npm run format:check
 npm run audit
 npm run test:content
+node --import tsx --test tests/unit/*.test.ts
 ```
 
 API 和浏览器测试使用**专用数据库**，API 测试要求数据库名以 `_test` 结尾，并会清理测试数据：
@@ -81,6 +82,8 @@ docker rm -f cms-test
 ```
 
 浏览器测试自动启动三端；运行前关闭使用其他数据库的本地服务。也可用 `E2E_EXTERNAL=1`，同时设置 `E2E_BLOG_URL`、`E2E_ADMIN_URL`（含 `/admin`）、`E2E_API_URL` 验证已启动的本地 Compose。测试覆盖编辑发布、Markdown 高亮与安全渲染、评论审核、路由加载、移动导航和无外部资源请求；截图存入 `test-results/`。
+
+真实 Nginx 边界测试验证两个独立客户端的限流、伪造转发头的覆盖和匿名管理端拒绝。CI 自动安装 Nginx 并启用；本地安装 Nginx 后可设置 `CMS_NGINX_TEST=1`（必要时加 `CMS_NGINX_BIN=/绝对路径/nginx`）再运行 `npm test`，未启用时此项明确跳过。它只启动隔离的高端口测试代理，不修改系统 Nginx 配置。
 
 依赖审计精确记录一项尚无补丁的 Nuxt 开发 HTTPS 间接依赖例外，其他未审查的 high/critical 告警会阻断 CI，见 [架构文档](docs/architecture.md#依赖审计)。
 

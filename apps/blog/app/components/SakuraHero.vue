@@ -1,7 +1,12 @@
 <script setup lang="ts">
+import { socialIcon } from '~/utils/social-icon';
 const store = useSiteStore();
 function scrollDown() {
-  document.getElementById('content')?.scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('content')?.scrollIntoView({
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'auto'
+      : 'smooth',
+  });
 }
 </script>
 <template>
@@ -44,21 +49,21 @@ function scrollDown() {
             ><span class="desc">{{ store.homepage.description }}</span
             ><span aria-hidden="true">❞</span>
           </p>
-          <div class="top-social">
+          <div v-if="store.social.length" class="top-social">
             <ul>
               <li v-for="link in store.social" :key="link.url">
-                <a :href="link.url" target="_blank" rel="noopener noreferrer">{{
-                  link.label
-                }}</a>
-              </li>
-              <li v-if="!store.social.length">
-                <NuxtLink to="/archives" aria-label="阅读所有文章"
+                <a
+                  :href="link.url"
+                  :aria-label="link.label"
+                  :title="link.label"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   ><img
-                    src="/sakura/images/next-b.svg"
+                    :src="socialIcon(link.url)"
+                    alt=""
                     width="28"
                     height="28"
-                    alt=""
-                /></NuxtLink>
+                /></a>
               </li>
             </ul>
           </div>

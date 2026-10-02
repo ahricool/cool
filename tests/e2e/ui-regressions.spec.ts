@@ -16,6 +16,11 @@ test('Sakura mobile sidebar traps focus, closes, and restores navigation', async
   await expect(close).toBeFocused();
   await expect(dialog.locator('.avatar img')).toBeVisible();
   await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
   await page.screenshot({
     path: info.outputPath('sakura-mobile-sidebar.png'),
     fullPage: true,
@@ -60,6 +65,23 @@ test('Admin formatting preserves prose and upload buttons work from keyboard', a
     .getByRole('link', { name: '← 返回博客' })
     .getAttribute('href');
   expect(new URL(blogHref!, page.url()).href).toBe(new URL('/', blog).href);
+  const loginArt = await page
+    .locator('.login-story')
+    .evaluate(
+      (element) =>
+        getComputedStyle(element).backgroundImage.match(
+          /url\(["']?([^"')]+)["']?\)/,
+        )?.[1],
+    );
+  expect(loginArt).toBeTruthy();
+  expect(
+    await page.evaluate(async (url) => {
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+      return image.naturalWidth;
+    }, loginArt!),
+  ).toBeGreaterThan(0);
   await page.screenshot({
     path: info.outputPath('sakura-admin-login.png'),
     fullPage: true,
@@ -69,6 +91,24 @@ test('Admin formatting preserves prose and upload buttons work from keyboard', a
   await page.getByLabel('密码', { exact: true }).fill(password);
   await page.getByRole('button', { name: '登录工作空间' }).click();
   await expect(page.getByRole('heading', { name: /你好/ })).toBeVisible();
+  const welcomeArt = await page
+    .locator('.welcome-card')
+    .evaluate(
+      (element) =>
+        getComputedStyle(element).backgroundImage.match(
+          /url\(["']?([^"')]+)["']?\)/,
+        )?.[1],
+    );
+  expect(welcomeArt).toBeTruthy();
+  expect(
+    await page.evaluate(async (url) => {
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+      return image.naturalWidth;
+    }, welcomeArt!),
+  ).toBeGreaterThan(0);
+
   await page.getByRole('link', { name: '＋ 写文章', exact: true }).click();
   const content = page.getByRole('textbox', { name: 'Markdown 内容' });
   await content.fill('把日常写成故事');

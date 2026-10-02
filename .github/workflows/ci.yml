@@ -44,7 +44,13 @@ jobs:
       - run: npm run format:check
       - run: npm run audit
       - run: npm run db:deploy
+      - name: Install Nginx for real ingress regression tests
+        run: sudo apt-get update && sudo apt-get install --yes nginx
       - run: npm test && npm run test:content
+        env:
+          CMS_NGINX_TEST: '1'
+          CMS_NGINX_BIN: /usr/sbin/nginx
+      - run: node --import tsx --test tests/unit/*.test.ts
       - run: node apps/backend/dist/seed.js
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
