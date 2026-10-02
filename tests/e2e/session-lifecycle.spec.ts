@@ -63,7 +63,10 @@ test('cookie session survives reload and all-device logout revokes browser and s
   await expect(secondTab).toHaveURL((url) => url.pathname === '/admin/login');
   await secondTab.getByLabel('密码', { exact: true }).fill(password);
   await secondTab.getByRole('button', { name: '登录工作空间' }).click();
-  await expect(secondTab.getByRole('heading', { name: /你好/ })).toBeVisible();
+  await expect(secondTab).toHaveURL((url) => url.pathname === '/admin/profile');
+  await expect(
+    secondTab.getByRole('heading', { name: '我的账户', exact: true }),
+  ).toBeVisible();
   const scriptToken = (await context.cookies()).find(
     (entry) => entry.name === 'cms_session',
   )!.value;
