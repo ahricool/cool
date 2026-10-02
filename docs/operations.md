@@ -34,6 +34,23 @@ checkout 项目到 `~/svr/cool`，复制 `.env.example` 为 `.env` 并执行 `ch
 
 GHCR 镜像若私有，先 `docker login ghcr.io`（read:packages 权限）。Actions 使用具有 packages 写权限的 GITHUB_TOKEN，无需提交个人 Token。
 
+### AMD64 与 ARM64
+
+两个应用镜像的同一 `latest`、`main`、`sha-<完整 SHA>` 标签包含 `linux/amd64` 和 `linux/arm64` manifest。Docker 按宿主机选择原生镜像；生产 Compose 不设置 `platform`，无需改 `.env`、镜像名或安装 QEMU。`media-init`、`migrate`、`seed` 同样使用服务器原生后端镜像，PostgreSQL 官方镜像也支持这两种架构。
+
+首次启用 ARM64 时，先合入支持双架构的提交，等待 main 的 **backend 和 frontend 两个镜像任务都成功**，再运行 `bash deploy.sh`。只拉取新代码不会改变 registry 中的旧镜像；旧 SHA 标签仍可能只有 AMD64。若报 `no matching manifest for linux/arm64`，先确认选择的是本次成功发布后的标签，不要用 `platform: linux/amd64` 强制模拟运行。
+
+可在部署前检查两个标签的 manifest（需要 Docker Buildx）：
+
+```bash
+docker buildx imagetools inspect ghcr.io/ahricool/cool-backend:latest
+docker buildx imagetools inspect ghcr.io/ahricool/cool-frontend:latest
+```
+
+两者都应列出 `linux/amd64` 与 `linux/arm64`；额外的 `unknown/unknown` 可以是构建证明，不是运行镜像。CI 发布后还会按本次构建的 digest 检查两个平台，避免误查移动中的 latest。
+
+构建端通过 QEMU 执行 ARM64 后端构建，每个平台分别安装 npm 依赖、生成 Prisma 客户端和打包；build/runtime 均使用 Node 24 Debian bookworm（glibc/OpenSSL），不跨架构复制 `node_modules`。最终后端镜像构建时执行 Sharp WebP 转换和 Prisma CLI 版本检查，无需数据库。前端仅在构建机器原生架构生成静态资源，再复制到目标架构的 Nginx。
+
 ## 首次安装与版本更新
 
 配置好容器版 `.env` 后，保持工作区干净（未提交或未跟踪的文件请先提交、移走或暂存；被忽略的 `.env` 和备份不受影响），直接运行：
@@ -184,7 +201,7 @@ curl --fail http://127.0.0.1:18080/api/v1/health
 
 - `verify` 执行类型检查、静态生成、lint、格式、审计、真实数据库/API/迁移测试、真实 Nginx 边界测试和浏览器测试
 - `compose-smoke` 运行 `scripts/compose-smoke.sh`，构建当前代码的两个应用镜像，验证空库备份、迁移、seed 幂等、首次密码设置、静态路由/资源、内容发布、上传、改密，并通过生产 Nginx 运行完整 Playwright 浏览器流程和桌面/移动截图，再验证有内容备份；移除源项目、数据库卷和独立临时媒体目录后，在另一项目及另一临时媒体目录恢复并比对迁移、ID、Markdown 与媒体 SHA-256
-- `images` 等待以上两个任务成功，再构建两个应用镜像；PR 不推送，合入 main 后推送 GHCR 的 latest、main 与完整 SHA 标签，不自动部署服务器
+- `images` 等待以上两个任务成功，再为两个应用镜像分别构建 AMD64/ARM64，并将双平台 manifest 推送到 GHCR 的 latest、main 与完整 SHA 标签；随后检查发布的 digest。所有任务仍只在 push 到 main 时运行，PR 不触发 CI，不自动部署服务器
 - 可在具备 Docker 的 Linux 环境先运行 `npm ci`、`npx playwright install --with-deps chromium`，再运行 `bash scripts/compose-smoke.sh`。它只使用隔离项目，清理自身测试容器、数据库卷和本次新建的临时媒体目录，始终显式覆盖媒体挂载路径，不读取或删除项目 `./data`，保留受限长度且已脱敏的报告与日志，不上传秘密、数据库 dump 或媒体备份
 - 三个常驻服务均有健康检查；API 健康接口检查数据库，frontend 检查静态入口。日志：`./scripts/compose.sh logs --tail=100 backend frontend`
 - 后端以非 root 用户运行；前端使用 Nginx 官方运行镜像。PostgreSQL 无宿主机映射，媒体不会随容器重建丢失
