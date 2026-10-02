@@ -24,7 +24,14 @@ async function unusedPort() {
   return port;
 }
 
-function send(port, client, path, method = 'GET', forged = '203.0.113.99') {
+function send(
+  port,
+  client,
+  path,
+  method = 'GET',
+  forged = '203.0.113.99',
+  host = 'cms.test',
+) {
   return new Promise((resolve, reject) => {
     const req = request(
       {
@@ -35,7 +42,7 @@ function send(port, client, path, method = 'GET', forged = '203.0.113.99') {
         localAddress: client,
         agent: false,
         headers: {
-          Host: 'cms.test',
+          Host: host,
           'Content-Type': 'application/json',
           'X-Forwarded-For': `${forged}, 198.51.100.99`,
           'X-Real-IP': forged,
@@ -175,6 +182,30 @@ http {
       await delay(100);
     }
     assert.ok(ready, `Nginx did not become ready: ${output}`);
+
+    await t.test(
+      'Admin slash redirect preserves the external origin',
+      async () => {
+        const response = await send(
+          port,
+          '127.0.0.2',
+          '/admin',
+          'GET',
+          '203.0.113.99',
+          'cms.test:43210',
+        );
+        assert.equal(response.status, 301);
+        assert.equal(response.headers.location, '/admin/');
+        for (const origin of [
+          'http://cms.test:43210',
+          'https://cms.test:43210',
+        ])
+          assert.equal(
+            new URL(response.headers.location, origin).href,
+            `${origin}/admin/`,
+          );
+      },
+    );
 
     await t.test(
       'both clients get a full login quota despite forged headers',

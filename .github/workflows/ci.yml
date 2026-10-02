@@ -60,8 +60,40 @@ jobs:
           name: browser-test-results
           path: test-results/
           retention-days: 7
+  compose-smoke:
+    name: Production Compose and backup restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and verify isolated production stacks
+        run: timeout --signal=TERM --kill-after=180s 25m bash scripts/compose-smoke.sh
+      - name: Publish smoke summary
+        if: always()
+        run: |
+          if [ -f test-results/compose-smoke/summary.md ]; then
+            cat test-results/compose-smoke/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-compose-smoke-results
+          path: |
+            test-results/compose-smoke/summary.md
+            test-results/compose-smoke/*-http.json
+            test-results/compose-smoke/*-containers.log
+            test-results/compose-smoke/*-services.log
+            test-results/compose-smoke/operations.log
+          if-no-files-found: warn
+          retention-days: 7
   images:
-    needs: verify
+    needs: [verify, compose-smoke]
     runs-on: ubuntu-latest
     permissions:
       contents: read
