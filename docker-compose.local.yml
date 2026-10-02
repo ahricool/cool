@@ -1,0 +1,10 @@
+# Explicit local builds must not overwrite pulled production :latest images.
+services:
+  backend:
+    image: cool-backend:local
+  migrate:
+    image: cool-backend:local
+  seed:
+    image: cool-backend:local
+  frontend:
+    image: cool-frontend:local
