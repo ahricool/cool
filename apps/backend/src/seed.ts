@@ -1,3 +1,4 @@
+import { defaultSettings } from './settings';
 import { Database } from './database';
 import { hashPassword } from './password';
 async function seed() {
@@ -37,9 +38,8 @@ async function seed() {
         create: {
           key: 'site',
           value: {
-            title: 'Personal CMS',
-            description: '',
-            author: { name: process.env.ADMIN_NAME ?? 'Administrator' },
+            ...defaultSettings.site,
+            authorName: process.env.ADMIN_NAME ?? 'Administrator',
           },
         },
       });

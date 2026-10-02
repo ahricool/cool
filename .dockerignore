@@ -4,3 +4,9 @@ node_modules
 **/generated
 .env*
 backups
+**/.nuxt
+**/.output
+vendor
+test-results
+playwright-report
+data

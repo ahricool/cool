@@ -18,8 +18,8 @@ import { Database } from './database';
 import { AuthGuard, type AuthRequest, publicUser } from './auth';
 import { CreatePostDto, ListQuery, UpdatePostDto } from './dto';
 import { Prisma } from './generated/prisma/client';
-export const visiblePosts = (): Prisma.PostWhereInput => ({
-  status: 'PUBLISHED',
+export const visiblePosts = () => ({
+  status: 'PUBLISHED' as const,
   publishedAt: { lte: new Date() },
 });
 const relations = {
@@ -51,6 +51,7 @@ export class PostsService {
             OR: [
               { title: { contains: query.q, mode: 'insensitive' } },
               { excerpt: { contains: query.q, mode: 'insensitive' } },
+              { content: { contains: query.q, mode: 'insensitive' } },
             ],
           }
         : {}),

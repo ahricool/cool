@@ -1,3 +1,7 @@
+import { LibraryController, PublicLibraryController } from './library';
+import { SettingsController } from './settings';
+import { PublicCommentsController, AdminCommentsController } from './comments';
+import { MediaController, PublicMediaController } from './media';
 import {
   Controller,
   Get,
@@ -45,6 +49,13 @@ class HealthController {
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
   ],
   controllers: [
+    LibraryController,
+    PublicLibraryController,
+    SettingsController,
+    PublicCommentsController,
+    AdminCommentsController,
+    MediaController,
+    PublicMediaController,
     HealthController,
     AuthController,
     AdminPostsController,

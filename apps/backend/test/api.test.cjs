@@ -186,6 +186,262 @@ test('Owner login and full post publication lifecycle', async (t) => {
       );
     },
   );
+  await t.test('taxonomy CRUD and draft visibility work together', async () => {
+    const category = (
+      await http
+        .post('/api/v1/admin/categories')
+        .auth(token, { type: 'bearer' })
+        .send({ name: 'Tests', slug: prefix })
+        .expect(201)
+    ).body;
+    const tag = (
+      await http
+        .post('/api/v1/admin/tags')
+        .auth(token, { type: 'bearer' })
+        .send({ name: 'Tests', slug: prefix })
+        .expect(201)
+    ).body;
+    await http
+      .put(`/api/v1/admin/posts/${ids[0]}`)
+      .auth(token, { type: 'bearer' })
+      .send({ categoryIds: [category.id], tagIds: [tag.id] })
+      .expect(200);
+    assert.equal((await http.get('/api/v1/public/categories')).body.length, 0);
+    await http
+      .put(`/api/v1/admin/posts/${ids[0]}`)
+      .auth(token, { type: 'bearer' })
+      .send({ status: 'PUBLISHED', publishedAt: null })
+      .expect(200);
+    assert.equal(
+      (await http.get('/api/v1/public/categories')).body[0].id,
+      category.id,
+    );
+    assert.equal(
+      (await http.get('/api/v1/public/posts?tag=' + prefix)).body.total,
+      1,
+    );
+    await http
+      .delete('/api/v1/admin/categories/' + category.id)
+      .auth(token, { type: 'bearer' })
+      .expect(200);
+    await http
+      .delete('/api/v1/admin/tags/' + tag.id)
+      .auth(token, { type: 'bearer' })
+      .expect(200);
+  });
+  await t.test(
+    'pages and moments use publication rules; photos and links are explicit opt-in',
+    async () => {
+      const page = (
+        await http
+          .post('/api/v1/admin/pages')
+          .auth(token, { type: 'bearer' })
+          .send({ slug: prefix, title: 'Page', content: '# Page' })
+          .expect(201)
+      ).body;
+      await http.get('/api/v1/public/pages/' + prefix).expect(404);
+      await http
+        .put('/api/v1/admin/pages/' + page.id)
+        .auth(token, { type: 'bearer' })
+        .send({ status: 'PUBLISHED' })
+        .expect(200);
+      assert.equal(
+        (await http.get('/api/v1/public/pages/' + prefix).expect(200)).body
+          .content,
+        '# Page',
+      );
+      const moment = (
+        await http
+          .post('/api/v1/admin/moments')
+          .auth(token, { type: 'bearer' })
+          .send({
+            content: 'A moment',
+            status: 'PUBLISHED',
+            publishedAt: '2099-01-01T00:00:00Z',
+          })
+          .expect(201)
+      ).body;
+      assert.equal((await http.get('/api/v1/public/moments')).body.total, 0);
+      await http
+        .put('/api/v1/admin/moments/' + moment.id)
+        .auth(token, { type: 'bearer' })
+        .send({ publishedAt: null })
+        .expect(200);
+      assert.equal((await http.get('/api/v1/public/moments')).body.total, 1);
+      const photo = (
+        await http
+          .post('/api/v1/admin/photos')
+          .auth(token, { type: 'bearer' })
+          .send({ title: 'A photo', url: '/sakura/images/default/temp.webp' })
+          .expect(201)
+      ).body;
+      assert.equal((await http.get('/api/v1/public/photos')).body.total, 0);
+      await http
+        .put('/api/v1/admin/photos/' + photo.id)
+        .auth(token, { type: 'bearer' })
+        .send({ published: true })
+        .expect(200);
+      assert.equal((await http.get('/api/v1/public/photos')).body.total, 1);
+      const link = (
+        await http
+          .post('/api/v1/admin/links')
+          .auth(token, { type: 'bearer' })
+          .send({
+            name: 'Example',
+            url: 'https://example.com',
+            published: true,
+          })
+          .expect(201)
+      ).body;
+      assert.equal((await http.get('/api/v1/public/links')).body.total, 1);
+      for (const [kind, id] of [
+        ['pages', page.id],
+        ['moments', moment.id],
+        ['photos', photo.id],
+        ['links', link.id],
+      ])
+        await http
+          .delete(`/api/v1/admin/${kind}/${id}`)
+          .auth(token, { type: 'bearer' })
+          .expect(200);
+    },
+  );
+  await t.test(
+    'comments require approval, counts track moderation and deletion',
+    async () => {
+      await http
+        .post(`/api/v1/public/posts/${prefix}/comments`)
+        .send({ name: 'Visitor', content: '<script>untrusted</script>' })
+        .expect(201);
+      assert.equal(
+        (await http.get(`/api/v1/public/posts/${prefix}/comments`)).body.total,
+        0,
+      );
+      const comment = (
+        await http
+          .get('/api/v1/admin/comments')
+          .auth(token, { type: 'bearer' })
+          .expect(200)
+      ).body.items[0];
+      await http
+        .put('/api/v1/admin/comments/' + comment.id)
+        .auth(token, { type: 'bearer' })
+        .send({ status: 'APPROVED' })
+        .expect(200);
+      assert.equal(
+        (await http.get(`/api/v1/public/posts/${prefix}/comments`)).body.total,
+        1,
+      );
+      assert.equal(
+        (await http.get('/api/v1/public/posts/' + prefix)).body.commentCount,
+        1,
+      );
+      await http
+        .put('/api/v1/admin/comments/' + comment.id)
+        .auth(token, { type: 'bearer' })
+        .send({ status: 'SPAM' })
+        .expect(200);
+      assert.equal(
+        (await http.get('/api/v1/public/posts/' + prefix)).body.commentCount,
+        0,
+      );
+      await http
+        .delete('/api/v1/admin/comments/' + comment.id)
+        .auth(token, { type: 'bearer' })
+        .expect(200);
+    },
+  );
+  await t.test(
+    'media validates image bytes, serves safely, and protects references',
+    async () => {
+      const sharp = require('sharp');
+      await http
+        .post('/api/v1/admin/media/upload')
+        .auth(token, { type: 'bearer' })
+        .attach('file', Buffer.from('<svg onload="alert(1)"/>'), 'image.svg')
+        .expect(400);
+      const bytes = await sharp({
+        create: { width: 10, height: 10, channels: 3, background: '#fff' },
+      })
+        .png()
+        .toBuffer();
+      const media = (
+        await http
+          .post('/api/v1/admin/media/upload')
+          .auth(token, { type: 'bearer' })
+          .attach('file', bytes, 'test.png')
+          .expect(201)
+      ).body;
+      await http
+        .get(media.url)
+        .expect('Content-Type', /image\/webp/)
+        .expect(200);
+      await http
+        .put(`/api/v1/admin/posts/${ids[0]}`)
+        .auth(token, { type: 'bearer' })
+        .send({ coverUrl: media.url })
+        .expect(200);
+      await http
+        .delete('/api/v1/admin/media/' + media.id)
+        .auth(token, { type: 'bearer' })
+        .expect(409);
+      await http
+        .put(`/api/v1/admin/posts/${ids[0]}`)
+        .auth(token, { type: 'bearer' })
+        .send({ coverUrl: null })
+        .expect(200);
+      await http
+        .delete('/api/v1/admin/media/' + media.id)
+        .auth(token, { type: 'bearer' })
+        .expect(200);
+      await http.get(media.url).expect(404);
+      await http
+        .put(`/api/v1/admin/posts/${ids[0]}`)
+        .auth(token, { type: 'bearer' })
+        .send({ coverUrl: 'https://cdn.example.com/image.png' })
+        .expect(400);
+    },
+  );
+  await t.test(
+    'settings validate nested payloads and can close comments',
+    async () => {
+      const config = (
+        await http
+          .get('/api/v1/admin/settings')
+          .auth(token, { type: 'bearer' })
+          .expect(200)
+      ).body;
+      config.site.commentsEnabled = false;
+      await http
+        .put('/api/v1/admin/settings')
+        .auth(token, { type: 'bearer' })
+        .send(config)
+        .expect(200);
+      await http
+        .post(`/api/v1/public/posts/${prefix}/comments`)
+        .send({ name: 'Visitor', content: 'Closed' })
+        .expect(403);
+      await http
+        .put('/api/v1/admin/settings')
+        .auth(token, { type: 'bearer' })
+        .send({
+          ...config,
+          homepage: { ...config.homepage, coverUrl: 'javascript:alert(1)' },
+        })
+        .expect(400);
+      await http
+        .put('/api/v1/admin/settings')
+        .auth(token, { type: 'bearer' })
+        .send({ site: null, homepage: config.homepage, social: [] })
+        .expect(400);
+      config.site.commentsEnabled = true;
+      await http
+        .put('/api/v1/admin/settings')
+        .auth(token, { type: 'bearer' })
+        .send(config)
+        .expect(200);
+    },
+  );
   await t.test(
     'delete removes content and repeated deletion returns 404',
     async () => {
@@ -208,5 +464,24 @@ test('Owner login and full post publication lifecycle', async (t) => {
           .send({ email: owner.email, password: 'wrong' })
       ).status;
     assert.equal(status, 429);
+  });
+  await t.test('password changes invalidate existing JWTs', async () => {
+    await http
+      .put('/api/v1/admin/auth/password')
+      .auth(token, { type: 'bearer' })
+      .send({ currentPassword: 'wrong', newPassword: 'new-test-only-password' })
+      .expect(401);
+    await http
+      .put('/api/v1/admin/auth/password')
+      .auth(token, { type: 'bearer' })
+      .send({
+        currentPassword: password,
+        newPassword: 'new-test-only-password',
+      })
+      .expect(200);
+    await http
+      .get('/api/v1/admin/auth/me')
+      .auth(token, { type: 'bearer' })
+      .expect(401);
   });
 });

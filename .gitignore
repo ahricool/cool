@@ -7,3 +7,8 @@ node_modules/
 backups/
 coverage/
 .DS_Store
+**/.nuxt/
+**/.output/
+data/
+playwright-report/
+test-results/

@@ -3,14 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "engines": {
     "node": ">=24 <25"
   },
   "scripts": {
     "dev": "npm run dev -w @cms/backend",
-    "build": "npm run build -w @cms/backend",
+    "build": "npm run build -w @cms/backend && npm run build -w @cms/blog && npm run build -w @cms/admin",
     "start": "npm run start -w @cms/backend",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -19,14 +20,23 @@
     "db:generate": "npm run db:generate -w @cms/backend",
     "db:migrate": "npm run db:migrate -w @cms/backend",
     "db:deploy": "npm run db:deploy -w @cms/backend",
-    "db:seed": "npm run db:seed -w @cms/backend"
+    "db:seed": "npm run db:seed -w @cms/backend",
+    "typecheck": "npm run typecheck -w @cms/blog && npm run typecheck -w @cms/admin",
+    "dev:blog": "npm run dev -w @cms/blog",
+    "dev:admin": "npm run dev -w @cms/admin",
+    "test:content": "npm test -w @cms/content",
+    "test:e2e": "playwright test",
+    "audit": "node scripts/audit.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "eslint": "^10.11.0",
     "typescript-eslint": "^8.46.0",
     "prettier": "^3.6.0",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "eslint-plugin-vue": "^10.5.0",
+    "@playwright/test": "^1.56.0",
+    "tsx": "^4.20.0"
   },
   "overrides": {
     "deepmerge-ts": "^8.0.2",

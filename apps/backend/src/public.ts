@@ -1,3 +1,4 @@
+import { defaultSettings } from './settings';
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Database } from './database';
@@ -20,17 +21,23 @@ export class PublicController {
     return this.posts.list(query);
   }
   @Get('site') async site() {
-    return (
-      (await this.db.siteSetting.findUnique({ where: { key: 'site' } }))
-        ?.value ?? { title: 'Personal CMS', description: '' }
-    );
+    const row = await this.db.siteSetting.findUnique({
+      where: { key: 'site' },
+    });
+    return { ...defaultSettings.site, ...((row?.value as object) ?? {}) };
   }
   @Get('config') async config() {
-    // Only these namespaces may ever contain public presentation data.
     const rows = await this.db.siteSetting.findMany({
       where: { key: { in: ['homepage', 'social'] } },
     });
-    return Object.fromEntries(rows.map((row) => [row.key, row.value]));
+    const saved = Object.fromEntries(rows.map((row) => [row.key, row.value]));
+    return {
+      homepage: {
+        ...defaultSettings.homepage,
+        ...((saved.homepage as object) ?? {}),
+      },
+      social: saved.social ?? [],
+    };
   }
   @Get('categories') categories() {
     return this.db.category.findMany({

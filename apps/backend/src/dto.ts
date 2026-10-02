@@ -1,3 +1,4 @@
+import { IsAssetPath } from './validators';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
@@ -8,7 +9,6 @@ import {
   IsInt,
   IsISO8601,
   IsString,
-  IsUrl,
   IsUUID,
   Length,
   Matches,
@@ -68,7 +68,7 @@ export class CreatePostDto {
   content?: string;
   @ApiPropertyOptional({ nullable: true })
   @ValidateIf((_o, v) => v !== undefined && v !== null)
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
+  @IsAssetPath()
   @MaxLength(2048)
   coverUrl?: string | null;
   @ApiPropertyOptional({ enum: PostStatus })

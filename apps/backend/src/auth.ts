@@ -1,3 +1,4 @@
+import { ProfileDto, PasswordDto } from './profile.dto';
 import {
   Body,
   CanActivate,
@@ -6,6 +7,7 @@ import {
   Get,
   Injectable,
   Post,
+  Put,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -38,18 +40,20 @@ export class AuthGuard implements CanActivate {
     const match = /^Bearer (\S+)$/.exec(req.headers.authorization ?? '');
     if (!match) throw new UnauthorizedException();
     try {
-      const payload = await this.jwt.verifyAsync<{ sub: string }>(match[1]!, {
+      const payload = await this.jwt.verifyAsync<{
+        sub: string;
+        version?: number;
+      }>(match[1]!, {
         algorithms: ['HS256'],
         issuer: 'cms',
         audience: 'cms-admin',
       });
-      if (
-        typeof payload.sub !== 'string' ||
-        !(await this.db.user.findUnique({
-          where: { id: payload.sub },
-          select: { id: true },
-        }))
-      )
+      if (typeof payload.sub !== 'string') throw new Error();
+      const owner = await this.db.user.findUnique({
+        where: { id: payload.sub },
+        select: { authVersion: true },
+      });
+      if (!owner || owner.authVersion !== (payload.version ?? 0))
         throw new Error();
       req.userId = payload.sub;
     } catch {
@@ -79,7 +83,10 @@ export class AuthController {
     if (!user || !valid)
       throw new UnauthorizedException('Invalid email or password');
     return {
-      accessToken: await this.jwt.signAsync({ sub: user.id }),
+      accessToken: await this.jwt.signAsync({
+        sub: user.id,
+        version: user.authVersion,
+      }),
       tokenType: 'Bearer',
       expiresIn: 3600,
     };
@@ -92,5 +99,33 @@ export class AuthController {
       where: { id: req.userId },
       select: { ...publicUser, email: true },
     });
+  }
+  @Put('profile')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  profile(@Req() req: AuthRequest, @Body() data: ProfileDto) {
+    return this.db.user.update({
+      where: { id: req.userId },
+      data: { ...data, email: data.email.toLowerCase() },
+      select: { ...publicUser, email: true },
+    });
+  }
+  @Put('password')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  async password(@Req() req: AuthRequest, @Body() data: PasswordDto) {
+    const owner = await this.db.user.findUniqueOrThrow({
+      where: { id: req.userId },
+    });
+    if (!(await verifyPassword(data.currentPassword, owner.passwordHash)))
+      throw new UnauthorizedException('Current password is incorrect');
+    await this.db.user.update({
+      where: { id: owner.id },
+      data: {
+        passwordHash: await hashPassword(data.newPassword),
+        authVersion: { increment: 1 },
+      },
+    });
+    return { message: 'Password changed. Sign in again.' };
   }
 }

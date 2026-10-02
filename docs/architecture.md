@@ -1,6 +1,4 @@
-# 架构与分阶段交付
-
-## 边界
+# 架构与实现边界
 
 ```mermaid
 flowchart TB
@@ -13,62 +11,72 @@ flowchart TB
   Admin --> API
   API --> Prisma[Prisma]
   Prisma --> DB[(PostgreSQL)]
+  API --> Media[(媒体持久化卷)]
 ```
 
-采用 npm workspace，当前实现 `apps/backend`；Phase 2 新建 `apps/blog`，Phase 3 新建 `apps/admin`。不提前引入任务编排框架和共享 UI 包。通过 OpenAPI 生成前端类型，不把 Prisma 数据库模型直接导入前端。
+## 工程与边界
 
-后台只有一个站长账户，所有其他人都是访客。数据库唯一表达式索引保证最多一个账户。没有注册、角色矩阵、多租户、扩展系统、主题商店或插件市场。
+npm workspaces：`apps/backend`、`apps/blog`、`apps/admin`；`packages/content` 提供前端共用的 TypeScript 响应类型、安全 Markdown 渲染和日期格式。前端不导入 Prisma；Swagger 提供请求契约，当前响应类型手工维护并通过集成测试核对主流程。
 
-## 内容模型
+后台只有一个站长账户，数据库唯一表达式索引保证最多一个账户。没有注册、角色矩阵、多租户、扩展系统或主题商店。后端不依赖 Sakura，不存页面 HTML；`site_settings` 的 JSONB 配置由前端决定如何展示。
 
-当前 migration 包含 users、posts、categories、tags、post_categories、post_tags、site_settings。文章存 Markdown source，content_format 受数据库约束只能是 markdown。数据库列 snake_case，JSON/TypeScript 属性 camelCase，时间使用 UTC timestamptz 和 ISO 8601。
+## 数据与发布
 
-- `slug` 是唯一且稳定的 URL 标识；Phase 1 允许编辑，未来 SEO 阶段再加旧 slug 重定向记录。
-- `DRAFT / PUBLISHED / ARCHIVED`；只有 PUBLISHED 且 publishedAt <= 当前时间才公开。未来时间通过查询过滤自然生效，没有定时队列。所有公开发现入口使用同一过滤规则。
-- publishedAt 未指定的首次发布使用当前时间；撤回不自动清掉时间，再发布保留原日期。显式传 null 并发布会重置为当前时间。
-- PUT 为字段更新语义：省略字段保持不变；coverUrl 和 publishedAt 可显式清空；分类/标签传空数组清空关联。OpenAPI 提供请求定义。
-- 数据库事务保证文章和分类/标签替换一起成功或回滚。唯一 slug 冲突返回 409，缺失资源 404，非法关联 400。
-- 详情返回 Markdown；列表不返回全文。作者信息仅公开 id、displayName、avatarUrl。email 和 passwordHash 不出现在文章响应。
-- viewCount/commentCount 先保留为 0；后续实现去重计数与审核通过评论计数，不把页面请求数当阅读人数。
-- site_settings 以 JSONB 保存，`site`、`homepage`、`social` 是公开命名空间，禁止存秘密；其它键不通过公开 API 暴露。Sakura 前端解释 homepage 值，后端没有 Theme 实体。
+表包括 users、posts、pages、categories、tags、post_categories、post_tags、media、comments、site_settings、moments、photos、links。数据库列 snake_case，JSON/TS 属性 camelCase；时间以 UTC timestamptz/ISO 8601 传输，博客日期按 Asia/Shanghai 展示。
 
-后续按功能迁移添加 pages、media、comments。评论需审核状态与限流；媒体记录存储键、类型、大小、摘要和上传时间，存储凭据使用服务端环境变量。瞬间、图库、友链采用独立 moments、photos、links 内容模型，避免把大量可分页内容塞入配置 JSON。
+- 文章、独立页面和瞬间保存 Markdown 原文；渲染在前端运行时完成。
+- `DRAFT / PUBLISHED / ARCHIVED`；公开查询仅允许 PUBLISHED 且 publishedAt <= 当前时间。预约发布通过查询过滤生效，无需队列。
+- 首次发布自动填时间；撤回保留原时间，再发布继续使用。显式清空时间并发布会设为当前时间。
+- 文章 PUT 支持字段更新：省略保持不变，null 清空封面/发布时间，空数组清空分类/标签。内容关联在事务中更新，非法关联回滚。
+- slug 唯一，可编辑；当前不提供旧 slug 重定向。SEO 阶段再增加重定向记录。
+- 列表不返回正文；作者公开字段仅 id/displayName/avatarUrl。密码哈希与邮箱不出现在公开文章中。
+- viewCount 保留字段，暂不采集阅读量；commentCount 随审核事务维护，只计通过审核的评论。
+- `site`、`homepage`、`social` 是公开配置命名空间，使用嵌套 DTO 校验；禁止在配置中存秘密。它们不构成后端主题实体。
+- media 是存储对象；photos 是有标题、描述、相册与公开开关的图库条目。友链支持分组和公开开关。
 
-## API 约定
+## API
 
-公开：`GET /api/v1/public/{site,config,posts,posts/:slug,categories,tags,archives,search}`。
+完整定义见 `/api/openapi.json`，开发环境 Swagger 位于 `/api/docs`。
 
-后台：`POST /api/v1/admin/auth/login`、`GET /api/v1/admin/auth/me`，及 `/api/v1/admin/posts` 的 GET/POST、`/:id` 的 GET/PUT/DELETE。
+| 类型     | 路径（前缀 `/api/v1`）                                                                                                |
+| -------- | --------------------------------------------------------------------------------------------------------------------- |
+| 公开配置 | `GET /public/site`、`/public/config`                                                                                  |
+| 文章发现 | `GET /public/posts`、`/posts/:slug`、`/categories`、`/tags`、`/archives`、`/search`（均在 `/public` 下）              |
+| 其他内容 | `GET /public/pages/:slug`、`/public/moments`、`/public/photos`、`/public/links`                                       |
+| 评论     | `GET/POST /public/posts/:slug/comments`                                                                               |
+| 认证     | `POST /admin/auth/login`、`GET /admin/auth/me`、`PUT /admin/auth/profile`、`PUT /admin/auth/password`                 |
+| 内容管理 | `/admin/posts`、`/admin/pages`、`/admin/moments`、`/admin/photos`、`/admin/links`、`/admin/categories`、`/admin/tags` |
+| 媒体     | `GET /admin/media`、`POST /admin/media/upload`、`DELETE /admin/media/:id`、`GET /media/:key`                          |
+| 管理功能 | `GET /admin/overview`、`GET/PUT /admin/settings`、`GET /admin/comments`、`PUT/DELETE /admin/comments/:id`             |
 
-列表返回 `{items,total,page,pageSize}`，page >= 1，pageSize 默认 10、最大 50。列表支持 category/tag slug，search 与 posts 的 q 在标题/摘要上做大小写不敏感匹配；全文检索留待 Phase 4。archives 返回分页的标题/slug/发布时间，按月份分组由前端完成。分类/标签公开列表只含有公开文章的条目，管理 CRUD 后续实现。
+分页列表返回 `{items,total,page,pageSize}`，pageSize 默认 10、最大 50。文章支持 category/tag slug 和 q；搜索在标题、摘要、Markdown 原文做大小写不敏感匹配，适合个人内容规模。分类/标签公开列表只包含有已发布文章的条目。归档由前端按月分组。
 
-JSON 请求体上限 1MB。Nest ValidationPipe 拒绝未知字段。JWT 使用 HS256，固定 issuer/audience、一小时期限。密码使用随机盐与 Node scrypt。无默认凭证，初始化要求显式设置。站长登录限流；当前限流状态在进程内，单实例部署。后续扩容时再引入 Redis。Nginx 不向应用转发客户端自定义的可信身份。
+## 认证、上传与评论
 
-## Phase 2：忠实迁移 Sakura
+JWT 使用 HS256，固定 issuer/audience，有效期一小时；登录限流5次/分钟。密码使用随机盐与 Node scrypt。改密验证旧密码并递增 authVersion，所有旧 Token 立即失效。Token 仅存管理端内存；后续若需要跨刷新会话，再设计 HttpOnly Cookie 与 CSRF。
 
-源码：[LIlGG/halo-theme-sakura](https://github.com/LIlGG/halo-theme-sakura)。调研时 HEAD 为 `a31ff6520b34e45beab20ef91204f958dcf1cd81`，仓库标注 MIT。实施迁移时固定并保存源码版本、LICENSE、第三方资源授权清单；仓库许可不代表所有远程图片/字体可自由再分发。
+JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大8MB，Sharp 解码验证格式与像素数量（最多4000万），旋转/缩放至最大2560像素、转为 WebP，GIF 保留首帧；不接受 SVG/HTML。文件保存到持久化卷，公开路径为 `/api/v1/media/<uuid>.webp`；删除时检查数据库内容与配置引用。更换存储后端时可以沿用公开 API。
 
-1. 保存原模板、CSS、SVG、图片、字体、动画和响应式规则；逐项查找外链并本地化，不能只按截图重画。
-2. 迁移 DOM 层级/class/variables/breakpoints。将 th:text/each/if/href 转成 Vue 数据绑定。保留原视觉，不使用 Tailwind 重写。
-3. 将 Pjax 导航替换为 Nuxt Router；原 JS 的 DOM 行为转换为有清理函数的 composable，在 mounted 初始化、unmounted 注销监听。window/document 仅客户端访问。
-4. 首先交付首页 Hero、头像、glitch、wave、文章列表，以及文章 Cover、metadata、Markdown、TOC、tags、author、share。
-5. Markdown 默认禁用原始 HTML，经过安全渲染、URL 协议过滤；代码高亮本地依赖。编辑器预览与博客使用一致渲染策略。Mermaid 后续独立安全评估和懒加载。
-6. 对照原主题进行桌面/移动端截图验收，检查图片/字体请求不访问 CDN，并测试 SPA 路由切换后动画和监听不重复。
+访客评论纯文本，默认待审核，蜜罐字段和每分钟3次限流；只公开审核通过内容。审核事务锁定关联文章，维护正确的评论数。当前限流在单进程内；扩容前再引入 Redis。关闭网站评论后拒绝新评论。
 
-Nuxt `ssr:false`，读取内容使用 useAsyncData/useFetch 与 runtimeConfig。服务端 API 地址和 public API 地址分离，不将秘密放到 public config。不在模块顶层访问浏览器对象。未来开启 SSR 时增加 hydration、服务端请求地址、SEO、sitemap、OpenGraph 和 metadata 测试。
+## Sakura 迁移
 
-所有路由：`/`、`/posts/:slug`、`/archives`、`/categories`、`/tags`、`/moments`、`/photos`、`/links`、`/search`。非首批页面随对应内容能力交付。
+固定上游 `a31ff6520b34e45beab20ef91204f958dcf1cd81`，保留原模板、CSS 源码及许可在 `vendor/sakura`。`apps/blog/public/sakura/main.css` 是上游编译 CSS 原件；图片、选用的 Solar SVG、Ubuntu 字体均在本地提供，详见 [许可清单](../licenses/THIRD-PARTY.md)。不使用 Tailwind。
 
-## Phase 3：独立管理端
+Vue 保留主要模板层级和 class。Pjax 被 Nuxt 路由替换；导航、明暗切换、返回顶部和图库弹窗使用 Vue 生命周期管理，波浪/glitch/响应式沿用原 CSS。未引入上游可选音乐播放器、Live2D、第三方评论和外部小部件。
 
-Vue 3 + Vite + Element Plus，路由基址 `/admin/`。登录、Markdown 编辑、预览、发布/撤回。管理端不加载 Sakura 展示 CSS；从原主题提取主色、圆角、间距、字体和图标规则作为独立设计 token。保持 Halo 式内容工作台结构。Token 第一版仅存内存，刷新后重新登录，后续需要持久会话时再设计 HttpOnly Cookie + CSRF。
+博客路由：`/`、`/posts/:slug`、`/archives`、`/categories`、`/tags`、`/moments`、`/photos`、`/links`、`/search`、`/pages/:slug`。原主题移动端会隐藏 Hero 焦点文字区，这是保留的响应式行为。
 
-## Phase 4：内容完善
+Markdown 禁用原始 HTML和危险协议，图片仅允许本地媒体与已打包 Sakura 资源；编辑器与博客共用渲染器。代码高亮本地运行；目录锚点由渲染器生成。Mermaid 留待后续。
 
-媒体上传、分类/标签编辑、搜索增强、评论审核、网站配置及其它博客页面。Redis/BullMQ/S3 仅在这些能力确实需要时加入；当前无空转服务或未实现 endpoint。图库和媒体区分：media 是存储对象，photos 是有标题、描述、排序的展示内容。
+Nuxt 当前 `ssr:false`，数据通过 useAsyncData 与 runtimeConfig 获取，服务端 API 地址和公开地址分离；浏览器操作限定事件/挂载生命周期。未来启用 SSR 仍需 hydration、首屏数据、服务端错误码与 SEO 专项验证。
 
-## 运维和依赖决策
+## 管理端
 
-遵循 finance_analysis 的 Compose + .env + Linux + deploy.sh 方式，增加健康检查、migration gate 和备份。当前生产只运行 database/backend/proxy，blog/admin 随各自阶段加入 Compose，避免用空占位镜像伪装实现。
+独立 Vue/Vite/Element Plus 应用，基址 `/admin/`。橙色主色、Ubuntu 字体、圆角、留白和线性图标呼应 Sakura，不加载博客 CSS。内容工作台提供真实数据统计、Markdown 编辑预览、图片插入、发布与配置维护。未保存草稿按记录存储在 sessionStorage，同一标签页登录后可恢复；保存成功清除草稿，离开编辑器提示未保存修改。
 
-运行版本锁在 package-lock.json。Prisma 选用 7.x 稳定线，不跟随当前 latest 的 8.x RC。deepmerge-ts/mysql2/js-yaml overrides 修复当前间接依赖审计问题；升级 Prisma/Swagger 时检查是否可以移除 overrides，migration、generate、构建及真实数据库测试必须通过。
+## 依赖审计
+
+版本锁在 package-lock.json。Prisma 使用7.x稳定线，Node24；deepmerge-ts/mysql2/js-yaml overrides 修复间接依赖问题，升级时复核是否仍需保留。
+
+`npm run audit` 对所有工作区执行 npm audit，阻断未审查的 high/critical 叶子告警。当前仅精确放行 [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv)：Nuxt → listhen 开发 HTTPS 的 node-forge 1.4.0 RSA 验签问题，上游尚无修复版本。当前开发服务不启用 HTTPS，listhen 相关代码用于创建本地证书，CMS 不调用其 RSA 验签；后端运行镜像不安装 Nuxt，前端生产运行 Nitro 构建产物。此例外不是忽略所有 Nuxt 告警；上游修复后应升级并移除脚本中的 URL 例外。
