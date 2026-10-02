@@ -21,6 +21,7 @@ import { session } from './api';
 const route = useRoute();
 const router = useRouter();
 const open = ref(false);
+const blogUrl = import.meta.env.DEV ? 'http://localhost:3001/' : '/';
 const nav = [
   { path: '/', label: '概览', icon: House },
   { path: '/posts', label: '文章', icon: Document },
@@ -104,7 +105,7 @@ function logout() {
           ><strong>{{ route.meta.title }}</strong>
         </div>
         <div class="topbar-right">
-          <a href="/" target="_blank" rel="noopener">访问博客 ↗</a
+          <a :href="blogUrl" target="_blank" rel="noopener">访问博客 ↗</a
           ><span class="owner-avatar">{{
             session.owner?.displayName.slice(0, 1) || 'S'
           }}</span>
