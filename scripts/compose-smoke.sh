@@ -194,13 +194,15 @@ run_step build-current-code timeout --signal=TERM --kill-after=20s 900s env \
   bash scripts/build.sh --images "$IMAGES_FILE"
 IMAGES_BUILT=1
 run_step start-empty-database compose "$SOURCE_PROJECT" up -d --wait --wait-timeout 120 --no-build --pull never database
-# Mirrors deploy.sh's default first-install backup, without SKIP_BACKUP and
-# before migrate/seed or any backend startup. Bind ownership initialization must work.
+# Deployment initializes bind ownership directly, including repeated deploys.
+run_step initialize-source-media compose "$SOURCE_PROJECT" run --rm --no-deps --pull never -T media-init
+run_step reinitialize-source-media compose "$SOURCE_PROJECT" run --rm --no-deps --pull never -T media-init
+run_step verify-virgin-media-permissions compose "$SOURCE_PROJECT" run --rm --no-deps -T --entrypoint sh backend \
+  -c 'test "$(id -u)" != 0 && test -d /app/data && test -r /app/data && test -w /app/data'
+# Independently verify manual backup of an empty installation.
 backup empty
 [[ $(wc -l < "$RUNTIME_DIR/media-empty.list") == 1 ]]
 [[ -z $(compose "$SOURCE_PROJECT" ps --status running -q backend) ]]
-run_step verify-virgin-media-permissions compose "$SOURCE_PROJECT" run --rm --no-deps -T --entrypoint sh backend \
-  -c 'test "$(id -u)" != 0 && test -d /app/data && test -r /app/data && test -w /app/data'
 run_step migrate compose "$SOURCE_PROJECT" run --rm -T migrate
 run_step seed compose "$SOURCE_PROJECT" run --rm -T seed
 run_step seed-idempotence compose "$SOURCE_PROJECT" run --rm -T seed

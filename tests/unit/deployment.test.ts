@@ -79,7 +79,6 @@ if(process.env.COOL_FAIL==='backup') process.exit(1);
         COOL_FAKE_LOG: log,
         COOL_BACKEND_REVISION: sha,
         COOL_FRONTEND_REVISION: sha,
-        SKIP_BACKUP: '0',
         ...extra,
       },
       encoding: 'utf8',
@@ -106,12 +105,16 @@ const compose = (...args: string[]) => [
   ...args,
 ];
 
-test('production Compose fixes latest image names and CI publishes latest', async () => {
+test('production Compose fixes latest image names and CI runs only on main pushes', async () => {
   const prod = await readFile('docker-compose.prod.yml', 'utf8');
   assert.match(prod, /image: ghcr\.io\/ahricool\/cool-backend:latest/);
   assert.match(prod, /image: ghcr\.io\/ahricool\/cool-frontend:latest/);
   assert.doesNotMatch(prod, /image:.*\$\{/);
   const workflow = await readFile('.github/workflows/ci.yml', 'utf8');
+  assert.match(
+    workflow,
+    /^on:\n {2}push:\n {4}branches: \[main\]\npermissions:/m,
+  );
   assert.match(
     workflow,
     /type=raw,value=latest,enable=\$\{\{ github.event_name == 'push' }}/,
@@ -165,7 +168,7 @@ test('missing explicit image overrides fail closed', async () => {
   }
 });
 
-test('no-argument deployment updates main, pulls latest, backs up, migrates and waits for health', async () => {
+test('no-argument deployment updates main, pulls latest, initializes media, migrates and waits for health', async () => {
   const f = await fixture();
   try {
     const result = f.run('deploy.sh');
@@ -203,7 +206,15 @@ test('no-argument deployment updates main, pulls latest, backs up, migrates and 
         'never',
         'database',
       ),
-      ['backup'],
+      compose(
+        'run',
+        '--rm',
+        '--no-deps',
+        '--pull',
+        'never',
+        '-T',
+        'media-init',
+      ),
       compose('run', '--rm', '--no-deps', '--pull', 'never', 'migrate'),
       compose('run', '--rm', '--no-deps', '--pull', 'never', 'seed'),
       compose(
@@ -280,8 +291,8 @@ for (const extra of [
 }
 
 for (const [failure, forbidden] of [
-  ['never database', 'backup'],
-  ['backup', 'migrate'],
+  ['never database', 'media-init'],
+  ['-T media-init', 'migrate'],
   ['never migrate', 'seed'],
   ['never seed', '--remove-orphans'],
   ['--remove-orphans', 'Deployment ready'],
@@ -299,10 +310,10 @@ for (const [failure, forbidden] of [
   });
 }
 
-test('backup is skipped only when explicitly requested', async () => {
+test('deployment succeeds without depending on the backup tool', async () => {
   const f = await fixture();
   try {
-    const result = f.run('deploy.sh', [], { SKIP_BACKUP: '1' });
+    const result = f.run('deploy.sh', [], { COOL_FAIL: 'backup' });
     assert.equal(result.status, 0, result.stderr);
     assert(!(await f.calls()).some((args) => args[0] === 'backup'));
     assert((await f.calls()).some((args) => args.includes('migrate')));

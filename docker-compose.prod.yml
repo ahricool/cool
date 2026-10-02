@@ -14,7 +14,7 @@ x-media: &media
     source: ${MEDIA_ROOT:-./data}
     target: /app/data
 services:
-  # Run once before first backend startup (deploy.sh and backup.sh do this).
+  # Safe to repeat; deploy.sh and manual backup.sh each initialize the mount.
   # Only the dedicated mount root is changed; existing files are never chowned.
   media-init:
     <<: *backend
