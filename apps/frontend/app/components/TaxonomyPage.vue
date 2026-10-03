@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t, locale, localePath, contentLang } = useCoolI18n();
+const { t, locale, routePath, contentLang } = useCoolI18n();
 import type { Pagination, Post, Taxonomy } from '@cool/content';
 const props = defineProps<{ kind: 'categories' | 'tags' }>();
 const route = useRoute();
@@ -29,37 +29,21 @@ const { data, pending, error, refresh } = await useAsyncData(
   <PageFrame
     :title="t(kind === 'categories' ? '分类' : '标签')"
     :content-class="kind"
-    ><div :class="`${kind}-container`">
-      <div class="card-container">
-        <div class="chip-container">
-          <div class="card">
-            <div class="card-content">
-              <ApiState
-                :error="termError"
-                :empty="terms?.length === 0"
-                @retry="refreshTerms()"
-              />
-              <div
-                :class="
-                  kind === 'categories' ? 'categories-chips' : 'tag-chips'
-                "
-              >
-                <NuxtLink
-                  v-for="term in terms"
-                  :key="term.id"
-                  :to="localePath(`/${kind}/${encodeURIComponent(term.slug)}`)"
-                  ><span
-                    class="chip chip-default"
-                    :class="{ selected: slug === term.slug }"
-                    :lang="contentLang(term.contentLocale)"
-                    >{{ term.name }}</span
-                  ></NuxtLink
-                >
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+  >
+    <ApiState
+      :error="termError"
+      :empty="terms?.length === 0"
+      @retry="refreshTerms()" />
+    <div class="taxonomy-terms">
+      <NuxtLink
+        v-for="term in terms"
+        :key="term.id"
+        class="chip"
+        :class="{ selected: slug === term.slug }"
+        :to="routePath(`/${kind}/${encodeURIComponent(term.slug)}`)"
+        :lang="contentLang(term.contentLocale)"
+        >{{ term.name }}</NuxtLink
+      >
     </div>
     <template v-if="slug"
       ><ApiState

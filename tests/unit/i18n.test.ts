@@ -3,11 +3,9 @@ import { test } from 'node:test';
 import {
   detectLocale,
   resolveLocale,
-  effectiveLocale,
   formatCoolDate,
   isLocale,
-  pathForLocale,
-  localizePublicRequest,
+  publicPath,
   contentLang,
 } from '../../apps/frontend/app/i18n/locale';
 import { translate } from '../../apps/frontend/app/i18n/messages';
@@ -24,28 +22,11 @@ test('browser language detection supports simplified Chinese and English in pref
   assert.equal(isLocale('zh-CN'), false);
   assert.equal(isLocale('zh'), true);
 });
-test('locale paths replace language prefixes without duplicating them', () => {
-  assert.equal(pathForLocale('/', 'zh'), '/zh');
-  assert.equal(pathForLocale('/en', 'zh'), '/zh');
-  assert.equal(pathForLocale('/zh/posts/my-story', 'en'), '/en/posts/my-story');
-  assert.equal(pathForLocale('/posts/my-story', 'en'), '/en/posts/my-story');
-  assert.equal(pathForLocale('/english', 'zh'), '/zh/english');
+test('public links remain independent of the reader preference', () => {
+  assert.equal(publicPath('/'), '/');
+  assert.equal(publicPath('/posts/my-story'), '/posts/my-story');
+  assert.equal(publicPath('/english'), '/english');
   assert.equal(contentLang('zh'), 'zh-CN');
-  assert.equal(contentLang('en'), 'en');
-});
-test('public API requests capture locale once including retries after switching language', () => {
-  const first = localizePublicRequest('/public/posts?page=2', 'en');
-  assert.equal(first, '/public/en/posts?page=2');
-  assert.equal(localizePublicRequest(first, 'zh'), first);
-  assert.equal(
-    localizePublicRequest('/public/zh/posts/story/comments', 'en'),
-    '/public/zh/posts/story/comments',
-  );
-  assert.equal(localizePublicRequest('/admin/posts', 'en'), '/admin/posts');
-  assert.equal(
-    localizePublicRequest('/api/v1/media/file.webp', 'zh'),
-    '/api/v1/media/file.webp',
-  );
 });
 test('UI translation interpolates plain values and preserves authored text passed as unknown keys', () => {
   assert.equal(translate('保存草稿', {}, 'en'), 'Save draft');
@@ -70,9 +51,6 @@ test('saved explicit preference overrides browser detection and invalid storage 
   assert.equal(resolveLocale('zh', ['en-US']), 'zh');
   assert.equal(resolveLocale('fr', ['zh-CN']), 'zh');
   assert.equal(resolveLocale(null, ['fr-FR']), 'en');
-  assert.equal(effectiveLocale('zh', 'en'), 'zh');
-  assert.equal(effectiveLocale(undefined, 'en'), 'en');
-  assert.equal(effectiveLocale(['zh'], 'en'), 'en');
 });
 
 test('localized dates keep the Shanghai site date across UTC day and month boundaries', () => {

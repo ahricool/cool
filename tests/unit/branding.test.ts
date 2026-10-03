@@ -2,14 +2,14 @@ import { strict as assert } from 'node:assert';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import { defaultSite, defaultHomepage } from '../../packages/content/src/types';
-import { LOCALE_STORAGE_KEY } from '../../apps/frontend/app/i18n/locale';
+import { LOCALE_COOKIE } from '../../apps/frontend/app/i18n/locale';
 import { translate } from '../../apps/frontend/app/i18n/messages';
 import { SESSION_COOKIE } from '../../apps/backend/src/auth.constants';
 
 test('梦桜 is the default product name in both interface languages', () => {
   assert.equal(defaultSite.title, '梦桜');
   assert.equal(defaultHomepage.greeting, 'Hi, 梦桜!');
-  assert.equal(LOCALE_STORAGE_KEY, 'cool.locale');
+  assert.equal(LOCALE_COOKIE, 'cool_locale');
   assert.equal(SESSION_COOKIE, 'cool_session');
   assert.equal(translate('创作工作台', {}, 'en'), 'Creative workspace');
   assert.equal(translate('梦桜 首页', {}, 'en'), '梦桜 homepage');

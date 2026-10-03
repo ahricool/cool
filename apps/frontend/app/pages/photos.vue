@@ -77,7 +77,7 @@ function open(photo: Photo) {
     <div class="photos-container">
       <section class="photos-inner">
         <div class="masonry-container">
-          <div class="photos-content fancybox-content">
+          <div class="photos-content">
             <div
               ref="gallery"
               class="gallery masonry-gallery"
@@ -89,7 +89,7 @@ function open(photo: Photo) {
               <figure
                 v-for="(photo, index) in data?.items"
                 :key="photo.id"
-                class="gallery-item col-3"
+                class="gallery-item"
                 :style="
                   positions?.items[index]
                     ? {

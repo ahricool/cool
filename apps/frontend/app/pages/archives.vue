@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t, locale, formatDate, localePath, contentLang } = useCoolI18n();
+const { t, locale, formatDate, routePath, contentLang } = useCoolI18n();
 import type { Pagination, Post } from '@cool/content';
 const route = useRoute();
 const page = computed(() => Math.max(1, Number(route.query.page) || 1));
@@ -42,10 +42,8 @@ const groups = computed(() =>
                 :key="post.id"
                 class="archive-post-item"
               >
-                <span class="archive-post-circle"></span>
-                <div class="arrow-left-ar"></div>
-                <div class="brick">
-                  <NuxtLink :to="localePath(`/posts/${post.slug}`)"
+                <div class="archive-entry">
+                  <NuxtLink :to="routePath(`/posts/${post.slug}`)"
                     ><span class="time flex-child-center">{{
                       formatDate(post.publishedAt, {
                         month: 'short',

@@ -1,5 +1,5 @@
 import { reactive, watch, type App } from 'vue';
-import { currentLocale } from '../../i18n/locale';
+import { preferredLocale } from '../../i18n/locale';
 let installation: Promise<void> | undefined;
 /** Keep Element Plus and its locale data out of the public site's initial JS path. */
 export function installAdminUi(app: App) {
@@ -8,9 +8,11 @@ export function installAdminUi(app: App) {
     import('element-plus/es/locale/lang/zh-cn'),
     import('element-plus/es/locale/lang/en'),
   ]).then(([{ default: ElementPlus }, { default: zh }, { default: en }]) => {
-    const config = reactive({ locale: currentLocale.value === 'zh' ? zh : en });
+    const config = reactive({
+      locale: preferredLocale.value === 'zh' ? zh : en,
+    });
     app.use(ElementPlus, config);
-    watch(currentLocale, (value) => {
+    watch(preferredLocale, (value) => {
       config.locale = value === 'zh' ? zh : en;
     });
   });

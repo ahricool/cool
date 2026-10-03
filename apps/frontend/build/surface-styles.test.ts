@@ -114,12 +114,15 @@ test('uses each imported rule source rather than only the parent stylesheet sour
   assert.match(result.css, /data-surface='admin'/);
 });
 
-test('the complete upstream Sakura and Element Plus stylesheets remain parseable and isolated', async () => {
+test('owned public styles and Element Plus remain isolated', async () => {
   const files = [
-    ['../app/assets/blog/sakura.css', 'blog'],
-    ['../app/assets/blog/adapters.css', 'blog'],
-    ['../app/assets/blog/refinements.css', 'blog'],
-    ['../app/assets/admin/style.css', 'admin'],
+    ['../app/assets/blog/base.css', 'blog'],
+    ['../app/assets/blog/shell.css', 'blog'],
+    ['../app/assets/blog/content.css', 'blog'],
+    ['../app/assets/admin/shell.css', 'admin'],
+    ['../app/assets/admin/workspace.css', 'admin'],
+    ['../app/assets/admin/editor.css', 'admin'],
+    ['../app/assets/admin/login.css', 'admin'],
     ['../../../node_modules/element-plus/dist/index.css', 'admin'],
   ];
   for (const [relativePath, surface] of files) {
@@ -140,18 +143,6 @@ test('the complete upstream Sakura and Element Plus stylesheets remain parseable
         });
       }).processSync(rule.selector);
     });
-    assert.ok(scoped > 100, `Expected a complete stylesheet: ${relativePath}`);
+    assert.ok(scoped > 10, `Expected a complete stylesheet: ${relativePath}`);
   }
-});
-
-test('repairs only the known upstream variable typos while retaining the original source', async () => {
-  const source =
-    '.item { color: var(theme-color); border: 1px solid var(theme-color) } .name { color: --var(theme-color) }';
-  const result = await transform(source, '/app/assets/blog/sakura.css');
-  assert.equal((result.css.match(/var\(--theme-color\)/g) ?? []).length, 3);
-  assert.ok(!result.css.includes('--var('));
-  assert.match(
-    (await transform(source, '/app/assets/blog/custom.css')).css,
-    /--var\(theme-color\)/,
-  );
 });

@@ -78,16 +78,14 @@ test('owner writes, previews and publishes; visitors read and comment; owner mod
   await expect(page).toHaveURL((url) =>
     /^\/admin\/posts\/[a-f0-9-]+$/.test(url.pathname),
   );
-  expect((await request.get(api + '/public/zh/posts/' + slug)).status()).toBe(
-    404,
-  );
+  expect((await request.get(api + '/public/posts/' + slug)).status()).toBe(404);
   await page.getByRole('button', { name: '发布', exact: true }).click();
   await expect(page.getByRole('button', { name: '撤回为草稿' })).toBeVisible();
-  const detail = await request.get(api + '/public/zh/posts/' + slug);
+  const detail = await request.get(api + '/public/posts/' + slug);
   expect(detail.ok()).toBeTruthy();
   const postId = (await detail.json()).id;
   await page.goto(blog + '/posts/' + slug);
-  await expect(page.locator('.pattern-title h1')).toHaveText(
+  await expect(page.locator('.page-heading h1')).toHaveText(
     '在时光里，收藏一片春天',
   );
   await expect(page.locator('.entry-content .hljs-keyword')).toHaveText(
@@ -162,7 +160,7 @@ test('all blog routes load on desktop and mobile without external resources', as
     await expect(page.locator('.api-state[role="alert"]')).toHaveCount(0);
   }
   await page.goto(blog);
-  await expect(page.locator('.center-text')).toBeVisible();
+  await expect(page.locator('.hero-title')).toBeVisible();
   await expect(page.locator('#page')).toHaveCSS('opacity', '1');
   await page.screenshot({
     path: info.outputPath('blog-home-desktop.png'),
@@ -175,13 +173,13 @@ test('all blog routes load on desktop and mobile without external resources', as
     .getByRole('navigation', { name: '移动端导航' })
     .getByRole('link', { name: '归档' })
     .click();
-  await expect(page.locator('.pattern-title h1')).toHaveText('归档');
+  await expect(page.locator('.page-heading h1')).toHaveText('归档');
   await page.goto(blog);
   await expect(page.locator('#content')).toBeVisible();
   await expect(page.locator('#page')).toHaveCSS('opacity', '1');
   await expect
     .poll(() =>
-      page.locator('#centerbg .cover-bg').evaluate((element) => {
+      page.locator('#hero-artwork .cover-bg').evaluate((element) => {
         const image = element as HTMLImageElement;
         return image.complete && image.naturalWidth > 0;
       }),

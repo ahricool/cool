@@ -40,7 +40,7 @@ test('Sakura mobile sidebar traps focus, closes, and restores navigation', async
   await expect(dialog).toBeHidden();
   await toggle.click();
   await dialog.getByRole('link', { name: '归档', exact: true }).click();
-  await expect(page.locator('.pattern-title h1')).toHaveText('归档');
+  await expect(page.locator('.page-heading h1')).toHaveText('归档');
   await expect(dialog).toBeHidden();
   for (let attempt = 0; attempt < 2; attempt++) {
     await toggle.click();
@@ -49,7 +49,7 @@ test('Sakura mobile sidebar traps focus, closes, and restores navigation', async
     await expect(dialog).toBeHidden();
     await expect(page).toHaveURL(
       (url) =>
-        url.pathname === '/zh/search' && url.searchParams.get('q') === 'Sakura',
+        url.pathname === '/search' && url.searchParams.get('q') === 'Sakura',
     );
   }
   expect(

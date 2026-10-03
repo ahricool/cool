@@ -2,7 +2,7 @@
 
 ```mermaid
 flowchart TB
-  Visitor[访客 /zh 或 /en] --> Frontend[统一前端 Nginx / Nuxt 静态 SPA]
+  Visitor[访客 /] --> Frontend[统一前端 Nginx / Nuxt 静态 SPA]
   Owner[唯一站长 /admin] --> Frontend
   Frontend -->|同源 /api| API[NestJS REST / api/v1]
   API --> Prisma[Prisma]
@@ -12,7 +12,7 @@ flowchart TB
 
 ## 工程与边界
 
-npm workspaces：`apps/backend`、`apps/frontend`、`packages/content`。`apps/frontend` 是唯一 Nuxt 4 / Vue 3 / Pinia 应用，通过 Nuxt 文件路由和布局提供博客 `/zh`、`/en` 与 Element Plus 管理工作台 `/admin`；原来的独立博客、管理端工程已合并。`packages/content` 提供共用的 TypeScript 响应类型、安全 Markdown 渲染和日期格式。前端不导入 Prisma；Swagger 提供请求契约，当前响应类型手工维护并通过集成测试核对主流程。
+npm workspaces：`apps/backend`、`apps/frontend`、`packages/content`。`apps/frontend` 是唯一 Nuxt 4 / Vue 3 / Pinia 应用，通过 Nuxt 文件路由和布局提供博客 `/` 与 Element Plus 管理工作台 `/admin`；原来的独立博客、管理端工程已合并。`packages/content` 提供共用的 TypeScript 响应类型、安全 Markdown 渲染和日期格式。前端不导入 Prisma；Swagger 提供请求契约，当前响应类型手工维护并通过集成测试核对主流程。
 
 前端 `ssr:false`，`nuxt generate` 输出 `.output/public`。`Dockerfile.frontend` 将静态产物和 Nginx 配置放进一个镜像，Nginx 负责静态文件、SPA 深层路由回退和 `/api/` 反向代理。生产只有 frontend、backend、database 三个常驻服务；migrate/seed 是复用后端镜像的一次性工具，不运行独立代理、管理端或 Nuxt/Nitro 服务。浏览器使用相对地址 `/api/v1`，开发时由 Nuxt 代理到本地后端。
 
@@ -34,7 +34,7 @@ npm workspaces：`apps/backend`、`apps/frontend`、`packages/content`。`apps/f
 
 ## 双语路由与内容选择
 
-只支持 `zh` 和 `en`。公开页面路径为 `/:locale/...`，API 为 `/api/v1/public/:locale/...`，语言不是 query 参数；分类/标签详情使用 `/:locale/categories/:slug`、`/:locale/tags/:slug`，对应 API 子资源为 `/public/:locale/categories/:slug/posts` 和 `/tags/:slug/posts`。搜索词 q 与分页 page/pageSize 仍使用普通 query 字段。访问 `/` 时按 localStorage 的 `cool.locale`、浏览器语言、英文默认值依次选择入口；已带语言的 URL 决定公开界面语言。footer 的原生语言选择器保存偏好并切换到对应语言路径，后台 `/admin` 使用同一偏好。
+只支持 `zh` 和 `en`。公开页面及 API 均不包含语言路径或 query：页面 `/posts/:slug`，API `/api/v1/public/posts/:slug`。首次访问按浏览器语言选择，footer 选择保存在一年期 `cool_locale` cookie（SameSite=Lax，HTTPS 下 Secure）。API 优先采用该 cookie，再按 Accept-Language 权重协商，最终默认英文。所有本地化公开响应声明 `Vary: Accept-Language, Cookie` 和 `Cache-Control: private, no-store`，避免共享缓存交叉语言。后台界面语言使用同一读者偏好，编辑正文语言保持独立。搜索词 q 与分页 page/pageSize 仍是普通 query 字段。
 
 文章和页面只有一个逻辑 ID/slug、作者/封面和分类标签关联。翻译表用 `(parentId, locale)` 唯一约束保存标题、摘要（文章）、正文及各自发布状态/时间。后台界面语言与编辑器内容语言互相独立；例如英文后台可以编辑中文正文，预览链接与当前内容 tab 一致。草稿按记录与语言保存，切换语言保留未保存提醒。
 
@@ -50,10 +50,10 @@ npm workspaces：`apps/backend`、`apps/frontend`、`packages/content`。`apps/f
 
 | 类型       | 路径（前缀 `/api/v1`）                                                                                                        |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 公开配置   | `GET /public/:locale/site`、`/public/:locale/config`                                                                          |
-| 文章发现   | `GET /public/:locale/posts`、`/posts/:slug`、`/categories`、`/tags`、`/archives`、`/search`（均在 `/public/:locale` 下）      |
-| 其他内容   | `GET /public/:locale/pages/:slug`、`/public/:locale/moments`、`/public/:locale/photos`                                        |
-| 评论       | `GET/POST /public/:locale/posts/:slug/comments`                                                                               |
+| 公开配置   | `GET /public/site`、`/public/config`                                                                                          |
+| 文章发现   | `GET /public/posts`、`/posts/:slug`、`/categories`、`/tags`、`/archives`、`/search`（均在 `/public` 下）                      |
+| 其他内容   | `GET /public/pages/:slug`、`/public/moments`、`/public/photos`                                                                |
+| 评论       | `GET/POST /public/posts/:slug/comments`                                                                                       |
 | 认证       | `GET /admin/auth/status`、`POST /admin/auth/setup`、`POST /admin/auth/login`、`GET /admin/auth/session`、`GET /admin/auth/me` |
 | 账户与会话 | `POST /admin/auth/logout`、`POST /admin/auth/revoke-all`、`PUT /admin/auth/profile`、`PUT /admin/auth/password`               |
 | 内容管理   | `/admin/posts`、`/admin/pages`、`/admin/moments`、`/admin/photos`、`/admin/categories`、`/admin/tags`                         |
@@ -76,16 +76,9 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 
 访客评论纯文本，默认待审核，蜜罐字段和每分钟3次限流；只公开审核通过内容。审核事务锁定关联文章，维护正确的评论数。当前限流在单进程内；扩容前再引入 Redis。关闭网站评论后拒绝新评论。
 
-## Sakura 迁移
+## Sakura 视觉系统
 
-固定上游 `a31ff6520b34e45beab20ef91204f958dcf1cd81`。当前应用保留迁移后的 Vue 模板、`apps/frontend/app/assets/blog/sakura.css` 上游编译 CSS 和所需本地资产，不再保存整份上游模板/CSS 源码副本。图片在 `apps/frontend/public/sakura`，选用的 Solar SVG 在 `app/assets/icons.json`，Ubuntu 与 Noto Sans SC 字体通过本地包构建。不使用 Tailwind。
-Vue 保留主要模板层级和 class。Pjax 被 Nuxt 路由替换；导航、明暗切换、返回顶部和图库弹窗使用 Vue 生命周期管理，波浪和响应式布局沿用原 CSS。独立的产品样式层与管理端统一无衬线排版、樱粉/梅紫配色、卡片和表单；首页文字采用清晰的静态字形，正文和输入框强调阅读舒适度，同时覆盖深色模式。上游编译 CSS 保留原件，构建时为博客和管理端样式添加 `html[data-surface]` 作用域，避免两种布局的 reset、组件样式和变量互相污染。未引入上游可选音乐播放器、Live2D、第三方评论和外部小部件。
-
-博客路由均带 `/:locale` 前缀：`/:locale`、`/:locale/posts/:slug`、`/:locale/archives`、`/:locale/categories`、`/:locale/categories/:slug`、`/:locale/tags`、`/:locale/tags/:slug`、`/:locale/moments`、`/:locale/photos`、`/:locale/search`、`/:locale/pages/:slug`。原主题移动端会隐藏 Hero 焦点文字区，这是保留的响应式行为。
-
-Markdown 禁用原始 HTML和危险协议，图片仅允许本地媒体与已打包 Sakura 资源；编辑器与博客共用渲染器。代码高亮本地运行；目录锚点由渲染器生成。Mermaid 留待后续。
-
-Nuxt 当前 `ssr:false`，数据由浏览器通过 useAsyncData 和同源 API 获取；静态生成仅生成 SPA 入口，不在构建时固化数据库文章，发布内容无需重建前端。浏览器操作限定事件/挂载生命周期。未来启用 SSR 仍需调整部署架构，并完成 hydration、首屏数据、服务端错误码与 SEO 专项验证。
+使用本地二次元插画和樱花图标，保留原始图片水印与第三方授权说明。公共布局、卡片与阅读样式均为本项目维护，不再依赖上游编译 CSS 或原主题模板层级。共享 token 管理樱粉、梅紫、淡紫色系与本地字体；公共与 Admin 样式按业务模块分离并以 `html[data-surface]` 隔离。导航、明暗切换和图库弹窗使用 Vue 生命周期管理，原可选波浪作为低透明度横幅装饰保留，尊重减少动画偏好。未引入音乐播放器、Live2D、第三方评论、外部小部件或新的主题框架。
 
 ## 管理端
 
@@ -98,3 +91,7 @@ Nuxt 当前 `ssr:false`，数据由浏览器通过 useAsyncData 和同源 API �
 版本锁在 package-lock.json。Prisma 使用7.x稳定线，Node24；deepmerge-ts/mysql2/js-yaml overrides 修复间接依赖问题，升级时复核是否仍需保留。
 
 `npm run audit` 对所有工作区执行 npm audit，阻断未审查的 high/critical 叶子告警。审计脚本仅精确放行 [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv)：Nuxt → listhen 开发 HTTPS 的 node-forge 1.4.0 RSA 验签问题，该例外针对锁文件中的 node-forge 版本。当前开发服务不启用 HTTPS，listhen 相关代码用于创建本地证书，Cool 不调用其 RSA 验签；后端运行镜像不安装 Nuxt，前端生产只运行 Nginx 和静态文件，不携带 Nuxt 开发 HTTPS 工具链。此例外不是忽略所有 Nuxt 告警；上游修复后应升级并移除脚本中的 URL 例外。
+
+## 前端视觉模块
+
+共享 `assets/tokens.css` 定义 Sakura 颜色、文字和表面。公共样式由 `blog/base.css`（基础控件与状态）、`shell.css`（导航、横幅、抽屉和页脚）、`content.css`（文章、阅读、归档、分类、瞬间和图库）组成；原主题及补丁层已删除。Admin 样式按 shell/workspace/editor/login 分离并清除被后续同选择器覆盖的声明。PostCSS 为每个表面添加低优先级作用域，避免 SPA 切换或传送弹层污染另一表面。`useReadingShell` 管理阅读导航的焦点、滚动和生命周期；内容组件只负责其展示。

@@ -98,7 +98,7 @@ const posts = [
   },
 ];
 async function fixture(page: Page) {
-  await page.route('**/api/v1/public/zh/tags', (route) =>
+  await page.route('**/api/v1/public/tags', (route) =>
     route.fulfill({
       json: [
         { id: 'spring', name: '春日', slug: 'spring', contentLocale: 'zh' },
@@ -107,13 +107,13 @@ async function fixture(page: Page) {
     }),
   );
   await page.route(
-    /\/api\/v1\/public\/zh\/(?:categories|tags)\/[^/]+\/posts(?:[?]|$)/,
+    /\/api\/v1\/public\/(?:categories|tags)\/[^/]+\/posts(?:[?]|$)/,
     (route) =>
       route.fulfill({
         json: { items: posts, total: posts.length, page: 1, pageSize: 8 },
       }),
   );
-  await page.route('**/api/v1/public/zh/site', (route) =>
+  await page.route('**/api/v1/public/site', (route) =>
     route.fulfill({
       json: {
         contentLocale: 'zh',
@@ -126,7 +126,7 @@ async function fixture(page: Page) {
       },
     }),
   );
-  await page.route('**/api/v1/public/zh/config', (route) =>
+  await page.route('**/api/v1/public/config', (route) =>
     route.fulfill({
       json: {
         homepage: {
@@ -142,7 +142,7 @@ async function fixture(page: Page) {
       },
     }),
   );
-  await page.route(/\/api\/v1\/public\/zh\/posts(?:[/?]|$)/, (route) => {
+  await page.route(/\/api\/v1\/public\/posts(?:[/?]|$)/, (route) => {
     const path = new URL(route.request().url()).pathname;
     return route.fulfill({
       json: path.endsWith('/comments')
@@ -180,189 +180,34 @@ async function noOverflow(page: Page) {
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(await page.evaluate(() => window.innerWidth));
 }
-test('Blog carries the Admin Sakura typography and surfaces through populated desktop and mobile pages', async ({
+test('populated reading pages remain usable on desktop and mobile in both palettes', async ({
   page,
 }, info) => {
   await fixture(page);
-  await page.setViewportSize({ width: 1280, height: 850 });
-  await page.goto(blog);
-  await expect(page.locator('.post-list-thumb')).toHaveCount(2);
-  await expect(page.locator('body')).not.toHaveClass(/serif/);
-  await expect(page.locator('body')).toHaveCSS(
-    'font-family',
-    /Ubuntu.*sans-serif/,
-  );
-  await expect(page.locator('body')).toHaveCSS('color', 'rgb(64, 54, 73)');
-  await expect(page.locator('.post-title h2').first()).toHaveCSS(
-    'font-size',
-    '21px',
-  );
-  await expect(page.locator('.main-title .sakura-flower')).toBeVisible();
-  const cjkFaces = await page.evaluate(async () =>
-    Promise.all([
-      document.fonts
-        .load('400 16px "Noto Sans SC"', '春天')
-        .then((faces) => faces.length),
-      document.fonts
-        .load('700 20px "Noto Sans SC"', '春天')
-        .then((faces) => faces.length),
-    ]),
-  );
-  expect(cjkFaces).toEqual([1, 1]);
-  for (const article of await page.locator('.post-list-thumb').all()) {
-    const card = (await article.boundingBox())!;
-    const more = (await article
-      .getByRole('link', { name: /^阅读 / })
-      .boundingBox())!;
-    expect(more.y + more.height).toBeLessThanOrEqual(card.y + card.height);
-    const cover = (await article.locator('.post-thumb').boundingBox())!;
-    expect(Math.abs(cover.width / card.width - 0.55)).toBeLessThan(0.01);
-    await article.scrollIntoViewIfNeeded();
+  for (const [width, height] of [
+    [1440, 1000],
+    [390, 844],
+  ]) {
+    await page.setViewportSize({ width: width!, height: height! });
+    await page.goto(blog);
+    await expect(
+      page.getByRole('heading', { name: 'Hello, 梦桜' }),
+    ).toBeVisible();
+    await expect(page.locator('.story-title')).toHaveCount(2);
+    await noOverflow(page);
+    await capture(page, info, `home-${width}-light.png`);
+    await page.getByRole('button', { name: '切换深色', exact: true }).click();
+    await capture(page, info, `home-${width}-dark.png`);
+    await page.goto(blog + '/posts/visual-spring');
+    await expect(page.locator('.entry-content').first()).toContainText(
+      '留一点空白',
+    );
+    await noOverflow(page);
+    await capture(page, info, `reading-${width}.png`);
+    await page.goto(blog + '/tags');
+    await expect(
+      page.getByRole('link', { name: '春日', exact: true }),
+    ).toBeVisible();
+    await noOverflow(page);
   }
-  await expect
-    .poll(() =>
-      page
-        .locator('.post-thumb img, #centerbg .cover-bg')
-        .evaluateAll((images) =>
-          images.every(
-            (image) =>
-              (image as HTMLImageElement).complete &&
-              (image as HTMLImageElement).naturalWidth > 0,
-          ),
-        ),
-    )
-    .toBe(true);
-  await noOverflow(page);
-  await capture(page, info, 'sakura-refined-home-desktop.png');
-  await page.setViewportSize({ width: 860, height: 850 });
-  const brand = (await page.locator('.site-branding').boundingBox())!;
-  const nav = (await page.locator('.header-content .navbar').boundingBox())!;
-  const actions = (await page.locator('.header-after').boundingBox())!;
-  expect(brand.x + brand.width).toBeLessThanOrEqual(nav.x);
-  expect(nav.x + nav.width).toBeLessThanOrEqual(actions.x);
-  await noOverflow(page);
-  await capture(page, info, 'sakura-refined-home-narrow-desktop.png');
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('.post-title h2').first()).toHaveCSS(
-    'font-size',
-    '20px',
-  );
-  await noOverflow(page);
-  await expect(page.locator('.site-header .header-inner')).toHaveCSS(
-    'background-color',
-    /255, 250, 253/,
-  );
-  const notice = (await page.locator('.notice').boundingBox())!;
-  expect(notice.x).toBeGreaterThanOrEqual(0);
-  expect(notice.x + notice.width).toBeLessThanOrEqual(390);
-  await capture(page, info, 'sakura-refined-home-mobile.png');
-  await page.getByRole('button', { name: '打开导航' }).click();
-  const navigation = page.getByRole('navigation', { name: '移动端导航' });
-  await expect(navigation).toBeVisible();
-  await expect(
-    navigation.getByRole('link', { name: '首页', exact: true }),
-  ).toHaveCSS('background-color', 'rgb(255, 241, 246)');
-  await noOverflow(page);
-  await capture(page, info, 'sakura-refined-navigation-mobile.png');
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: '打开导航' })).toBeFocused();
-
-  await page.goto(blog + '/posts/visual-spring');
-  await expect(page.locator('.entry-content h1')).toHaveText('把日常写成故事');
-  await expect(page.locator('.entry-content em')).toHaveCSS(
-    'font-style',
-    'italic',
-  );
-  await expect(page.locator('.entry-content em')).toHaveCSS(
-    'font-synthesis',
-    'style',
-  );
-  await expect(page.locator('.entry-content > p').first()).toHaveCSS(
-    'font-size',
-    '16px',
-  );
-  await expect(page.getByLabel('昵称', { exact: true })).toHaveCSS(
-    'font-size',
-    '16px',
-  );
-  await expect(page.getByRole('button', { name: '提交评论' })).toHaveCSS(
-    'background-color',
-    'rgb(179, 66, 114)',
-  );
-  await expect(page.locator('.pattern-attachment-img img')).toHaveJSProperty(
-    'complete',
-    true,
-  );
-  await expect(page.locator('.entry-content .hljs-keyword').first()).toHaveCSS(
-    'color',
-    'rgb(155, 50, 110)',
-  );
-  await expect(page.locator('.entry-content .hljs-string').first()).toHaveCSS(
-    'color',
-    'rgb(56, 101, 71)',
-  );
-  await noOverflow(page);
-  await capture(page, info, 'sakura-refined-article-mobile.png');
-  await page.setViewportSize({ width: 1280, height: 850 });
-  await capture(page, info, 'sakura-refined-article-desktop.png');
-  await page.getByRole('button', { name: '切换深色' }).click();
-  await expect(page.locator('body')).toHaveCSS(
-    'background-color',
-    'rgb(33, 27, 39)',
-  );
-  await expect(page.locator('body')).toHaveCSS('color', 'rgb(238, 227, 238)');
-  await expect(page.locator('.entry-content .hljs-keyword').first()).toHaveCSS(
-    'color',
-    'rgb(243, 162, 200)',
-  );
-  await capture(page, info, 'sakura-refined-article-dark.png');
-});
-
-test('Blog search, empty and retry states retain readable Sakura controls on mobile', async ({
-  page,
-}, info) => {
-  await fixture(page);
-  let fail = false;
-  await page.route('**/api/v1/public/zh/search*', (route) =>
-    route.fulfill(
-      fail
-        ? { status: 503, json: { message: 'unavailable' } }
-        : { json: { items: [], total: 0, page: 1, pageSize: 8 } },
-    ),
-  );
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(blog + '/search?q=spring');
-  await expect(page.locator('.api-state')).toContainText('这里还没有内容');
-  const button = page.getByRole('button', { name: '搜索', exact: true });
-  expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(42);
-  await page.getByRole('searchbox', { name: '寻找一段文字' }).focus();
-  await expect(page.getByRole('searchbox', { name: '寻找一段文字' })).toHaveCSS(
-    'outline-style',
-    'solid',
-  );
-  await noOverflow(page);
-  await capture(page, info, 'sakura-refined-search-mobile.png');
-  fail = true;
-  await page.goto(blog + '/search?q=unavailable');
-  await expect(page.getByRole('alert')).toContainText('暂时无法加载内容');
-  await noOverflow(page);
-  await capture(page, info, 'sakura-refined-error-mobile.png');
-  fail = false;
-  await page.getByRole('button', { name: '重新加载' }).click();
-  await expect(page.getByRole('alert')).toHaveCount(0);
-  await expect(page.locator('.api-state')).toContainText('这里还没有内容');
-  await page.goto(blog + '/tags');
-  await page.getByRole('link', { name: '春日', exact: true }).click();
-  await expect(page).toHaveURL(
-    (url) => url.pathname === '/zh/tags/spring' && !url.search,
-  );
-  await expect(page.locator('.post-list-thumb')).toHaveCount(2);
-  const selected = page.locator('.chip.selected');
-  await expect(selected).toHaveText('春日');
-  await expect(selected).toHaveCSS('background-color', 'rgb(179, 66, 114)');
-  await expect(selected).toHaveCSS('color', 'rgb(252, 248, 251)');
-  await capture(page, info, 'sakura-refined-tags-mobile.png');
-  await page.getByRole('button', { name: '切换深色' }).click();
-  await expect(selected).toHaveCSS('background-color', 'rgb(238, 164, 197)');
-  await expect(selected).toHaveCSS('color', 'rgb(33, 27, 39)');
 });

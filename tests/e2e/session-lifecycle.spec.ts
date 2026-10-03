@@ -204,7 +204,7 @@ test('first-password screen confirms input and remains in the same Nuxt app acro
   await expect(page.locator('html')).toHaveAttribute('data-surface', 'admin');
   await expect(page.locator('body')).toHaveCSS(
     'background-color',
-    'rgb(252, 248, 251)',
+    'rgb(250, 247, 251)',
   );
   await page
     .getByLabel('设置密码', { exact: true })

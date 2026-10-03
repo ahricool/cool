@@ -1,6 +1,7 @@
 /** Public interface copy only. Authored content is localized by the API. */
 export const publicMessages: Record<string, string> = {
   首页: 'Home',
+  主导航: 'Main navigation',
   归档: 'Archives',
   分类: 'Categories',
   标签: 'Tags',

@@ -13,16 +13,16 @@
   --sakura-text: #403649;
   --sakura-text-regular: #615466;
   --sakura-muted: #766779;
-  --sakura-heading: #633b59;
+  --sakura-heading: #563b55;
   --sakura-surface: #fff;
   --sakura-soft: #fff1f6;
   --sakura-border: #eadfe8;
   --sakura-control-border: #e4d7e0;
   --sakura-border-light: #eee3eb;
   --sakura-fill-light: #fff5f9;
-  --sakura-page: #fcf8fb;
+  --sakura-page: #faf7fb;
   --sakura-header-background: #fffafdef;
-  --sakura-shadow: 0 5px 24px #71395109;
+  --sakura-shadow: 0 8px 32px #593b5808;
 }
 
 /* Blog's reading preference must never change the admin workspace palette. */
@@ -36,6 +36,11 @@
   --sakura-surface: #2b2332;
   --sakura-soft: #382838;
   --sakura-border: #514055;
+  --sakura-control-border: #65516a;
+  --sakura-border-light: #423448;
+  --sakura-fill-light: #382838;
+  --sakura-accent-light-5: #88617b;
+  --sakura-accent-light-7: #654258;
   --sakura-page: #211b27;
   --sakura-header-background: #2b2332f2;
   --sakura-shadow: 0 5px 24px #0b070f20;
