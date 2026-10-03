@@ -103,20 +103,7 @@ useHead(() => ({
             </li>
           </ul>
         </nav>
-        <div class="header-after">
-          <NuxtLink
-            :to="routePath('/search')"
-            class="header-action"
-            :aria-label="t('搜索')"
-            ><SakuraIcon name="magnifer-linear" /></NuxtLink
-          ><button
-            class="header-action"
-            :aria-label="t(dark ? '切换浅色' : '切换深色')"
-            @click="dark = !dark"
-          >
-            <SakuraIcon :name="dark ? 'sun-2-linear' : 'moon-linear'" />
-          </button>
-        </div>
+        <ReadingControls :dark="dark" @toggle-theme="dark = !dark" />
       </div>
     </header>
     <main id="page" class="main site wrapper">

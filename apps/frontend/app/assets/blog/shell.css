@@ -51,24 +51,6 @@
   background: var(--sakura-soft);
   color: var(--sakura-accent);
 }
-.header-after {
-  display: flex;
-  gap: 6px;
-}
-.header-action {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--sakura-text);
-  font-size: 23px;
-}
-.header-action:hover {
-  background: var(--sakura-soft);
-}
 .page-content {
   max-width: 1040px;
   margin: 0 auto;
