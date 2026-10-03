@@ -5,7 +5,6 @@ import { api, errorText } from '../api';
 import type {
   AdminMoment,
   AdminPhoto,
-  AdminFriendLink,
   Pagination,
   Status,
 } from '@cool/content';
@@ -17,8 +16,8 @@ import { displayTranslation } from '../content';
 import type { CoolLocale } from '~/i18n/locale';
 const { t, locale, contentLang } = useCoolI18n();
 const contentLocale = ref<CoolLocale>(locale.value);
-const props = defineProps<{ kind: 'moments' | 'photos' | 'links' }>();
-type Item = AdminMoment | AdminPhoto | AdminFriendLink;
+const props = defineProps<{ kind: 'moments' | 'photos' }>();
+type Item = AdminMoment | AdminPhoto;
 const items = ref<Item[]>([]);
 const total = ref(0);
 const page = ref(1);
@@ -31,7 +30,7 @@ function beforeClose(done: () => void) {
   if (!busy.value && !uploading.value) done();
 }
 const editId = ref('');
-const labels = { moments: '瞬间', photos: '图库', links: '友链' };
+const labels = { moments: '瞬间', photos: '图库' };
 const empty = () => ({
   content: '',
   status: 'DRAFT' as Status,
@@ -40,14 +39,10 @@ const empty = () => ({
   description: '',
   url: '',
   album: '',
-  name: '',
-  logoUrl: null as string | null,
-  group: '',
   published: false,
 });
 const form = reactive({
   url: '',
-  logoUrl: null as string | null,
   published: false,
 });
 const translated = reactive({ zh: empty(), en: empty() });
@@ -66,7 +61,7 @@ async function load() {
 }
 function edit(item?: Item) {
   if (busy.value || uploading.value) return;
-  Object.assign(form, { url: '', logoUrl: null, published: false }, item ?? {});
+  Object.assign(form, { url: '', published: false }, item ?? {});
   for (const language of ['zh', 'en'] as const)
     Object.assign(
       translated[language],
@@ -81,30 +76,18 @@ async function save() {
   for (const language of ['zh', 'en'] as const) {
     const value = translated[language];
     const incomplete =
-      props.kind === 'photos'
-        ? !value.title.trim() &&
-          !!(value.description.trim() || value.album.trim())
-        : props.kind === 'links' &&
-          !value.name.trim() &&
-          !!(value.description.trim() || value.group.trim());
+      props.kind === 'photos' &&
+      !value.title.trim() &&
+      !!(value.description.trim() || value.album.trim());
     if (incomplete) {
       contentLocale.value = language;
-      ElMessage.warning(t('请为已填写的语言补充标题或名称'));
+      ElMessage.warning(t('请为已填写的语言补充标题'));
       return;
     }
   }
   if (props.kind !== 'moments' && !form.url.trim()) {
-    ElMessage.warning(t('请填写图片或链接地址'));
+    ElMessage.warning(t('请填写图片地址'));
     return;
-  }
-  if (props.kind === 'links') {
-    try {
-      const url = new URL(form.url);
-      if (!['http:', 'https:'].includes(url.protocol)) throw new Error();
-    } catch {
-      ElMessage.warning(t('请输入有效的 HTTP 或 HTTPS 网址'));
-      return;
-    }
   }
   busy.value = true;
   try {
@@ -123,24 +106,13 @@ async function save() {
               },
             ]
           : [];
-      if (props.kind === 'photos')
-        return value.title.trim()
-          ? [
-              {
-                locale,
-                title: value.title,
-                description: value.description,
-                album: value.album,
-              },
-            ]
-          : [];
-      return value.name.trim()
+      return value.title.trim()
         ? [
             {
               locale,
-              name: value.name,
+              title: value.title,
               description: value.description,
-              group: value.group,
+              album: value.album,
             },
           ]
         : [];
@@ -153,13 +125,7 @@ async function save() {
       translations,
       ...(props.kind === 'moments'
         ? {}
-        : props.kind === 'photos'
-          ? { url: form.url, published: form.published }
-          : {
-              url: form.url,
-              logoUrl: form.logoUrl,
-              published: form.published,
-            }),
+        : { url: form.url, published: form.published }),
     };
     await api(`/admin/${props.kind}${editId.value ? '/' + editId.value : ''}`, {
       method: editId.value ? 'PUT' : 'POST',
@@ -180,11 +146,10 @@ function title(item: Item) {
         locale: CoolLocale;
         title?: string;
         content?: string;
-        name?: string;
       }[];
     },
   );
-  return value?.content?.slice(0, 100) ?? value?.title ?? value?.name ?? '';
+  return value?.content?.slice(0, 100) ?? value?.title ?? '';
 }
 function published(item: Item) {
   return 'published' in item
@@ -215,9 +180,7 @@ onMounted(load);
     :description="
       kind === 'moments'
         ? t('短短几句，留住生活的碎片。')
-        : kind === 'photos'
-          ? t('把喜欢的画面，放进你的相册。')
-          : t('那些值得一起分享的小小世界。')
+        : t('把喜欢的画面，放进你的相册。')
     "
     ><el-button type="primary" @click="edit()"
       >＋ {{ t('新建') }} {{ t(labels[kind]) }}</el-button
@@ -318,29 +281,6 @@ onMounted(load);
             v-model="translation.album"
             :lang="contentLang(contentLocale)"
             maxlength="100" /></el-form-item></template
-      ><template v-else
-        ><el-form-item :label="t('名称')"
-          ><el-input
-            v-model="translation.name"
-            :lang="contentLang(contentLocale)"
-            maxlength="100"
-            required /></el-form-item
-        ><el-form-item :label="t('网址')"
-          ><el-input
-            v-model="form.url"
-            type="url"
-            placeholder="https://"
-            required /></el-form-item
-        ><el-form-item :label="t('分组')"
-          ><el-input
-            v-model="translation.group"
-            :lang="contentLang(contentLocale)"
-            maxlength="100" /></el-form-item
-        ><el-form-item :label="t('头像')"
-          ><AssetPicker
-            v-model="form.logoUrl"
-            :disabled="busy"
-            @busy-change="uploads.asset = $event" /></el-form-item></template
       ><template v-if="kind !== 'moments'"
         ><el-form-item :label="t('描述')"
           ><el-input

@@ -644,14 +644,6 @@ body.sakura-ui {
 .sakura-ui .archives-inner .archive-item .archive-posts .arrow-left-ar {
   border-bottom-color: var(--sakura-border);
 }
-.sakura-ui .link-article .links .link-title {
-  font-weight: 700;
-}
-.sakura-ui .link-article .links .link-items .link-item {
-  background: var(--sakura-surface);
-  border-color: var(--sakura-border);
-  border-radius: 14px;
-}
 .sakura-ui .moments-container {
   --single-bg-and-btn-color: var(--sakura-soft);
   --double-bg-and-btn-color: var(--sakura-surface);

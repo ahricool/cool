@@ -128,28 +128,6 @@ export interface AdminPhoto {
   published: boolean;
   translations: PhotoTranslation[];
 }
-export interface FriendLink extends LocalizedContent {
-  id: string;
-  name: string;
-  url: string;
-  logoUrl: string | null;
-  description: string;
-  group: string;
-  published?: boolean;
-}
-export interface LinkTranslation {
-  locale: ContentLocale;
-  name: string;
-  description: string;
-  group: string;
-}
-export interface AdminFriendLink {
-  id: string;
-  url: string;
-  logoUrl: string | null;
-  published: boolean;
-  translations: LinkTranslation[];
-}
 export interface Media {
   id: string;
   key: string;

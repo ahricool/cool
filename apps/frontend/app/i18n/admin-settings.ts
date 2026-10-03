@@ -137,7 +137,6 @@ export const adminSettingsMessages: Record<string, string> = {
   标签: 'Tags',
   瞬间: 'Moments',
   图库: 'Gallery',
-  友链: 'Friend links',
   评论: 'Comments',
   管理: 'Administration',
   工作空间导航: 'Workspace navigation',

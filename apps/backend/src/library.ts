@@ -24,8 +24,6 @@ import {
   UpdateMomentDto,
   PhotoDto,
   UpdatePhotoDto,
-  LinkDto,
-  UpdateLinkDto,
 } from './content.dto';
 import {
   ContentLocale,
@@ -387,80 +385,6 @@ export class LibraryController {
     await this.db.photo.delete({ where: { id } });
     return { deleted: true };
   }
-  @Get('links') async links(@Query() q: ListQuery) {
-    const where = {};
-    return this.db.$transaction(
-      async (tx) => ({
-        items: await tx.link.findMany({
-          where,
-          ...paging(q),
-          include: { translations: true },
-          orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
-        }),
-        total: await tx.link.count({ where }),
-        page: q.page,
-        pageSize: q.pageSize,
-      }),
-      { isolationLevel: 'RepeatableRead' },
-    );
-  }
-  @Get('links/:id') async link(@Param('id', ParseUUIDPipe) id: string) {
-    const item = await this.db.link.findUnique({
-      where: { id },
-      include: { translations: true },
-    });
-    if (!item) throw new NotFoundException();
-    return item;
-  }
-  @Post('links') createLink(@Body() d: LinkDto) {
-    const { translations, ...data } = d;
-    return this.db.link.create({
-      data: { ...data, translations: { create: translations } },
-      include: { translations: true },
-    });
-  }
-  @Put('links/:id') async updateLink(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() d: UpdateLinkDto,
-  ) {
-    const { translations, ...data } = d;
-    return this.db.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM links WHERE id = ${id}::uuid FOR UPDATE`;
-      const current = await tx.link.findUnique({
-        where: { id },
-        include: { translations: true },
-      });
-      if (!current) throw new NotFoundException();
-      for (const row of translations ?? []) {
-        const values = { ...row };
-        await tx.linkTranslation.upsert({
-          where: { linkId_locale: { linkId: id, locale: row.locale } },
-          create: { ...values, linkId: id },
-          update: values,
-        });
-      }
-      return tx.link.update({
-        where: { id },
-        data: { ...data, updatedAt: new Date() },
-        include: { translations: true },
-      });
-    });
-  }
-  @Delete('links/:id/translations/:locale') async deleteLinkTranslation(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Param('locale', LocalePipe) locale: ContentLocale,
-  ) {
-    await this.db.linkTranslation.delete({
-      where: { linkId_locale: { linkId: id, locale } },
-    });
-    return { deleted: true };
-  }
-  @Delete('links/:id') async deleteLink(
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
-    await this.db.link.delete({ where: { id } });
-    return { deleted: true };
-  }
   @Get('overview') async overview() {
     const [posts, drafts, media, comments] = await Promise.all([
       this.db.post.count(),
@@ -570,42 +494,6 @@ export class PublicLibraryController {
           })
         ).map((item) => localize(item, locale)),
         total: await tx.photo.count({ where }),
-        page: q.page,
-        pageSize: q.pageSize,
-      }),
-      { isolationLevel: 'RepeatableRead' },
-    );
-  }
-  @Get('links') async links(
-    @Param('locale', LocalePipe) locale: ContentLocale,
-    @Query() q: ListQuery,
-  ) {
-    const where = { published: true, translations: { some: {} } };
-    return this.db.$transaction(
-      async (tx) => ({
-        items: (
-          await tx.link.findMany({
-            where,
-            ...paging(q),
-            select: {
-              id: true,
-              url: true,
-              createdAt: true,
-              updatedAt: true,
-              logoUrl: true,
-              translations: {
-                select: {
-                  locale: true,
-                  name: true,
-                  description: true,
-                  group: true,
-                },
-              },
-            },
-            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-          })
-        ).map((item) => localize(item, locale)),
-        total: await tx.link.count({ where }),
         page: q.page,
         pageSize: q.pageSize,
       }),

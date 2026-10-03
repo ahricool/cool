@@ -6,7 +6,6 @@ export const publicMessages: Record<string, string> = {
   标签: 'Tags',
   瞬间: 'Moments',
   图库: 'Photos',
-  友链: 'Friends',
   搜索: 'Search',
   跳到正文: 'Skip to content',
   打开导航: 'Open navigation',

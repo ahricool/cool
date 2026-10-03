@@ -27,7 +27,7 @@ test('Sakura mobile sidebar traps focus, closes, and restores navigation', async
   });
   await page.keyboard.press('Shift+Tab');
   await expect(
-    dialog.getByRole('link', { name: '友链', exact: true }),
+    dialog.getByRole('link', { name: '图库', exact: true }),
   ).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(firstControl).toBeFocused();

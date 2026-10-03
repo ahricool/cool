@@ -19,7 +19,6 @@ import {
   ChatDotRound,
   Setting,
   User,
-  Link as LinkIcon,
   Camera,
   Notebook,
   SwitchButton,
@@ -93,7 +92,6 @@ const nav = [
   { path: '/admin/tags', label: '标签', icon: PriceTag },
   { path: '/admin/moments', label: '瞬间', icon: EditPen },
   { path: '/admin/photos', label: '图库', icon: Camera },
-  { path: '/admin/links', label: '友链', icon: LinkIcon },
   { path: '/admin/comments', label: '评论', icon: ChatDotRound },
 ];
 watch(

@@ -308,7 +308,7 @@ module.exports = async function verifyBilingual(t, http, token) {
       },
     );
     await t.test(
-      'moments, photos and links localize text while keeping shared identity and URLs',
+      'moments and photos localize text while keeping shared identity and URLs',
       async () => {
         const moment = await create('moments', {
           translations: [
@@ -377,24 +377,6 @@ module.exports = async function verifyBilingual(t, http, token) {
             (row) => row.id === photo.id,
           ).title,
           '中文照片',
-        );
-        const link = await create('links', {
-          url: 'https://example.com',
-          published: true,
-          translations: [
-            {
-              locale: 'en',
-              name: 'Friend',
-              description: 'Hello',
-              group: 'Friends',
-            },
-          ],
-        });
-        assert.equal(
-          (await read('zh', 'links')).body.items.find(
-            (row) => row.id === link.id,
-          ).contentLocale,
-          'en',
         );
       },
     );

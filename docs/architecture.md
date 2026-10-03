@@ -20,7 +20,7 @@ npm workspaces：`apps/backend`、`apps/frontend`、`packages/content`。`apps/f
 
 ## 数据与发布
 
-表包括 users、admin_sessions、posts、pages、categories、tags、post_categories、post_tags、media、comments、site_settings、moments、photos、links，以及各内容实体的语言翻译表。数据库列 snake_case，JSON/TS 属性 camelCase；时间以 UTC timestamptz/ISO 8601 传输，博客日期按 Asia/Shanghai 展示。
+表包括 users、admin_sessions、posts、pages、categories、tags、post_categories、post_tags、media、comments、site_settings、moments、photos，以及各内容实体的语言翻译表。数据库列 snake_case，JSON/TS 属性 camelCase；时间以 UTC timestamptz/ISO 8601 传输，博客日期按 Asia/Shanghai 展示。
 
 - 文章、独立页面和瞬间在各语言翻译记录保存 Markdown 原文；渲染在前端运行时完成。
 - 每个内容语言版本分别维护 `DRAFT / PUBLISHED / ARCHIVED` 和 publishedAt；公开查询仅允许 PUBLISHED 且 publishedAt <= 当前时间。预约发布通过查询过滤生效，无需队列。
@@ -30,7 +30,7 @@ npm workspaces：`apps/backend`、`apps/frontend`、`packages/content`。`apps/f
 - 列表不返回正文；作者公开字段仅 id/displayName/avatarUrl。密码哈希与邮箱不出现在公开文章中。
 - viewCount 保留字段，暂不采集阅读量；commentCount 随审核事务维护，只计通过审核的评论。
 - `site`、`homepage`、`social` 是公开配置命名空间，使用嵌套 DTO 校验；禁止在配置中存秘密。它们不构成后端主题实体。
-- media 是存储对象；photos 是有标题、描述、相册与公开开关的图库条目。友链支持分组和公开开关。
+- media 是存储对象；photos 是有标题、描述、相册与公开开关的图库条目。
 
 ## 双语路由与内容选择
 
@@ -40,7 +40,7 @@ npm workspaces：`apps/backend`、`apps/frontend`、`packages/content`。`apps/f
 
 公开查询先选请求语言的可见版本，再选择另一语言的可见版本。缺少翻译、草稿或未来预约版本不会阻止另一语言已发布内容显示；没有任何可见版本时返回 404。回退不改变 URL 或界面语言，不弹出“缺少翻译”提示；响应 `contentLocale` 和正文 `lang` 标识实际内容语言。列表、搜索、归档、分类/标签过滤与总数都按这一选择后的逻辑记录计算，每个 ID 最多出现一次，不泄漏未发布正文。
 
-瞬间同样按语言发布；分类/标签名称、图库/友链描述和站点展示文案可编辑双语并按可用内容回退。媒体对象、作者身份和文章评论按逻辑内容共享；用户正文和评论不会自动翻译。语言选择进入数据请求及缓存键，避免切换后复用另一语言的旧响应。
+瞬间同样按语言发布；分类/标签名称、图库描述和站点展示文案可编辑双语并按可用内容回退。媒体对象、作者身份和文章评论按逻辑内容共享；用户正文和评论不会自动翻译。语言选择进入数据请求及缓存键，避免切换后复用另一语言的旧响应。
 
 这是新项目的完整双语 schema 基线，仅支持新空数据库，不包含旧单语数据迁移或旧公开 URL 兼容跳转。
 
@@ -52,11 +52,11 @@ npm workspaces：`apps/backend`、`apps/frontend`、`packages/content`。`apps/f
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | 公开配置   | `GET /public/:locale/site`、`/public/:locale/config`                                                                          |
 | 文章发现   | `GET /public/:locale/posts`、`/posts/:slug`、`/categories`、`/tags`、`/archives`、`/search`（均在 `/public/:locale` 下）      |
-| 其他内容   | `GET /public/:locale/pages/:slug`、`/public/:locale/moments`、`/public/:locale/photos`、`/public/:locale/links`               |
+| 其他内容   | `GET /public/:locale/pages/:slug`、`/public/:locale/moments`、`/public/:locale/photos`                                        |
 | 评论       | `GET/POST /public/:locale/posts/:slug/comments`                                                                               |
 | 认证       | `GET /admin/auth/status`、`POST /admin/auth/setup`、`POST /admin/auth/login`、`GET /admin/auth/session`、`GET /admin/auth/me` |
 | 账户与会话 | `POST /admin/auth/logout`、`POST /admin/auth/revoke-all`、`PUT /admin/auth/profile`、`PUT /admin/auth/password`               |
-| 内容管理   | `/admin/posts`、`/admin/pages`、`/admin/moments`、`/admin/photos`、`/admin/links`、`/admin/categories`、`/admin/tags`         |
+| 内容管理   | `/admin/posts`、`/admin/pages`、`/admin/moments`、`/admin/photos`、`/admin/categories`、`/admin/tags`                         |
 | 媒体       | `GET /admin/media`、`POST /admin/media/upload`、`DELETE /admin/media/:id`、`GET /media/:key`                                  |
 | 管理功能   | `GET /admin/overview`、`GET/PUT /admin/settings`、`GET /admin/comments`、`PUT/DELETE /admin/comments/:id`                     |
 
@@ -81,7 +81,7 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 固定上游 `a31ff6520b34e45beab20ef91204f958dcf1cd81`。当前应用保留迁移后的 Vue 模板、`apps/frontend/app/assets/blog/sakura.css` 上游编译 CSS 和所需本地资产，不再保存整份上游模板/CSS 源码副本。图片在 `apps/frontend/public/sakura`，选用的 Solar SVG 在 `app/assets/icons.json`，Ubuntu 与 Noto Sans SC 字体通过本地包构建。许可证和署名与资产放在一起，详见 [许可清单](../apps/frontend/public/sakura/ATTRIBUTION.md)。不使用 Tailwind。
 Vue 保留主要模板层级和 class。Pjax 被 Nuxt 路由替换；导航、明暗切换、返回顶部和图库弹窗使用 Vue 生命周期管理，波浪和响应式布局沿用原 CSS。独立的产品样式层与管理端统一无衬线排版、樱粉/梅紫配色、卡片和表单；首页文字采用清晰的静态字形，正文和输入框强调阅读舒适度，同时覆盖深色模式。上游编译 CSS 保留原件，构建时为博客和管理端样式添加 `html[data-surface]` 作用域，避免两种布局的 reset、组件样式和变量互相污染。未引入上游可选音乐播放器、Live2D、第三方评论和外部小部件。
 
-博客路由均带 `/:locale` 前缀：`/:locale`、`/:locale/posts/:slug`、`/:locale/archives`、`/:locale/categories`、`/:locale/categories/:slug`、`/:locale/tags`、`/:locale/tags/:slug`、`/:locale/moments`、`/:locale/photos`、`/:locale/links`、`/:locale/search`、`/:locale/pages/:slug`。原主题移动端会隐藏 Hero 焦点文字区，这是保留的响应式行为。
+博客路由均带 `/:locale` 前缀：`/:locale`、`/:locale/posts/:slug`、`/:locale/archives`、`/:locale/categories`、`/:locale/categories/:slug`、`/:locale/tags`、`/:locale/tags/:slug`、`/:locale/moments`、`/:locale/photos`、`/:locale/search`、`/:locale/pages/:slug`。原主题移动端会隐藏 Hero 焦点文字区，这是保留的响应式行为。
 
 Markdown 禁用原始 HTML和危险协议，图片仅允许本地媒体与已打包 Sakura 资源；编辑器与博客共用渲染器。代码高亮本地运行；目录锚点由渲染器生成。Mermaid 留待后续。
 

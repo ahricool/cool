@@ -30,7 +30,6 @@ test('owner writes, previews and publishes; visitors read and comment; owner mod
     '标签',
     '瞬间',
     '图库',
-    '友链',
     '评论',
     '网站配置',
     '我的账户',
@@ -156,7 +155,6 @@ test('all blog routes load on desktop and mobile without external resources', as
     '/tags',
     '/moments',
     '/photos',
-    '/links',
     '/search',
   ]) {
     await page.goto(blog + path);

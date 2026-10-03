@@ -18,7 +18,6 @@ const menu = [
   ['/tags', '标签'],
   ['/moments', '瞬间'],
   ['/photos', '图库'],
-  ['/links', '友链'],
 ];
 onMounted(() => {
   void store.load();
