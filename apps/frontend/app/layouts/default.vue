@@ -304,7 +304,7 @@ useHead(() => ({
         >
         (CC BY 4.0)
       </p>
-      <LanguageSelector />
+      <LanguageSelector variant="text" />
       <div class="footer-device">
         <p>
           © {{ new Date().getFullYear() }}

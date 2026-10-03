@@ -9,7 +9,13 @@ for (const locale of ['zh', 'en'] as const) {
     await expect(page.locator('.site-footer')).toContainText(
       locale === 'zh' ? '由 Cool 驱动' : 'Powered by Cool',
     );
-    await page.getByTestId('language-select').selectOption(locale);
+    await page
+      .locator('.site-footer')
+      .getByRole('button', {
+        name: locale === 'zh' ? '中文' : 'English',
+        exact: true,
+      })
+      .click();
     await page.goto(admin + '/login');
     await expect(page).toHaveTitle(/ · Cool$/);
     await expect(page.locator('.login-footnote')).toHaveText(

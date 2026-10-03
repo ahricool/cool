@@ -29,7 +29,16 @@ type AdminContent = {
 };
 
 async function expectLocale(page: Page, locale: Locale) {
-  await expect(page.getByTestId('language-select')).toHaveValue(locale);
+  if (new URL(page.url()).pathname.startsWith('/admin')) {
+    await expect(page.getByTestId('language-select')).toHaveValue(locale);
+  } else {
+    await expect(
+      page.locator('.site-footer').getByRole('button', {
+        name: locale === 'zh' ? '中文' : 'English',
+        exact: true,
+      }),
+    ).toHaveAttribute('aria-pressed', 'true');
+  }
   await expect(page.locator('html')).toHaveAttribute(
     'lang',
     locale === 'zh' ? 'zh-CN' : 'en',
@@ -141,7 +150,10 @@ test('footer switching persists across reloads and shares the UI choice between 
   await page.goto(`${site}/en/search?q=spring#results`);
   await expectLocale(page, 'en');
   const select = page.getByTestId('language-select');
-  await select.selectOption('zh');
+  await page
+    .locator('.site-footer')
+    .getByRole('button', { name: '中文', exact: true })
+    .click();
   await expect(page).toHaveURL(`${site}/zh/search?q=spring#results`);
   await expectLocale(page, 'zh');
   expect(
@@ -233,7 +245,10 @@ for (const kind of ['posts', 'pages'] as const) {
         fullPage: true,
         animations: 'disabled',
       });
-      await page.getByTestId('language-select').selectOption('zh');
+      await page
+        .locator('.site-footer')
+        .getByRole('button', { name: '中文', exact: true })
+        .click();
       await expect(page).toHaveURL(`${site}/zh/${kind}/${item.slug}`);
       await expectLocale(page, 'zh');
       await expect(page.locator('.entry-content')).toContainText(
