@@ -29,14 +29,9 @@ type AdminContent = {
 };
 
 async function expectLocale(page: Page, locale: Locale) {
-  if (
-    new URL(page.url()).pathname.startsWith('/admin') &&
-    new URL(page.url()).pathname !== '/admin/login'
-  ) {
-    await expect(page.getByTestId('language-select')).toHaveValue(locale);
-  } else {
+  if (!new URL(page.url()).pathname.startsWith('/admin')) {
     await expect(
-      page.locator('.site-footer, .login-language-footer').getByRole('button', {
+      page.locator('.site-footer').getByRole('button', {
         name: locale === 'zh' ? '中文' : 'English',
         exact: true,
       }),
@@ -168,10 +163,12 @@ test('footer switching persists across reloads and shares the UI choice between 
   await page.goto(admin + '/login');
   await expectLocale(page, 'zh');
   await expect(page.getByLabel('密码', { exact: true })).toBeVisible();
+  await page.goto(site);
   await page
-    .locator('.login-language-footer')
+    .locator('.site-footer')
     .getByRole('button', { name: 'English', exact: true })
     .click();
+  await page.goto(admin + '/login');
   await expect(page).toHaveURL(admin + '/login');
   await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
   await expectLocale(page, 'en');
@@ -314,7 +311,12 @@ for (const kind of ['posts', 'pages'] as const) {
       await expect(
         page.getByRole('textbox', { name: 'Title', exact: true }),
       ).toHaveValue('Private English draft');
-      await page.getByTestId('language-select').selectOption('zh');
+      await page.goto(site);
+      await page
+        .locator('.site-footer')
+        .getByRole('button', { name: '中文', exact: true })
+        .click();
+      await page.goto(`${admin}/${kind}/${item.id}`);
       await expectLocale(page, 'zh');
       await expect(
         page

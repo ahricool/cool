@@ -218,8 +218,7 @@ useHead(() => ({
       </header>
       <main class="workspace"><slot /></main>
       <footer class="admin-footer">
-        <span>梦桜 · {{ t('写下值得记住的事') }}</span
-        ><LanguageSelector />
+        <span>梦桜 · {{ t('写下值得记住的事') }}</span>
       </footer>
     </div>
   </div>

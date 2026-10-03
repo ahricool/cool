@@ -159,21 +159,6 @@ async function login() {
           >{{ t(firstSetup ? '设置密码并进入' : '登录工作空间') }}</el-button
         >
       </el-form>
-      <footer class="login-language-footer">
-        <LanguageSelector variant="text" />
-      </footer>
     </section>
   </main>
 </template>
-
-<style scoped>
-.login-language-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 24px;
-  padding-bottom: 24px;
-}
-</style>
