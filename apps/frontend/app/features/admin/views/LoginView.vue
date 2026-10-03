@@ -39,13 +39,8 @@ async function login() {
     error.value = '请输入密码';
     return;
   }
-  if (
-    (firstSetup.value && password.value.length < 16) ||
-    password.value.length > 256
-  ) {
-    error.value = firstSetup.value
-      ? '密码长度需为 16 至 256 个字符'
-      : '密码最多为 256 个字符';
+  if (firstSetup.value && Array.from(password.value).length < 6) {
+    error.value = '密码至少需要 6 个字符';
     return;
   }
   if (firstSetup.value && password.value !== confirmation.value) {
@@ -136,13 +131,12 @@ async function login() {
             type="password"
             :autocomplete="firstSetup ? 'new-password' : 'current-password'"
             show-password
-            :placeholder="t(firstSetup ? '至少 16 个字符' : '输入密码')"
-            :minlength="firstSetup ? 16 : undefined"
-            maxlength="256"
+            :placeholder="t(firstSetup ? '至少 6 个字符' : '输入密码')"
+            :minlength="firstSetup ? 6 : undefined"
             required
           />
           <small v-if="firstSetup" class="muted">{{
-            t('至少 16 个字符，可使用一句容易记住的话')
+            t('至少 6 个字符，可使用一句容易记住的话')
           }}</small>
         </el-form-item>
         <el-form-item v-if="firstSetup" :label="t('确认密码')">
@@ -152,8 +146,7 @@ async function login() {
             autocomplete="new-password"
             show-password
             :placeholder="t('再次输入密码')"
-            minlength="16"
-            maxlength="256"
+            minlength="6"
             required
           />
         </el-form-item>

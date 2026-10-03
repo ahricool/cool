@@ -51,7 +51,7 @@ npm run dev:frontend
 | Swagger（开发环境） | http://localhost:3000/api/docs         |
 | OpenAPI             | http://localhost:3000/api/openapi.json |
 
-开发前端将 `/api/` 代理到本地后端，不再启动独立博客和管理端进程。唯一登录邮箱固定为 `whoreahri@gmail.com`，不可修改。空库先运行 migration 和 seed，然后在登录页直接设置至少 16 字符的密码，无需额外初始化密钥。**新实例应先完成首次密码设置，再开放公网访问。** seed 幂等，不重置已有密码。本项目按全新双语数据库建模，不提供旧单语 schema 或旧 URL 的兼容迁移。无需配置 `ADMIN_EMAIL` 或 `ADMIN_PASSWORD`。
+开发前端将 `/api/` 代理到本地后端，不再启动独立博客和管理端进程。唯一登录邮箱固定为 `whoreahri@gmail.com`，不可修改。空库先运行 migration 和 seed，然后在登录页直接设置至少 6 字符的密码（不限制字符类型或格式），无需额外初始化密钥。**新实例应先完成首次密码设置，再开放公网访问。** seed 幂等，不重置已有密码。本项目按全新双语数据库建模，不提供旧单语 schema 或旧 URL 的兼容迁移。无需配置 `ADMIN_EMAIL` 或 `ADMIN_PASSWORD`。
 
 登录同时返回 Bearer Token 并设置 15 天 HttpOnly Cookie。浏览器使用 Cookie，在刷新后恢复会话；Token 不写入 localStorage/sessionStorage。API 的 CORS 固定为 `*`，不开放携带凭据的跨域读取；不校验 Origin，后台 Cookie 写操作仍须携带会话 CSRF token。退出仅撤销当前会话；“退出全部设备”和改密撤销全部会话。未保存编辑内容仍可从当前标签页的 sessionStorage 草稿恢复。详见 [认证设计](docs/architecture.md#认证上传与评论)。
 

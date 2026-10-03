@@ -55,8 +55,8 @@ async function changePassword() {
     error.value = '请输入当前密码';
     return;
   }
-  if (password.newPassword.length < 16 || password.newPassword.length > 256) {
-    error.value = '密码长度需为 16 至 256 个字符';
+  if (Array.from(password.newPassword).length < 6) {
+    error.value = '密码至少需要 6 个字符';
     return;
   }
   error.value = '';
@@ -148,10 +148,9 @@ async function revokeAll() {
             type="password"
             show-password
             autocomplete="new-password"
-            minlength="16"
-            maxlength="256"
+            minlength="6"
             required
-          /><small class="muted">{{ t('至少 16 个字符') }}</small></el-form-item
+          /><small class="muted">{{ t('至少 6 个字符') }}</small></el-form-item
         ><el-button native-type="submit" :loading="busy">{{
           t('更新密码')
         }}</el-button></el-form

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, Length, ValidateIf } from 'class-validator';
+import { IsString, Length, MinLength, ValidateIf } from 'class-validator';
 import { IsAssetPath } from './validators';
 export class ProfileDto {
   @ApiProperty() @IsString() @Length(1, 100) displayName!: string;
@@ -9,6 +9,6 @@ export class ProfileDto {
   avatarUrl?: string | null;
 }
 export class PasswordDto {
-  @ApiProperty() @IsString() @Length(1, 256) currentPassword!: string;
-  @ApiProperty() @IsString() @Length(16, 256) newPassword!: string;
+  @ApiProperty() @IsString() @MinLength(1) currentPassword!: string;
+  @ApiProperty() @IsString() @MinLength(6) newPassword!: string;
 }
