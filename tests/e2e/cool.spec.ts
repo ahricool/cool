@@ -160,7 +160,7 @@ test('all blog routes load on desktop and mobile without external resources', as
     await expect(page.locator('.api-state[role="alert"]')).toHaveCount(0);
   }
   await page.goto(blog);
-  await expect(page.locator('.hero-title')).toBeVisible();
+  await expect(page.locator('.hero-brand')).toBeVisible();
   await expect(page.locator('#page')).toHaveCSS('opacity', '1');
   await page.screenshot({
     path: info.outputPath('blog-home-desktop.png'),

@@ -191,8 +191,19 @@ test('populated reading pages remain usable on desktop and mobile in both palett
     await page.setViewportSize({ width: width!, height: height! });
     await page.goto(blog);
     await expect(
-      page.getByRole('heading', { name: 'Hello, 梦桜' }),
+      page.getByRole('img', { name: '梦桜', exact: true }),
     ).toBeVisible();
+    await expect(page.getByText('Hello, 梦桜', { exact: true })).toHaveCount(0);
+    await page
+      .locator('.site-footer')
+      .getByRole('button', { name: 'English', exact: true })
+      .click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(page.getByText('Hello, 梦桜', { exact: true })).toHaveCount(0);
+    await page
+      .locator('.site-footer')
+      .getByRole('button', { name: '中文', exact: true })
+      .click();
     await expect(page.locator('.story-title')).toHaveCount(2);
     await noOverflow(page);
     await capture(page, info, `home-${width}-light.png`);

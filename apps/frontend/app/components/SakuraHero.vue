@@ -37,13 +37,6 @@ function scrollDown() {
               height="120"
           /></NuxtLink>
         </div>
-        <h1
-          v-else
-          class="hero-title"
-          :lang="contentLang(store.homepage.contentLocale)"
-        >
-          {{ store.homepage.greeting }}
-        </h1>
         <div class="hero-description">
           <p class="flex-child-center">
             <span

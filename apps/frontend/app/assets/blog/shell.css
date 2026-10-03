@@ -102,12 +102,6 @@
   max-width: 740px;
   color: #fff6fa;
 }
-.hero-title {
-  margin: 0 0 20px;
-  color: #fff6fa;
-  font-size: clamp(32px, 4.5vw, 58px);
-  font-weight: 700;
-}
 .hero-description p {
   margin: 0;
   max-width: 540px;
