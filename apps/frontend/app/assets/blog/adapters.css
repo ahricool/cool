@@ -358,21 +358,6 @@ section.site-sidebar {
   z-index: 102;
   overflow: visible;
 }
-section.site-sidebar .sidebar-close {
-  position: absolute;
-  border: 0;
-  background: none;
-  width: 44px;
-  height: 44px;
-  top: 8px;
-  left: calc(100% + 4px);
-  cursor: pointer;
-}
-section.site-sidebar .sidebar-close::before,
-section.site-sidebar .sidebar-close::after {
-  left: 7px;
-  top: 20px;
-}
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
@@ -408,9 +393,6 @@ section.site-sidebar .sidebar-close::after {
   }
 }
 
-section.site-sidebar:not(.open) .sidebar-close {
-  visibility: hidden;
-}
 .is-homepage .site-header:focus-within .header-inner .lower-container {
   display: block;
 }

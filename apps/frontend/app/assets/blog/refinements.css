@@ -782,11 +782,6 @@ body.sakura-ui {
   :is(.hljs-comment, .hljs-quote, .hljs-meta) {
   color: #b9aac2;
 }
-.sakura-ui section.site-sidebar .sidebar-close {
-  background: var(--sakura-surface);
-  border: 1px solid var(--sakura-border);
-  border-radius: 10px;
-}
 .sakura-ui .top-social a {
   box-sizing: border-box;
   width: 36px;

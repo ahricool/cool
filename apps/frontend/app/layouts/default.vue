@@ -6,7 +6,6 @@ const store = useSiteStore();
 const menuOpen = ref(false);
 const menuTrigger = ref<HTMLButtonElement>();
 const sidebar = ref<HTMLElement>();
-const sidebarClose = ref<HTMLButtonElement>();
 const mobileQuery = ref('');
 const mobileSearchFailure = ref('');
 let previousOverflow = '';
@@ -43,7 +42,9 @@ watch(menuOpen, async (open) => {
     previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     await nextTick();
-    sidebarClose.value?.focus();
+    sidebar.value
+      ?.querySelector<HTMLElement>('button, a[href], input, select')
+      ?.focus();
   } else {
     document.body.style.overflow = previousOverflow;
     await nextTick();
@@ -191,12 +192,6 @@ useHead(() => ({
     :aria-label="t('移动端菜单')"
     @keydown="sidebarKeydown"
   >
-    <button
-      ref="sidebarClose"
-      class="sidebar-close"
-      :aria-label="t('关闭菜单')"
-      @click="menuOpen = false"
-    ></button>
     <div class="sidebar-inner">
       <div class="mobile-sidebar">
         <div class="avatar">
