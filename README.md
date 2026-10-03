@@ -2,7 +2,7 @@
 
 Cool 是个人博客与内容管理系统：NestJS + PostgreSQL 管理内容，一个 Nuxt 4 应用同时提供 Sakura 博客 `/zh`、`/en` 和管理工作台 `/admin`。只有一个站长账户，其他人都是访客。
 
-项目独立实现前后端，不依赖 Halo 服务或 Halo 管理端。所有浏览器页面（包括登录、管理、错误和弹窗状态）采用统一的 Sakura / 二次元 / 少女风格；博客沿用已迁移的 Sakura 结构和资源，管理端使用 Element Plus，编辑和表格区域保持清晰易读。资源署名和许可证随前端资产保留。
+项目独立实现前后端，不依赖 Halo 服务或 Halo 管理端。所有浏览器页面（包括登录、管理、错误和弹窗状态）采用统一的 Sakura / 二次元 / 少女风格；博客沿用已迁移的 Sakura 结构和资源，管理端使用 Element Plus，编辑和表格区域保持清晰易读。
 
 ## 已实现
 
@@ -13,7 +13,7 @@ Cool 是个人博客与内容管理系统：NestJS + PostgreSQL 管理内容，�
 - **后端**：NestJS 11、Prisma 7、PostgreSQL 17、SQL migration、Swagger、JWT、限流和输入校验。数据库只保存 Markdown 原文。
 - **部署**：两个应用镜像、三个常驻服务：统一 Nuxt 静态前端/Nginx、后端、PostgreSQL。Nginx 同时提供页面和同源 API 网关；媒体保存在项目根目录 `./data`（Git 忽略），生产使用宿主机 bind mount，数据库使用 `cool_postgres_data` 命名卷，提供部署脚本及数据库/媒体一致性备份。
 
-当前前端为 SPA，`nuxt generate` 输出 `apps/frontend/.output/public`，生产不运行 Nuxt/Nitro 服务。SSR、SEO、sitemap、OpenGraph、Mermaid、Redis/BullMQ 和对象存储仍预留；没有多用户、主题商店或插件系统。详见 [架构](docs/architecture.md) 和 [资源许可](apps/frontend/public/sakura/ATTRIBUTION.md)。
+当前前端为 SPA，`nuxt generate` 输出 `apps/frontend/.output/public`，生产不运行 Nuxt/Nitro 服务。SSR、SEO、sitemap、OpenGraph、Mermaid、Redis/BullMQ 和对象存储仍预留；没有多用户、主题商店或插件系统。详见 [架构](docs/architecture.md)。
 
 ## 本地开发
 

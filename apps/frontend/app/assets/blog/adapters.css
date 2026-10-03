@@ -72,9 +72,6 @@ body {
 .site-content .notice {
   box-sizing: border-box;
 }
-.footer-heart {
-  color: #e67d91;
-}
 .skip-link {
   position: absolute;
   left: 16px;
@@ -371,9 +368,6 @@ section.site-sidebar {
 }
 .mobile-sidebar .navbar {
   min-height: 0;
-}
-.mobile-sidebar .footer {
-  flex-shrink: 0;
 }
 .mobile-sidebar .socials {
   flex-wrap: wrap;

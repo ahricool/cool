@@ -273,14 +273,6 @@ useHead(() => ({
             </li>
           </ul>
         </nav>
-        <div class="footer">
-          <p>
-            ©
-            <span :lang="contentLang(store.site.contentLocale)">{{
-              store.site.title
-            }}</span>
-          </p>
-        </div>
       </div>
     </div>
   </section>
@@ -293,14 +285,6 @@ useHead(() => ({
         <em>愿你的天空永远星光灿烂，<br />愿你的舞台永远明光幻彩。</em>
       </p>
       <LanguageSelector variant="text" />
-      <div class="footer-device">
-        <p>
-          ©
-          <span :lang="contentLang(store.site.contentLocale)">{{
-            store.site.title
-          }}</span>
-        </p>
-      </div>
     </div>
   </footer>
 </template>

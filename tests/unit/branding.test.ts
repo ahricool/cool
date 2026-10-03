@@ -11,8 +11,6 @@ test('梦桜 is the default product name in both interface languages', () => {
   assert.equal(defaultHomepage.greeting, 'Hi, 梦桜!');
   assert.equal(LOCALE_STORAGE_KEY, 'cool.locale');
   assert.equal(SESSION_COOKIE, 'cool_session');
-  assert.equal(translate('由 梦桜 驱动', {}, 'zh'), '由 梦桜 驱动');
-  assert.equal(translate('由 梦桜 驱动', {}, 'en'), 'Powered by 梦桜');
   assert.equal(translate('创作工作台', {}, 'en'), 'Creative workspace');
   assert.equal(translate('梦桜 首页', {}, 'en'), '梦桜 homepage');
 });

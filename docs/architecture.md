@@ -78,7 +78,7 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 
 ## Sakura 迁移
 
-固定上游 `a31ff6520b34e45beab20ef91204f958dcf1cd81`。当前应用保留迁移后的 Vue 模板、`apps/frontend/app/assets/blog/sakura.css` 上游编译 CSS 和所需本地资产，不再保存整份上游模板/CSS 源码副本。图片在 `apps/frontend/public/sakura`，选用的 Solar SVG 在 `app/assets/icons.json`，Ubuntu 与 Noto Sans SC 字体通过本地包构建。许可证和署名与资产放在一起，详见 [许可清单](../apps/frontend/public/sakura/ATTRIBUTION.md)。不使用 Tailwind。
+固定上游 `a31ff6520b34e45beab20ef91204f958dcf1cd81`。当前应用保留迁移后的 Vue 模板、`apps/frontend/app/assets/blog/sakura.css` 上游编译 CSS 和所需本地资产，不再保存整份上游模板/CSS 源码副本。图片在 `apps/frontend/public/sakura`，选用的 Solar SVG 在 `app/assets/icons.json`，Ubuntu 与 Noto Sans SC 字体通过本地包构建。不使用 Tailwind。
 Vue 保留主要模板层级和 class。Pjax 被 Nuxt 路由替换；导航、明暗切换、返回顶部和图库弹窗使用 Vue 生命周期管理，波浪和响应式布局沿用原 CSS。独立的产品样式层与管理端统一无衬线排版、樱粉/梅紫配色、卡片和表单；首页文字采用清晰的静态字形，正文和输入框强调阅读舒适度，同时覆盖深色模式。上游编译 CSS 保留原件，构建时为博客和管理端样式添加 `html[data-surface]` 作用域，避免两种布局的 reset、组件样式和变量互相污染。未引入上游可选音乐播放器、Live2D、第三方评论和外部小部件。
 
 博客路由均带 `/:locale` 前缀：`/:locale`、`/:locale/posts/:slug`、`/:locale/archives`、`/:locale/categories`、`/:locale/categories/:slug`、`/:locale/tags`、`/:locale/tags/:slug`、`/:locale/moments`、`/:locale/photos`、`/:locale/search`、`/:locale/pages/:slug`。原主题移动端会隐藏 Hero 焦点文字区，这是保留的响应式行为。
