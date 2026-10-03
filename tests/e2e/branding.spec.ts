@@ -6,9 +6,7 @@ for (const locale of ['zh', 'en'] as const) {
     page,
   }) => {
     await page.goto(`${site}/${locale}`);
-    await expect(page.locator('.site-footer')).toContainText(
-      locale === 'zh' ? '由 梦桜 驱动' : 'Powered by 梦桜',
-    );
+    await expect(page.locator('.site-footer')).toContainText('梦桜');
     await page
       .locator('.site-footer')
       .getByRole('button', {

@@ -281,28 +281,8 @@ useHead(() => ({
       <div class="footer-logo">
         <SakuraFlower class="footer-flower" />
       </div>
-      <div class="footer-copyright">
-        <p>
-          {{ t('由 梦桜 驱动') }} · <span class="footer-heart">♥</span>
-          {{ t('主题设计') }}
-          <a
-            href="https://github.com/LIlGG/halo-theme-sakura"
-            target="_blank"
-            rel="noopener noreferrer"
-            >LIlGG</a
-          >
-        </p>
-      </div>
-      <p class="asset-credits">
-        <a href="/sakura/ATTRIBUTION.md">{{ t('资源许可') }}</a> ·
-        {{ t('图标设计') }}
-        <a
-          href="https://www.figma.com/community/file/1166831539721848736"
-          target="_blank"
-          rel="noopener noreferrer"
-          >480 Design</a
-        >
-        (CC BY 4.0)
+      <p class="footer-wish" lang="zh-CN">
+        <em>愿你的天空永远星光灿烂，<br />愿你的舞台永远明光幻彩。</em>
       </p>
       <LanguageSelector variant="text" />
       <div class="footer-device">
@@ -336,6 +316,13 @@ useHead(() => ({
 </template>
 
 <style scoped>
+.footer-wish {
+  margin: 12px 0;
+}
+.footer-wish em {
+  font-style: italic;
+}
+
 /* English labels need a little more room beside the brand on tablet widths. */
 @media (min-width: 769px) and (max-width: 1100px) {
   :global(html[lang='en']) .site-header .navbar .menu-root > .menu-item {
