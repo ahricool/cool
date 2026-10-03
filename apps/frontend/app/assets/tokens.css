@@ -3,45 +3,45 @@
   --sakura-font:
     Ubuntu, 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC',
     'Microsoft YaHei', sans-serif;
-  --sakura-accent: #b34272;
-  --sakura-accent-strong: #92335c;
-  --sakura-accent-light-3: #c97497;
-  --sakura-accent-light-5: #dfa6bd;
+  --sakura-accent: #ff6699;
+  --sakura-accent-strong: #b52e63;
+  --sakura-accent-light-3: #ff94b8;
+  --sakura-accent-light-5: #ffbad1;
   --sakura-accent-light-7: #efcedc;
   --sakura-accent-light-8: #f6e2eb;
   --sakura-danger: #c23d5a;
-  --sakura-text: #403649;
-  --sakura-text-regular: #615466;
-  --sakura-muted: #766779;
-  --sakura-heading: #563b55;
+  --sakura-text: #303236;
+  --sakura-text-regular: #505258;
+  --sakura-muted: #686b72;
+  --sakura-heading: #303236;
   --sakura-surface: #fff;
   --sakura-soft: #fff1f6;
-  --sakura-border: #eadfe8;
-  --sakura-control-border: #e4d7e0;
-  --sakura-border-light: #eee3eb;
+  --sakura-border: #e7e7eb;
+  --sakura-control-border: #dcdde2;
+  --sakura-border-light: #ececf0;
   --sakura-fill-light: #fff5f9;
-  --sakura-page: #faf7fb;
+  --sakura-page: #f8f8fa;
   --sakura-header-background: #fffafdef;
   --sakura-shadow: 0 8px 32px #593b5808;
 }
 
 /* Blog's reading preference must never change the admin workspace palette. */
 :root[data-surface='blog'].dark {
-  --sakura-accent: #eea4c5;
-  --sakura-accent-strong: #ffd0e4;
-  --sakura-text: #eee3ee;
-  --sakura-text-regular: #d6c7db;
-  --sakura-muted: #bdacc2;
-  --sakura-heading: #f3cddd;
-  --sakura-surface: #2b2332;
-  --sakura-soft: #382838;
-  --sakura-border: #514055;
-  --sakura-control-border: #65516a;
-  --sakura-border-light: #423448;
-  --sakura-fill-light: #382838;
+  --sakura-accent: #d34e7e;
+  --sakura-accent-strong: #f58bae;
+  --sakura-text: #ededf0;
+  --sakura-text-regular: #d2d3d8;
+  --sakura-muted: #a5a7af;
+  --sakura-heading: #f5f5f7;
+  --sakura-surface: #222327;
+  --sakura-soft: #2b252b;
+  --sakura-border: #3e3f45;
+  --sakura-control-border: #52535b;
+  --sakura-border-light: #323339;
+  --sakura-fill-light: #2b252b;
   --sakura-accent-light-5: #88617b;
   --sakura-accent-light-7: #654258;
-  --sakura-page: #211b27;
-  --sakura-header-background: #2b2332f2;
+  --sakura-page: #17181a;
+  --sakura-header-background: #222327f2;
   --sakura-shadow: 0 5px 24px #0b070f20;
 }

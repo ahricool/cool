@@ -480,3 +480,10 @@ textarea:focus-visible {
   opacity: 0.35;
   background: url('/sakura/images/footer/sakura.svg') center / contain no-repeat;
 }
+
+/* Pink filled actions use charcoal labels for readable contrast. */
+.el-button--primary:not(.is-plain):not(.is-text):not(.is-link) {
+  --el-button-text-color: #292b30;
+  --el-button-hover-text-color: #292b30;
+  --el-button-active-text-color: #292b30;
+}

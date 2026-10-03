@@ -1,0 +1,63 @@
+<svg
+    viewBox="0 0 300 156"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <g
+      fill="none"
+      stroke="currentColor"
+      stroke-width="11"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path
+        d="M17 40Q40 37 66 40M42 23Q39 49 41 77M38 45Q30 60 15 72M46 48Q57 55 66 66"
+      />
+      <path
+        d="M78 40Q102 36 127 40M103 22Q100 48 102 77M98 46Q88 61 75 72M108 47Q117 60 132 68"
+      />
+      <path
+        d="M65 88Q54 104 38 111M63 93Q86 89 109 95Q96 125 65 140M54 110Q62 110 72 120"
+      />
+      <path
+        d="M149 62Q172 58 198 62M174 27Q170 78 173 140M169 68Q159 87 144 101M179 76Q190 81 199 94"
+      />
+      <path
+        d="M218 30Q219 38 225 46M240 24Q239 33 243 43M269 26Q261 44 253 51"
+      />
+      <path
+        d="M211 83Q244 79 279 83M240 60Q229 90 215 109Q250 111 277 140M261 65Q266 106 236 131Q221 140 206 141"
+      />
+    </g>
+    <g fill="white" opacity=".68">
+      <ellipse
+        cx="39"
+        cy="26"
+        rx="2.3"
+        ry="1.4"
+        transform="rotate(-24 39 26)"
+      />
+      <ellipse
+        cx="101"
+        cy="25"
+        rx="2.3"
+        ry="1.4"
+        transform="rotate(-24 101 25)"
+      />
+      <ellipse
+        cx="171"
+        cy="30"
+        rx="2.3"
+        ry="1.4"
+        transform="rotate(-24 171 30)"
+      />
+      <ellipse
+        cx="238"
+        cy="27"
+        rx="2.3"
+        ry="1.4"
+        transform="rotate(-24 238 27)"
+      />
+    </g>
+  </svg>

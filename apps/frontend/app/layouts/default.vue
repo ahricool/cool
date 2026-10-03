@@ -19,11 +19,13 @@ const { t, routePath, contentLang } = useCoolI18n();
 import { socialIcon } from '~/utils/social-icon';
 const route = useRoute();
 const store = useSiteStore();
+const isHome = computed(() => route.path === '/');
 const {
   menuOpen,
   menuTrigger,
   sidebar,
   dark,
+  scrollProgress,
   mobileQuery,
   mobileSearchFailure,
   sidebarKeydown,
@@ -62,40 +64,29 @@ useHead(() => ({
     id="main-container"
     class="container"
     :class="{
-      'is-homepage':
-        route.path === routePath('/') || route.path === `${routePath('/')}/`,
+      'is-homepage': isHome,
       'sidebar-open': menuOpen,
     }"
     :inert="menuOpen"
   >
-    <header class="site-header">
+    <header
+      class="site-header"
+      :class="{
+        'home-header': isHome,
+        'header-readable': scrollProgress > 0.12,
+      }"
+      :style="{ '--header-progress': isHome ? scrollProgress : 1 }"
+    >
       <div class="header-inner">
-        <div class="header-before">
-          <div class="site-branding">
-            <div class="site-title">
-              <button
-                ref="menuTrigger"
-                class="mobile-brand"
-                type="button"
-                :lang="contentLang(store.site.contentLocale)"
-                :aria-label="t('打开导航')"
-                aria-controls="mobile-sidebar"
-                :aria-expanded="menuOpen"
-                @click="menuOpen = !menuOpen"
-              >
-                {{ store.site.title }}
-              </button>
-              <NuxtLink
-                class="desktop-brand"
-                :to="routePath('/')"
-                :lang="contentLang(store.site.contentLocale)"
-                ><SakuraFlower class="brand-flower" />{{
-                  store.site.title
-                }}</NuxtLink
-              >
-            </div>
-          </div>
-        </div>
+        <NuxtLink
+          class="header-brand"
+          :inert="isHome && scrollProgress < 0.1"
+          :aria-hidden="isHome && scrollProgress < 0.1"
+          :to="routePath('/')"
+          :lang="contentLang(store.site.contentLocale)"
+          :aria-label="store.site.title"
+          ><SakuraWordmark
+        /></NuxtLink>
         <nav class="header-content" :aria-label="t('主导航')">
           <ul class="menu-root">
             <li v-for="item in menu" :key="item[0]" class="menu-item">
@@ -103,7 +94,22 @@ useHead(() => ({
             </li>
           </ul>
         </nav>
-        <ReadingControls :dark="dark" @toggle-theme="dark = !dark" />
+        <div class="header-actions">
+          <button
+            ref="menuTrigger"
+            class="mobile-menu reading-control"
+            type="button"
+            :aria-label="t('打开导航')"
+            aria-controls="mobile-sidebar"
+            :aria-expanded="menuOpen"
+            @click="menuOpen = !menuOpen"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <ReadingControls />
+        </div>
       </div>
     </header>
     <main id="page" class="main site wrapper">
@@ -203,5 +209,10 @@ useHead(() => ({
       </div>
     </div>
   </section>
+  <FloatingThemeToggle
+    :dark="dark"
+    :inert="menuOpen"
+    @toggle-theme="dark = !dark"
+  />
   <SiteFooter :inert="menuOpen" />
 </template>

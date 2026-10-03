@@ -1,14 +1,25 @@
 /* The reading shell shares the editorial workspace's rhythm and surfaces. */
 .site-header {
-  position: sticky;
+  position: fixed;
   top: 0;
   z-index: 40;
-  background: var(--sakura-header-background);
-  border-bottom: 1px solid var(--sakura-border);
-  backdrop-filter: blur(18px);
+  inset-inline: 0;
+  color: var(--sakura-text-regular);
+  background: color-mix(
+    in srgb,
+    var(--sakura-surface) min(98%, calc(var(--header-progress) * 294%)),
+    transparent
+  );
+  backdrop-filter: blur(calc(var(--header-progress) * 18px));
+  box-shadow: 0 1px 0
+    color-mix(
+      in srgb,
+      var(--sakura-border) calc(var(--header-progress) * 100%),
+      transparent
+    );
 }
 .header-inner {
-  max-width: 1240px;
+  max-width: 1440px;
   min-height: 80px;
   padding: 12px 40px;
   margin: auto;
@@ -17,19 +28,10 @@
   justify-content: space-between;
   gap: 24px;
 }
-.site-title {
-  margin: 0;
-  font-size: 24px;
-  letter-spacing: -0.04em;
-}
-.desktop-brand {
+.header-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-.brand-flower {
-  width: 32px;
-  height: 32px;
+  flex-shrink: 0;
 }
 .menu-root {
   display: flex;
@@ -44,12 +46,12 @@
   padding: 8px 14px;
   font-size: 14px;
   border-radius: 10px;
-  color: var(--sakura-muted);
+  color: inherit;
 }
 .menu-item a:hover,
 .menu-item .router-link-exact-active {
   background: var(--sakura-soft);
-  color: var(--sakura-accent);
+  color: var(--sakura-accent-strong);
 }
 .page-content {
   max-width: 1040px;
@@ -63,16 +65,16 @@
 }
 .home-hero {
   position: relative;
-  max-width: 1160px;
-  margin: 32px auto 0;
-  padding: 0 24px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 .hero-artwork {
   position: relative;
-  min-height: 440px;
+  min-height: 100svh;
   margin: 0;
   overflow: hidden;
-  border-radius: 28px;
+  border-radius: 0;
   isolation: isolate;
   display: flex;
   align-items: flex-end;
@@ -91,12 +93,12 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, #221527c9, #39233b48),
-    linear-gradient(0deg, #25172a96, transparent 80%);
+    linear-gradient(90deg, #17181ab0, #17181a30),
+    linear-gradient(0deg, #17181a80, transparent 80%);
   z-index: -1;
 }
 .hero-content {
-  padding: 64px;
+  padding: 140px max(40px, calc((100vw - 1160px) / 2)) 140px;
   max-width: 740px;
   color: #fff6fa;
 }
@@ -141,19 +143,20 @@
 }
 .home-wave {
   position: absolute;
-  inset: auto 24px 0;
-  height: 36px;
-  opacity: 0.12;
+  inset: auto 0 0;
+  height: 65px;
+  opacity: 1;
   overflow: hidden;
-  border-radius: 0 0 28px 28px;
+  background: linear-gradient(transparent 60%, var(--sakura-page));
   pointer-events: none;
 }
 .home-wave > div {
   position: absolute;
   inset: 0;
   width: 200%;
-  height: 36px;
-  background-size: auto 36px !important;
+  height: 65px;
+  background-size: auto 65px !important;
+  filter: brightness(0) invert(1);
   animation: hero-wave 24s linear infinite;
 }
 .home-wave .wave-2 {
@@ -168,7 +171,7 @@
 .hero-scroll {
   position: absolute;
   right: 56px;
-  bottom: 32px;
+  bottom: 90px;
   display: grid;
   place-items: center;
   width: 44px;
@@ -324,21 +327,20 @@
     min-height: 68px;
     padding: 10px 20px;
   }
-  .home-hero,
   .page-header {
     margin-top: 20px;
     padding-inline: 16px;
   }
   .hero-artwork {
-    min-height: 420px;
-    border-radius: 20px;
+    min-height: 100svh;
+    border-radius: 0;
   }
   .hero-content {
-    padding: 36px 28px 76px;
+    padding: 120px 28px 140px;
   }
   .hero-scroll {
     right: 40px;
-    bottom: 24px;
+    bottom: 90px;
   }
   .page-artwork {
     height: 230px;
@@ -356,25 +358,126 @@
   }
 }
 
-.mobile-brand {
+.main {
+  padding-top: 80px;
+}
+.is-homepage .main {
+  padding-top: 0;
+}
+.home-header .header-brand {
+  opacity: min(1, calc(var(--header-progress) * 3));
+}
+.home-header {
+  color: white;
+}
+.home-header.header-readable {
+  color: var(--sakura-text-regular);
+}
+
+.hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 700;
+  margin-bottom: 28px;
+  --wordmark-width: clamp(148px, 16vw, 220px);
+}
+.hero-brand .sakura-wordmark {
+  filter: drop-shadow(0 3px 0 #461a2a55) drop-shadow(0 6px 12px #0009);
+}
+.home-header:not(.header-readable) .sakura-wordmark {
+  filter: drop-shadow(0 2px 5px #0009);
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+.reading-controls {
+  display: flex;
+}
+.reading-control {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s ease;
+}
+.reading-control svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.reading-control:hover {
+  color: var(--sakura-accent-strong);
+  background: var(--sakura-soft);
+  transform: translateY(-2px);
+}
+.reading-control:focus-visible {
+  outline: 2px solid var(--sakura-accent-strong);
+  outline-offset: 3px;
+}
+.floating-theme {
+  position: fixed;
+  right: max(24px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: 50;
+  color: var(--sakura-text-regular);
+  background: var(--sakura-surface);
+  box-shadow: 0 4px 20px #0002;
+}
+.mobile-menu {
   display: none;
 }
+.hero-social a {
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease;
+}
+.hero-social a:hover {
+  transform: translateY(-4px);
+  background: #fff;
+}
+.menu-item a {
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease;
+}
+:root.dark .home-wave > div {
+  filter: brightness(0) invert(0.095);
+}
 @media (max-width: 768px) {
-  .desktop-brand {
-    display: none;
+  .main {
+    padding-top: 68px;
   }
-  .mobile-brand {
-    display: block;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--sakura-heading);
-    font-size: 20px;
-    font-weight: 700;
-    min-height: 44px;
-    max-width: 180px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .mobile-menu {
+    display: grid;
+  }
+  .floating-theme {
+    right: 20px;
+    bottom: max(20px, env(safe-area-inset-bottom));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reading-control,
+  .hero-social a,
+  .menu-item a {
+    transition: none;
+  }
+  .home-wave > div {
+    animation: none;
   }
 }

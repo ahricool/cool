@@ -21,7 +21,7 @@ a {
   text-decoration: none;
 }
 a:hover {
-  color: var(--sakura-accent);
+  color: var(--sakura-accent-strong);
 }
 button,
 input,
@@ -102,7 +102,7 @@ h3 {
   border: 1px solid var(--sakura-border);
   border-radius: 12px;
   background: var(--sakura-surface);
-  color: var(--sakura-accent);
+  color: var(--sakura-accent-strong);
 }
 :is(.api-state, .comment-form, .cool-search, .post-footer, .pagination)
   button:hover {

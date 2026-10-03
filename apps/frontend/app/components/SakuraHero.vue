@@ -23,6 +23,9 @@ function scrollDown() {
           fetchpriority="high"
       /></picture>
       <div class="hero-content">
+        <div class="hero-brand" role="img" :aria-label="store.site.title">
+          <SakuraWordmark />
+        </div>
         <div v-if="store.homepage.focusMode === 'avatar'" class="hero-avatar">
           <NuxtLink :to="routePath('/')"
             ><img

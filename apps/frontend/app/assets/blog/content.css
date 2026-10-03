@@ -59,7 +59,7 @@
 .story-action a {
   font-size: 13px;
   font-weight: 700;
-  color: var(--sakura-accent);
+  color: var(--sakura-accent-strong);
 }
 .story-cover a {
   display: block;
@@ -83,7 +83,7 @@
   scroll-margin-top: 100px;
 }
 .entry-content a {
-  color: var(--sakura-accent);
+  color: var(--sakura-accent-strong);
   text-decoration: underline;
   text-underline-offset: 4px;
 }
@@ -139,7 +139,7 @@
 }
 .post-tags {
   flex-wrap: wrap;
-  color: var(--sakura-accent);
+  color: var(--sakura-accent-strong);
   font-size: 13px;
 }
 .author-profile {
@@ -234,6 +234,12 @@
 }
 .cool-search input {
   margin: 0;
+  min-width: 0;
+  flex: 1;
+}
+.cool-search button {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .taxonomy-terms {
   display: flex;
@@ -252,7 +258,7 @@
 }
 .chip.selected {
   background: var(--sakura-soft);
-  color: var(--sakura-accent);
+  color: var(--sakura-accent-strong);
   border-color: var(--sakura-accent-light-5);
 }
 .archive-item {
@@ -262,7 +268,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  color: var(--sakura-accent);
+  color: var(--sakura-accent-strong);
 }
 .archive-title h3 {
   font-size: 20px;
@@ -360,7 +366,7 @@
   color: var(--sakura-muted);
 }
 .gallery-caption small {
-  color: var(--sakura-accent);
+  color: var(--sakura-accent-strong);
 }
 .photo-dialog {
   max-width: 92vw;

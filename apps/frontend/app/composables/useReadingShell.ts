@@ -7,13 +7,23 @@ export function useReadingShell() {
   const mobileSearchFailure = ref('');
   let previousOverflow = '';
   const dark = ref(false);
+  const scrollProgress = ref(0);
   onMounted(() => {
     const resize = () => {
       if (window.innerWidth > 768) menuOpen.value = false;
+      updateScroll();
     };
+    const updateScroll = () => {
+      const hero = document.getElementById('hero-artwork');
+      const distance = Math.max(160, (hero?.offsetHeight ?? 320) - 80);
+      scrollProgress.value = Math.min(1, window.scrollY / distance);
+    };
+    updateScroll();
+    window.addEventListener('scroll', updateScroll, { passive: true });
     window.addEventListener('resize', resize);
     onUnmounted(() => {
       window.removeEventListener('resize', resize);
+      window.removeEventListener('scroll', updateScroll);
       if (menuOpen.value) document.body.style.overflow = previousOverflow;
     });
   });
@@ -63,6 +73,7 @@ export function useReadingShell() {
     menuTrigger,
     sidebar,
     dark,
+    scrollProgress,
     mobileQuery,
     mobileSearchFailure,
     sidebarKeydown,
