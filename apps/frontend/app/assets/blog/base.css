@@ -106,7 +106,7 @@ h3 {
 }
 :is(.api-state, .comment-form, .cool-search, .post-footer, .pagination)
   button:hover {
-  background: var(--sakura-soft);
+  border-color: var(--sakura-accent-light-5);
 }
 .pagination {
   display: flex;

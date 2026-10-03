@@ -50,8 +50,15 @@
 }
 .menu-item a:hover,
 .menu-item .router-link-exact-active {
-  background: var(--sakura-soft);
-  color: var(--sakura-accent-strong);
+  color: var(--reading-interaction, var(--sakura-accent-strong));
+}
+.menu-item .router-link-exact-active {
+  text-decoration: underline;
+  text-underline-offset: 7px;
+  text-decoration-thickness: 1px;
+}
+.menu-item a:active {
+  opacity: 0.72;
 }
 .page-content {
   max-width: 1040px;
@@ -363,9 +370,11 @@
 }
 .home-header {
   color: white;
+  --reading-interaction: #ffbad1;
 }
 .home-header.header-readable {
   color: var(--sakura-text-regular);
+  --reading-interaction: var(--sakura-accent-strong);
 }
 
 .hero-brand {
@@ -403,8 +412,7 @@
   cursor: pointer;
   transition:
     color 0.18s ease,
-    background-color 0.18s ease,
-    transform 0.18s ease;
+    opacity 0.18s ease;
 }
 .reading-control svg {
   width: 22px;
@@ -416,12 +424,13 @@
   stroke-linejoin: round;
 }
 .reading-control:hover {
-  color: var(--sakura-accent-strong);
-  background: var(--sakura-soft);
-  transform: translateY(-2px);
+  color: var(--reading-interaction, var(--sakura-accent-strong));
+}
+.reading-control:active {
+  opacity: 0.72;
 }
 .reading-control:focus-visible {
-  outline: 2px solid var(--sakura-accent-strong);
+  outline: 2px solid var(--reading-interaction, var(--sakura-accent-strong));
   outline-offset: 3px;
 }
 .floating-theme {
@@ -437,18 +446,15 @@
   display: none;
 }
 .hero-social a {
-  transition:
-    transform 0.2s ease,
-    background-color 0.2s ease;
+  transition: opacity 0.18s ease;
 }
 .hero-social a:hover {
-  transform: translateY(-4px);
-  background: #fff;
+  opacity: 0.8;
 }
 .menu-item a {
   transition:
     color 0.18s ease,
-    background-color 0.18s ease;
+    opacity 0.18s ease;
 }
 :root.dark .home-wave > div {
   filter: brightness(0) invert(0.095);
