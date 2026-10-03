@@ -283,7 +283,7 @@ useHead(() => ({
       </div>
       <div class="footer-copyright">
         <p>
-          {{ t('由 Cool 驱动') }} · <span class="footer-heart">♥</span>
+          {{ t('由 梦桜 驱动') }} · <span class="footer-heart">♥</span>
           {{ t('主题设计') }}
           <a
             href="https://github.com/LIlGG/halo-theme-sakura"

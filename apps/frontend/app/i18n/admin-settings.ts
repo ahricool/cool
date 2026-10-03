@@ -65,7 +65,7 @@ export const adminSettingsMessages: Record<string, string> = {
   作者简介: 'Author bio',
   头像: 'Avatar',
   允许访客评论: 'Allow visitor comments',
-  'Cool 首页': 'Cool homepage',
+  '梦桜 首页': '梦桜 homepage',
   首页背景: 'Homepage background',
   首屏展示: 'Hero display',
   标题文字: 'Title text',

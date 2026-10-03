@@ -84,7 +84,7 @@ async function login() {
       <p>
         {{ t('记录热爱，整理思绪。') }}<br />{{ t('这里是属于你的内容空间。') }}
       </p>
-      <span class="login-footnote">Cool · {{ t('创作工作台') }}</span>
+      <span class="login-footnote">梦桜 · {{ t('创作工作台') }}</span>
     </section>
     <section class="login-form">
       <p class="eyebrow">{{ t(firstSetup ? '新的篇章' : '欢迎归来') }}</p>

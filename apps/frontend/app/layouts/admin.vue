@@ -127,7 +127,7 @@ async function logout() {
   }
 }
 useHead(() => ({
-  title: `${t(String(route.meta.title ?? '管理'))} · Cool`,
+  title: `${t(String(route.meta.title ?? '管理'))} · 梦桜`,
 }));
 </script>
 <template>
@@ -155,7 +155,7 @@ useHead(() => ({
       <RouterLink to="/admin" class="brand" @click="open = false"
         ><SakuraFlower class="brand-mark" />
         <div>
-          Cool<small>{{ t('你的内容，自在生长。') }}</small>
+          梦桜<small>{{ t('你的内容，自在生长。') }}</small>
         </div></RouterLink
       ><span class="nav-caption">{{ t('工作空间') }}</span>
       <nav>
@@ -218,7 +218,7 @@ useHead(() => ({
       </header>
       <main class="workspace"><slot /></main>
       <footer class="admin-footer">
-        <span>Cool · {{ t('写下值得记住的事') }}</span
+        <span>梦桜 · {{ t('写下值得记住的事') }}</span
         ><LanguageSelector />
       </footer>
     </div>
