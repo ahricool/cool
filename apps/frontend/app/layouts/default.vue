@@ -267,7 +267,7 @@ useHead(() => ({
         </nav>
         <div class="footer">
           <p>
-            © {{ new Date().getFullYear() }}
+            ©
             <span :lang="contentLang(store.site.contentLocale)">{{
               store.site.title
             }}</span>
@@ -287,7 +287,7 @@ useHead(() => ({
       <LanguageSelector variant="text" />
       <div class="footer-device">
         <p>
-          © {{ new Date().getFullYear() }}
+          ©
           <span :lang="contentLang(store.site.contentLocale)">{{
             store.site.title
           }}</span>
