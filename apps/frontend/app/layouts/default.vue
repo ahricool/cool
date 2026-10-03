@@ -116,20 +116,22 @@ useHead(() => ({
     <header class="site-header" :class="{ yya: scrolled }">
       <div class="header-inner">
         <div class="header-before">
-          <button
-            ref="menuTrigger"
-            class="site-nav-toggle"
-            :class="{ open: menuOpen }"
-            :aria-label="t('打开导航')"
-            aria-controls="mobile-sidebar"
-            :aria-expanded="menuOpen"
-            @click="menuOpen = !menuOpen"
-          >
-            <span class="nav-toggle"><span class="icon"></span></span>
-          </button>
           <div class="site-branding">
             <h1 class="site-title">
+              <button
+                ref="menuTrigger"
+                class="mobile-brand"
+                type="button"
+                :lang="contentLang(store.site.contentLocale)"
+                :aria-label="t('打开导航')"
+                aria-controls="mobile-sidebar"
+                :aria-expanded="menuOpen"
+                @click="menuOpen = !menuOpen"
+              >
+                {{ store.site.title }}
+              </button>
               <NuxtLink
+                class="desktop-brand"
                 :to="localePath('/')"
                 :lang="contentLang(store.site.contentLocale)"
                 >{{ store.site.title }}</NuxtLink
@@ -318,6 +320,44 @@ useHead(() => ({
 </template>
 
 <style scoped>
+.mobile-brand {
+  display: none;
+}
+@media (max-width: 768px) {
+  .site-branding .site-title .desktop-brand {
+    display: none;
+  }
+  .mobile-brand {
+    display: block;
+    max-width: 160px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    color: var(--sakura-heading);
+    font: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .mobile-brand:focus-visible {
+    outline: 1px solid currentColor;
+    outline-offset: 3px;
+  }
+  .site-header .header-inner .header-before {
+    justify-content: flex-start;
+    padding-left: 20px;
+  }
+  .site-header .header-inner .header-after {
+    padding-right: 20px;
+  }
+}
+
 .footer-wish {
   margin: 12px 0;
 }
