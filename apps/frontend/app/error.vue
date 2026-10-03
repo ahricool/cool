@@ -5,7 +5,7 @@ defineProps<{ error: NuxtError }>();
 const route = useRoute();
 const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
 useHead(() => ({
-  title: `${t('暂时迷路了')} · Cool`,
+  title: `${t('暂时迷路了')} · 梦桜`,
   htmlAttrs: {
     lang: contentLang(locale.value),
     'data-surface': isAdmin.value ? 'admin' : 'blog',

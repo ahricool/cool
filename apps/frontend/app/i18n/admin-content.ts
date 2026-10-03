@@ -1,10 +1,8 @@
 export const adminContentMessages: Record<string, string> = {
   请填写标题: 'Please enter a title.',
   请填写正文: 'Please enter the content.',
-  请为已填写的语言补充标题或名称:
-    'Add a title or name for each language you have started.',
-  请填写图片或链接地址: 'Please provide an image or link URL.',
-  '请输入有效的 HTTP 或 HTTPS 网址': 'Enter a valid HTTP or HTTPS URL.',
+  请为已填写的语言补充标题: 'Add a title for each language you have started.',
+  请填写图片地址: 'Please provide an image URL.',
   '请填写有效的 URL 标识': 'Enter a valid URL slug.',
   'URL 标识已存在，请使用其他标识':
     'This URL slug already exists. Choose another.',
@@ -160,13 +158,11 @@ export const adminContentMessages: Record<string, string> = {
   选择图片: 'Choose an image',
   选择标签: 'Select tags',
   通过: 'Approve',
-  '那些值得一起分享的小小世界。': 'Little corners of the web worth sharing.',
   预览: 'Preview',
   '＋ 上传图片': '＋ Upload image',
   '＋ 新建': '＋ Create',
   瞬间: 'Moments',
   图库: 'Photos',
-  友链: 'Links',
   请求失败: 'Request failed',
   '操作失败，请重试': 'Something went wrong. Please try again.',
   邮箱或密码不正确: 'Invalid email or password',

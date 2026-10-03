@@ -128,7 +128,6 @@ export class MediaController {
         where: { translations: { some: { content: { contains: url } } } },
       }),
       this.db.photo.count({ where: { url } }),
-      this.db.link.count({ where: { logoUrl: url } }),
       this.db.user.count({ where: { avatarUrl: url } }),
     ]);
     const settings = await this.db.siteSetting.findMany();

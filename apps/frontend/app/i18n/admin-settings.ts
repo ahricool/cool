@@ -5,9 +5,7 @@ export const adminSettingsMessages: Record<string, string> = {
   评论审核: 'Comment moderation',
 
   请输入密码: 'Enter your password',
-  '密码长度需为 16 至 256 个字符':
-    'Use a password between 16 and 256 characters',
-  '密码最多为 256 个字符': 'Passwords can contain up to 256 characters',
+  '密码至少需要 6 个字符': 'Use a password with at least 6 characters',
   请输入显示名称: 'Enter a display name',
   请输入当前密码: 'Enter your current password',
   '请为已填写的内容语言设置网站标题，至少填写一种语言。':
@@ -45,10 +43,10 @@ export const adminSettingsMessages: Record<string, string> = {
   邮箱: 'Email',
   设置密码: 'Set a password',
   密码: 'Password',
-  '至少 16 个字符': 'At least 16 characters',
+  '至少 6 个字符': 'At least 6 characters',
   输入密码: 'Enter your password',
-  '至少 16 个字符，可使用一句容易记住的话':
-    'Use at least 16 characters. A memorable phrase works well.',
+  '至少 6 个字符，可使用一句容易记住的话':
+    'Use at least 6 characters. A memorable phrase works well.',
   确认密码: 'Confirm password',
   再次输入密码: 'Enter your password again',
   设置密码并进入: 'Set password and get started',
@@ -67,7 +65,7 @@ export const adminSettingsMessages: Record<string, string> = {
   作者简介: 'Author bio',
   头像: 'Avatar',
   允许访客评论: 'Allow visitor comments',
-  'Cool 首页': 'Cool homepage',
+  '梦桜 首页': '梦桜 homepage',
   首页背景: 'Homepage background',
   首屏展示: 'Hero display',
   标题文字: 'Title text',
@@ -139,7 +137,6 @@ export const adminSettingsMessages: Record<string, string> = {
   标签: 'Tags',
   瞬间: 'Moments',
   图库: 'Gallery',
-  友链: 'Friend links',
   评论: 'Comments',
   管理: 'Administration',
   工作空间导航: 'Workspace navigation',

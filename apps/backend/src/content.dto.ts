@@ -15,7 +15,6 @@ import {
   IsBoolean,
   IsEnum,
   IsString,
-  IsUrl,
   Length,
   MaxLength,
   Matches,
@@ -153,44 +152,6 @@ export class PhotoDto {
   translations!: PhotoTranslationDto[];
 }
 export class UpdatePhotoDto extends PartialType(PhotoDto, {
-  skipNullProperties: false,
-}) {}
-export class LinkTranslationDto extends LocaleDto {
-  @ApiProperty() @IsString() @Length(1, 100) @Matches(/\S/) name!: string;
-  @ApiPropertyOptional()
-  @ValidateIf((_o, v) => v !== undefined)
-  @IsString()
-  @MaxLength(500)
-  description?: string;
-  @ApiPropertyOptional()
-  @ValidateIf((_o, v) => v !== undefined)
-  @IsString()
-  @MaxLength(100)
-  group?: string;
-}
-export class LinkDto {
-  @ApiProperty()
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
-  @MaxLength(2048)
-  url!: string;
-  @ApiPropertyOptional({ nullable: true })
-  @ValidateIf((_o, v) => v !== undefined && v !== null)
-  @IsAssetPath()
-  logoUrl?: string | null;
-  @ApiPropertyOptional()
-  @ValidateIf((_o, v) => v !== undefined)
-  @IsBoolean()
-  published?: boolean;
-  @ApiProperty({ type: [LinkTranslationDto] })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(2)
-  @ArrayUnique((item: LocaleDto) => item?.locale)
-  @ValidateNested({ each: true })
-  @Type(() => LinkTranslationDto)
-  translations!: LinkTranslationDto[];
-}
-export class UpdateLinkDto extends PartialType(LinkDto, {
   skipNullProperties: false,
 }) {}
 export class CommentDto {

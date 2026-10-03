@@ -29,7 +29,14 @@ type AdminContent = {
 };
 
 async function expectLocale(page: Page, locale: Locale) {
-  await expect(page.getByTestId('language-select')).toHaveValue(locale);
+  if (!new URL(page.url()).pathname.startsWith('/admin')) {
+    await expect(
+      page.locator('.site-footer').getByRole('button', {
+        name: locale === 'zh' ? '中文' : 'English',
+        exact: true,
+      }),
+    ).toHaveAttribute('aria-pressed', 'true');
+  }
   await expect(page.locator('html')).toHaveAttribute(
     'lang',
     locale === 'zh' ? 'zh-CN' : 'en',
@@ -140,8 +147,10 @@ test('footer switching persists across reloads and shares the UI choice between 
 }, info) => {
   await page.goto(`${site}/en/search?q=spring#results`);
   await expectLocale(page, 'en');
-  const select = page.getByTestId('language-select');
-  await select.selectOption('zh');
+  await page
+    .locator('.site-footer')
+    .getByRole('button', { name: '中文', exact: true })
+    .click();
   await expect(page).toHaveURL(`${site}/zh/search?q=spring#results`);
   await expectLocale(page, 'zh');
   expect(
@@ -154,7 +163,12 @@ test('footer switching persists across reloads and shares the UI choice between 
   await page.goto(admin + '/login');
   await expectLocale(page, 'zh');
   await expect(page.getByLabel('密码', { exact: true })).toBeVisible();
-  await select.selectOption('en');
+  await page.goto(site);
+  await page
+    .locator('.site-footer')
+    .getByRole('button', { name: 'English', exact: true })
+    .click();
+  await page.goto(admin + '/login');
   await expect(page).toHaveURL(admin + '/login');
   await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
   await expectLocale(page, 'en');
@@ -165,8 +179,7 @@ test('footer switching persists across reloads and shares the UI choice between 
     fullPage: true,
     animations: 'disabled',
   });
-  // Follow the actual Nuxt link so this also covers shared state without a reload.
-  await page.getByRole('link', { name: '← Back to the blog' }).click();
+  await page.goto(site);
   await expect(page).toHaveURL(`${site}/en`);
   await expectLocale(page, 'en');
   await expect(page.locator('html')).toHaveAttribute('data-surface', 'blog');
@@ -233,7 +246,10 @@ for (const kind of ['posts', 'pages'] as const) {
         fullPage: true,
         animations: 'disabled',
       });
-      await page.getByTestId('language-select').selectOption('zh');
+      await page
+        .locator('.site-footer')
+        .getByRole('button', { name: '中文', exact: true })
+        .click();
       await expect(page).toHaveURL(`${site}/zh/${kind}/${item.slug}`);
       await expectLocale(page, 'zh');
       await expect(page.locator('.entry-content')).toContainText(
@@ -295,7 +311,12 @@ for (const kind of ['posts', 'pages'] as const) {
       await expect(
         page.getByRole('textbox', { name: 'Title', exact: true }),
       ).toHaveValue('Private English draft');
-      await page.getByTestId('language-select').selectOption('zh');
+      await page.goto(site);
+      await page
+        .locator('.site-footer')
+        .getByRole('button', { name: '中文', exact: true })
+        .click();
+      await page.goto(`${admin}/${kind}/${item.id}`);
       await expectLocale(page, 'zh');
       await expect(
         page

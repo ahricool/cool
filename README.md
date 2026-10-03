@@ -2,18 +2,18 @@
 
 Cool 是个人博客与内容管理系统：NestJS + PostgreSQL 管理内容，一个 Nuxt 4 应用同时提供 Sakura 博客 `/zh`、`/en` 和管理工作台 `/admin`。只有一个站长账户，其他人都是访客。
 
-项目独立实现前后端，不依赖 Halo 服务或 Halo 管理端。所有浏览器页面（包括登录、管理、错误和弹窗状态）采用统一的 Sakura / 二次元 / 少女风格；博客沿用已迁移的 Sakura 结构和资源，管理端使用 Element Plus，编辑和表格区域保持清晰易读。资源署名和许可证随前端资产保留。
+项目独立实现前后端，不依赖 Halo 服务或 Halo 管理端。所有浏览器页面（包括登录、管理、错误和弹窗状态）采用统一的 Sakura / 二次元 / 少女风格；博客沿用已迁移的 Sakura 结构和资源，管理端使用 Element Plus，编辑和表格区域保持清晰易读。
 
 ## 已实现
 
 - **双语**：简体中文/English 界面，按浏览器语言选择初始界面，footer 可切换并保存到 localStorage。文章、独立页面和其他公开内容可分别编辑双语版本；URL 使用 `/zh/...`、`/en/...`，缺少当前语言的已发布版本时自动展示另一语言的已发布内容。
 
-- **博客**：Sakura 原版结构、CSS、本地图片与 SVG；Hero、波浪、明暗模式、响应式导航；首页、文章、归档、分类、标签、瞬间、图库、友链、搜索和独立页面。
-- **管理工作台**：首次设置密码、登录、Markdown 编辑/预览、浏览器草稿恢复、发布/撤回/预约发布时间、媒体库、分类/标签、独立页面、瞬间、图库、友链、评论审核、网站配置、个人资料、改密和会话撤销。
+- **博客**：Sakura 原版结构、CSS、本地图片与 SVG；Hero、波浪、明暗模式、响应式导航；首页、文章、归档、分类、标签、瞬间、图库、搜索和独立页面。
+- **管理工作台**：首次设置密码、登录、Markdown 编辑/预览、浏览器草稿恢复、发布/撤回/预约发布时间、媒体库、分类/标签、独立页面、瞬间、图库、评论审核、网站配置、个人资料、改密和会话撤销。
 - **后端**：NestJS 11、Prisma 7、PostgreSQL 17、SQL migration、Swagger、JWT、限流和输入校验。数据库只保存 Markdown 原文。
 - **部署**：两个应用镜像、三个常驻服务：统一 Nuxt 静态前端/Nginx、后端、PostgreSQL。Nginx 同时提供页面和同源 API 网关；媒体保存在项目根目录 `./data`（Git 忽略），生产使用宿主机 bind mount，数据库使用 `cool_postgres_data` 命名卷，提供部署脚本及数据库/媒体一致性备份。
 
-当前前端为 SPA，`nuxt generate` 输出 `apps/frontend/.output/public`，生产不运行 Nuxt/Nitro 服务。SSR、SEO、sitemap、OpenGraph、Mermaid、Redis/BullMQ 和对象存储仍预留；没有多用户、主题商店或插件系统。详见 [架构](docs/architecture.md) 和 [资源许可](apps/frontend/public/sakura/ATTRIBUTION.md)。
+当前前端为 SPA，`nuxt generate` 输出 `apps/frontend/.output/public`，生产不运行 Nuxt/Nitro 服务。SSR、SEO、sitemap、OpenGraph、Mermaid、Redis/BullMQ 和对象存储仍预留；没有多用户、主题商店或插件系统。详见 [架构](docs/architecture.md)。
 
 ## 本地开发
 
@@ -51,7 +51,7 @@ npm run dev:frontend
 | Swagger（开发环境） | http://localhost:3000/api/docs         |
 | OpenAPI             | http://localhost:3000/api/openapi.json |
 
-开发前端将 `/api/` 代理到本地后端，不再启动独立博客和管理端进程。唯一登录邮箱固定为 `whoreahri@gmail.com`，不可修改。空库先运行 migration 和 seed，然后在登录页直接设置至少 16 字符的密码，无需额外初始化密钥。**新实例应先完成首次密码设置，再开放公网访问。** seed 幂等，不重置已有密码。本项目按全新双语数据库建模，不提供旧单语 schema 或旧 URL 的兼容迁移。无需配置 `ADMIN_EMAIL` 或 `ADMIN_PASSWORD`。
+开发前端将 `/api/` 代理到本地后端，不再启动独立博客和管理端进程。唯一登录邮箱固定为 `whoreahri@gmail.com`，不可修改。空库先运行 migration 和 seed，然后在登录页直接设置至少 6 字符的密码（不限制字符类型或格式），无需额外初始化密钥。**新实例应先完成首次密码设置，再开放公网访问。** seed 幂等，不重置已有密码。本项目按全新双语数据库建模，不提供旧单语 schema 或旧 URL 的兼容迁移。无需配置 `ADMIN_EMAIL` 或 `ADMIN_PASSWORD`。
 
 登录同时返回 Bearer Token 并设置 15 天 HttpOnly Cookie。浏览器使用 Cookie，在刷新后恢复会话；Token 不写入 localStorage/sessionStorage。API 的 CORS 固定为 `*`，不开放携带凭据的跨域读取；不校验 Origin，后台 Cookie 写操作仍须携带会话 CSRF token。退出仅撤销当前会话；“退出全部设备”和改密撤销全部会话。未保存编辑内容仍可从当前标签页的 sessionStorage 草稿恢复。详见 [认证设计](docs/architecture.md#认证上传与评论)。
 

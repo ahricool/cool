@@ -6,15 +6,13 @@ import { LOCALE_STORAGE_KEY } from '../../apps/frontend/app/i18n/locale';
 import { translate } from '../../apps/frontend/app/i18n/messages';
 import { SESSION_COOKIE } from '../../apps/backend/src/auth.constants';
 
-test('Cool is the default product name in both interface languages', () => {
-  assert.equal(defaultSite.title, 'Cool');
-  assert.equal(defaultHomepage.greeting, 'Hi, Cool!');
+test('梦桜 is the default product name in both interface languages', () => {
+  assert.equal(defaultSite.title, '梦桜');
+  assert.equal(defaultHomepage.greeting, 'Hi, 梦桜!');
   assert.equal(LOCALE_STORAGE_KEY, 'cool.locale');
   assert.equal(SESSION_COOKIE, 'cool_session');
-  assert.equal(translate('由 Cool 驱动', {}, 'zh'), '由 Cool 驱动');
-  assert.equal(translate('由 Cool 驱动', {}, 'en'), 'Powered by Cool');
   assert.equal(translate('创作工作台', {}, 'en'), 'Creative workspace');
-  assert.equal(translate('Cool 首页', {}, 'en'), 'Cool homepage');
+  assert.equal(translate('梦桜 首页', {}, 'en'), '梦桜 homepage');
 });
 
 test('workspace manifests and lockfile agree on the cool namespace', async () => {

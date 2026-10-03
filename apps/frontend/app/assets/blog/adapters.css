@@ -72,9 +72,6 @@ body {
 .site-content .notice {
   box-sizing: border-box;
 }
-.footer-heart {
-  color: #e67d91;
-}
 .skip-link {
   position: absolute;
   left: 16px;
@@ -349,10 +346,7 @@ body {
   }
 }
 
-/* Preserve Sakura's original sidebar and scroll decoration; Vue owns state. */
-html:root {
-  --cd-top-image: url('/sakura/images/scroll.png') no-repeat center;
-}
+/* Preserve Sakura's original sidebar; Vue owns state. */
 .site-nav-toggle {
   padding: 0;
   position: relative;
@@ -360,21 +354,6 @@ html:root {
 section.site-sidebar {
   z-index: 102;
   overflow: visible;
-}
-section.site-sidebar .sidebar-close {
-  position: absolute;
-  border: 0;
-  background: none;
-  width: 44px;
-  height: 44px;
-  top: 8px;
-  left: calc(100% + 4px);
-  cursor: pointer;
-}
-section.site-sidebar .sidebar-close::before,
-section.site-sidebar .sidebar-close::after {
-  left: 7px;
-  top: 20px;
 }
 .sidebar-backdrop {
   position: fixed;
@@ -390,9 +369,6 @@ section.site-sidebar .sidebar-close::after {
 .mobile-sidebar .navbar {
   min-height: 0;
 }
-.mobile-sidebar .footer {
-  flex-shrink: 0;
-}
 .mobile-sidebar .socials {
   flex-wrap: wrap;
   gap: 8px 16px;
@@ -401,11 +377,6 @@ section.site-sidebar .sidebar-close::after {
 }
 .mobile-sidebar .search-form {
   border-radius: 8px;
-}
-button.cd-top {
-  border: 0;
-  padding: 0;
-  background-size: contain;
 }
 @media (max-width: 768px) {
   #main-container {
@@ -416,9 +387,6 @@ button.cd-top {
   }
 }
 
-section.site-sidebar:not(.open) .sidebar-close {
-  visibility: hidden;
-}
 .is-homepage .site-header:focus-within .header-inner .lower-container {
   display: block;
 }

@@ -99,7 +99,7 @@ test('CI contains only image build and publish steps without validation gates', 
   const workflow = await readFile('.github/workflows/ci.yml', 'utf8');
   const jobs = workflow.slice(workflow.indexOf('\njobs:'));
   assert.deepEqual(
-    [...jobs.matchAll(/^  ([\w-]+):$/gm)].map((match) => match[1]),
+    [...jobs.matchAll(/^[ ]{2}([\w-]+):$/gm)].map((match) => match[1]),
     ['images'],
   );
   assert.doesNotMatch(

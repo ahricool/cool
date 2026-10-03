@@ -19,7 +19,6 @@ import {
   ChatDotRound,
   Setting,
   User,
-  Link as LinkIcon,
   Camera,
   Notebook,
   SwitchButton,
@@ -93,7 +92,6 @@ const nav = [
   { path: '/admin/tags', label: '标签', icon: PriceTag },
   { path: '/admin/moments', label: '瞬间', icon: EditPen },
   { path: '/admin/photos', label: '图库', icon: Camera },
-  { path: '/admin/links', label: '友链', icon: LinkIcon },
   { path: '/admin/comments', label: '评论', icon: ChatDotRound },
 ];
 watch(
@@ -127,7 +125,7 @@ async function logout() {
   }
 }
 useHead(() => ({
-  title: `${t(String(route.meta.title ?? '管理'))} · Cool`,
+  title: `${t(String(route.meta.title ?? '管理'))} · 梦桜`,
 }));
 </script>
 <template>
@@ -155,7 +153,7 @@ useHead(() => ({
       <RouterLink to="/admin" class="brand" @click="open = false"
         ><SakuraFlower class="brand-mark" />
         <div>
-          Cool<small>{{ t('你的内容，自在生长。') }}</small>
+          梦桜<small>{{ t('你的内容，自在生长。') }}</small>
         </div></RouterLink
       ><span class="nav-caption">{{ t('工作空间') }}</span>
       <nav>
@@ -218,8 +216,7 @@ useHead(() => ({
       </header>
       <main class="workspace"><slot /></main>
       <footer class="admin-footer">
-        <span>Cool · {{ t('写下值得记住的事') }}</span
-        ><LanguageSelector />
+        <span>梦桜 · {{ t('写下值得记住的事') }}</span>
       </footer>
     </div>
   </div>

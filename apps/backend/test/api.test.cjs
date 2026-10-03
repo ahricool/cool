@@ -19,7 +19,6 @@ const zh = ({
   categoryIds,
   tagIds,
   url,
-  logoUrl,
   published,
   ...text
 }) => ({
@@ -28,7 +27,6 @@ const zh = ({
   ...(categoryIds === undefined ? {} : { categoryIds }),
   ...(tagIds === undefined ? {} : { tagIds }),
   ...(url === undefined ? {} : { url }),
-  ...(logoUrl === undefined ? {} : { logoUrl }),
   ...(published === undefined ? {} : { published }),
   translations: [{ locale: 'zh', ...text }],
 });
@@ -526,7 +524,7 @@ test('Owner login and full post publication lifecycle', async (t) => {
       .expect(200);
   });
   await t.test(
-    'pages and moments use publication rules; photos and links are explicit opt-in',
+    'pages and moments use publication rules; photos are explicit opt-in',
     async () => {
       const page = (
         await http
@@ -582,25 +580,10 @@ test('Owner login and full post publication lifecycle', async (t) => {
         .send({ published: true })
         .expect(200);
       assert.equal((await http.get('/api/v1/public/zh/photos')).body.total, 1);
-      const link = (
-        await http
-          .post('/api/v1/admin/links')
-          .auth(token, { type: 'bearer' })
-          .send(
-            zh({
-              name: 'Example',
-              url: 'https://example.com',
-              published: true,
-            }),
-          )
-          .expect(201)
-      ).body;
-      assert.equal((await http.get('/api/v1/public/zh/links')).body.total, 1);
       for (const [kind, id] of [
         ['pages', page.id],
         ['moments', moment.id],
         ['photos', photo.id],
-        ['links', link.id],
       ])
         await http
           .delete(`/api/v1/admin/${kind}/${id}`)

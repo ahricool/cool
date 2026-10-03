@@ -196,8 +196,7 @@ test('first-password screen confirms input and remains in the same Nuxt app acro
   await page.getByRole('button', { name: '设置密码并进入' }).click();
   await expect(page.getByRole('alert')).toContainText('两次输入的密码不一致');
   expect(initialized).toBe(false);
-  // The public link is Nuxt navigation; no reload can hide style leakage.
-  await page.getByRole('link', { name: '← 返回博客' }).click();
+  await page.goto(blog);
   await expect(page.locator('html')).toHaveAttribute('data-surface', 'blog');
   await expect(page.locator('#content')).toBeVisible();
   await page.getByRole('button', { name: '切换深色' }).click();

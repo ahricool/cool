@@ -11,9 +11,9 @@ test('Sakura mobile sidebar traps focus, closes, and restores navigation', async
   const toggle = page.getByRole('button', { name: '打开导航' });
   await toggle.click();
   const dialog = page.getByRole('dialog', { name: '移动端菜单' });
-  const close = dialog.getByRole('button', { name: '关闭菜单' });
-  await expect(close).toBeFocused();
-  await expect(dialog.locator('.avatar img')).toBeVisible();
+  const firstControl = dialog.locator('button, a[href], input, select').first();
+  await expect(firstControl).toBeFocused();
+  await expect(dialog.locator('.sidebar-brand-mark')).toBeVisible();
   await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
   expect(
     await page.evaluate(
@@ -27,10 +27,10 @@ test('Sakura mobile sidebar traps focus, closes, and restores navigation', async
   });
   await page.keyboard.press('Shift+Tab');
   await expect(
-    dialog.getByRole('link', { name: '友链', exact: true }),
+    dialog.getByRole('link', { name: '图库', exact: true }),
   ).toBeFocused();
   await page.keyboard.press('Tab');
-  await expect(close).toBeFocused();
+  await expect(firstControl).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   await expect(toggle).toBeFocused();
@@ -63,10 +63,6 @@ test('Admin formatting preserves prose and upload buttons work from keyboard', a
   page,
 }, info) => {
   await page.goto(admin + '/login');
-  const blogHref = await page
-    .getByRole('link', { name: '← 返回博客' })
-    .getAttribute('href');
-  expect(new URL(blogHref!, page.url()).href).toBe(new URL(blog).href);
   const loginArt = await page
     .locator('.login-story')
     .evaluate(

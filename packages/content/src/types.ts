@@ -128,28 +128,6 @@ export interface AdminPhoto {
   published: boolean;
   translations: PhotoTranslation[];
 }
-export interface FriendLink extends LocalizedContent {
-  id: string;
-  name: string;
-  url: string;
-  logoUrl: string | null;
-  description: string;
-  group: string;
-  published?: boolean;
-}
-export interface LinkTranslation {
-  locale: ContentLocale;
-  name: string;
-  description: string;
-  group: string;
-}
-export interface AdminFriendLink {
-  id: string;
-  url: string;
-  logoUrl: string | null;
-  published: boolean;
-  translations: LinkTranslation[];
-}
 export interface Media {
   id: string;
   key: string;
@@ -235,7 +213,7 @@ export interface AdminSettings {
   social: AdminSocial[];
 }
 export const defaultSite: Site = {
-  title: 'Cool',
+  title: '梦桜',
   description: '记录生活，也记录每一次灵感。',
   authorName: 'Administrator',
   authorBio: '在这里，收藏日常的微光。',
@@ -246,7 +224,7 @@ export const defaultSite: Site = {
 export const defaultHomepage: Homepage = {
   coverUrl: '/sakura/images/default/hd.webp',
   focusMode: 'glitch-text',
-  greeting: 'Hi, Cool!',
+  greeting: 'Hi, 梦桜!',
   description: 'You got to put the past behind you before you can move on.',
   notice: '欢迎来到我的小小世界。',
   wave: true,

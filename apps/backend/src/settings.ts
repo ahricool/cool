@@ -109,13 +109,13 @@ export const defaultSettings = {
     translations: [
       {
         locale: 'zh' as const,
-        title: 'Cool',
+        title: '梦桜',
         description: '记录生活，也记录每一次灵感。',
         authorBio: '在这里，收藏日常的微光。',
       },
       {
         locale: 'en' as const,
-        title: 'Cool',
+        title: '梦桜',
         description: 'A journal of everyday life and inspiration.',
         authorBio: 'Collecting the little sparks of everyday life.',
       },
@@ -128,13 +128,13 @@ export const defaultSettings = {
     translations: [
       {
         locale: 'zh' as const,
-        greeting: 'Hi, Cool!',
+        greeting: 'Hi, 梦桜!',
         description: '放下过去，继续向前。',
         notice: '欢迎来到我的小小世界。',
       },
       {
         locale: 'en' as const,
-        greeting: 'Hi, Cool!',
+        greeting: 'Hi, 梦桜!',
         description:
           'You got to put the past behind you before you can move on.',
         notice: 'Welcome to my little corner of the world.',

@@ -1,4 +1,20 @@
 <script setup lang="ts">
+import {
+  House,
+  Notebook,
+  Folder,
+  PriceTag,
+  EditPen,
+  Camera,
+} from '@element-plus/icons-vue';
+const navigationIcons = {
+  '/': House,
+  '/archives': Notebook,
+  '/categories': Folder,
+  '/tags': PriceTag,
+  '/moments': EditPen,
+  '/photos': Camera,
+};
 const { t, localePath, contentLang } = useCoolI18n();
 import { socialIcon } from '~/utils/social-icon';
 const route = useRoute();
@@ -6,7 +22,6 @@ const store = useSiteStore();
 const menuOpen = ref(false);
 const menuTrigger = ref<HTMLButtonElement>();
 const sidebar = ref<HTMLElement>();
-const sidebarClose = ref<HTMLButtonElement>();
 const mobileQuery = ref('');
 const mobileSearchFailure = ref('');
 let previousOverflow = '';
@@ -19,7 +34,6 @@ const menu = [
   ['/tags', '标签'],
   ['/moments', '瞬间'],
   ['/photos', '图库'],
-  ['/links', '友链'],
 ];
 onMounted(() => {
   void store.load();
@@ -43,7 +57,9 @@ watch(menuOpen, async (open) => {
     previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     await nextTick();
-    sidebarClose.value?.focus();
+    sidebar.value
+      ?.querySelector<HTMLElement>('button, a[href], input, select')
+      ?.focus();
   } else {
     document.body.style.overflow = previousOverflow;
     await nextTick();
@@ -82,14 +98,6 @@ function mobileSearch() {
     });
   }
 }
-function toTop() {
-  window.scrollTo({
-    top: 0,
-    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      ? 'auto'
-      : 'smooth',
-  });
-}
 watch(
   () => route.fullPath,
   () => {
@@ -116,20 +124,22 @@ useHead(() => ({
     <header class="site-header" :class="{ yya: scrolled }">
       <div class="header-inner">
         <div class="header-before">
-          <button
-            ref="menuTrigger"
-            class="site-nav-toggle"
-            :class="{ open: menuOpen }"
-            :aria-label="t('打开导航')"
-            aria-controls="mobile-sidebar"
-            :aria-expanded="menuOpen"
-            @click="menuOpen = !menuOpen"
-          >
-            <span class="nav-toggle"><span class="icon"></span></span>
-          </button>
           <div class="site-branding">
             <h1 class="site-title">
+              <button
+                ref="menuTrigger"
+                class="mobile-brand"
+                type="button"
+                :lang="contentLang(store.site.contentLocale)"
+                :aria-label="t('打开导航')"
+                aria-controls="mobile-sidebar"
+                :aria-expanded="menuOpen"
+                @click="menuOpen = !menuOpen"
+              >
+                {{ store.site.title }}
+              </button>
               <NuxtLink
+                class="desktop-brand"
                 :to="localePath('/')"
                 :lang="contentLang(store.site.contentLocale)"
                 >{{ store.site.title }}</NuxtLink
@@ -183,7 +193,9 @@ useHead(() => ({
     :aria-label="t('关闭导航')"
     @click="menuOpen = false"
   ></button>
+  <!-- Keep the closed drawer hidden before the surface-scoped theme activates. -->
   <section
+    v-show="menuOpen"
     id="mobile-sidebar"
     ref="sidebar"
     class="site-sidebar"
@@ -195,28 +207,19 @@ useHead(() => ({
     :aria-label="t('移动端菜单')"
     @keydown="sidebarKeydown"
   >
-    <button
-      ref="sidebarClose"
-      class="sidebar-close"
-      :aria-label="t('关闭菜单')"
-      @click="menuOpen = false"
-    ></button>
     <div class="sidebar-inner">
       <div class="mobile-sidebar">
-        <div class="avatar">
-          <img
-            :src="store.site.avatarUrl || '/sakura/images/default/avatar.webp'"
-            :alt="store.site.authorName"
-            width="90"
-            height="90"
-          />
+        <div class="sidebar-brand">
+          <SakuraFlower class="sidebar-brand-mark" />
+          <div>
+            <span
+              class="sidebar-brand-title"
+              :lang="contentLang(store.site.contentLocale)"
+              >{{ store.site.title }}</span
+            >
+            <small>{{ t('你的内容，自在生长。') }}</small>
+          </div>
         </div>
-        <p
-          class="glitch-text"
-          :lang="contentLang(store.homepage.contentLocale)"
-        >
-          {{ store.homepage.greeting }}
-        </p>
         <div v-if="store.social.length" class="socials">
           <a
             v-for="link in store.social"
@@ -259,20 +262,17 @@ useHead(() => ({
         <nav class="navbar" :aria-label="t('移动端导航')">
           <ul class="menu-root">
             <li v-for="item in menu" :key="item[0]" class="menu-item">
-              <NuxtLink :to="localePath(item[0]!)" @click="menuOpen = false">{{
-                t(item[1]!)
-              }}</NuxtLink>
+              <NuxtLink :to="localePath(item[0]!)" @click="menuOpen = false">
+                <component
+                  :is="navigationIcons[item[0] as keyof typeof navigationIcons]"
+                  class="sidebar-nav-icon"
+                  aria-hidden="true"
+                />
+                <span>{{ t(item[1]!) }}</span>
+              </NuxtLink>
             </li>
           </ul>
         </nav>
-        <div class="footer">
-          <p>
-            © {{ new Date().getFullYear() }}
-            <span :lang="contentLang(store.site.contentLocale)">{{
-              store.site.title
-            }}</span>
-          </p>
-        </div>
       </div>
     </div>
   </section>
@@ -281,61 +281,60 @@ useHead(() => ({
       <div class="footer-logo">
         <SakuraFlower class="footer-flower" />
       </div>
-      <div class="footer-copyright">
-        <p>
-          {{ t('由 Cool 驱动') }} · <span class="footer-heart">♥</span>
-          {{ t('主题设计') }}
-          <a
-            href="https://github.com/LIlGG/halo-theme-sakura"
-            target="_blank"
-            rel="noopener noreferrer"
-            >LIlGG</a
-          >
-        </p>
-      </div>
-      <p class="asset-credits">
-        <a href="/sakura/ATTRIBUTION.md">{{ t('资源许可') }}</a> ·
-        {{ t('图标设计') }}
-        <a
-          href="https://www.figma.com/community/file/1166831539721848736"
-          target="_blank"
-          rel="noopener noreferrer"
-          >480 Design</a
-        >
-        (CC BY 4.0)
+      <p class="footer-wish" lang="zh-CN">
+        <em>愿你的天空永远星光灿烂，<br />愿你的舞台永远明光幻彩。</em>
       </p>
-      <LanguageSelector />
-      <div class="footer-device">
-        <p>
-          © {{ new Date().getFullYear() }}
-          <span :lang="contentLang(store.site.contentLocale)">{{
-            store.site.title
-          }}</span>
-        </p>
-      </div>
+      <LanguageSelector variant="text" />
     </div>
   </footer>
-  <button
-    class="cd-top"
-    :class="{ 'cd-is-visible': scrolled }"
-    :tabindex="scrolled ? 0 : -1"
-    :aria-label="t('回到顶部')"
-    :inert="menuOpen"
-    @click="toTop"
-  ></button>
-  <button
-    class="m-cd-top"
-    :class="{ 'cd-is-visible': scrolled }"
-    :tabindex="scrolled ? 0 : -1"
-    :aria-label="t('回到顶部')"
-    :inert="menuOpen"
-    @click="toTop"
-  >
-    <SakuraIcon name="alt-arrow-up-linear" />
-  </button>
 </template>
 
 <style scoped>
+.mobile-brand {
+  display: none;
+}
+@media (max-width: 768px) {
+  .site-branding .site-title .desktop-brand {
+    display: none;
+  }
+  .mobile-brand {
+    display: block;
+    max-width: 160px;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    color: var(--sakura-heading);
+    font: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .mobile-brand:focus-visible {
+    outline: 1px solid currentColor;
+    outline-offset: 3px;
+  }
+  .site-header .header-inner .header-before {
+    justify-content: flex-start;
+    padding-left: 20px;
+  }
+  .site-header .header-inner .header-after {
+    padding-right: 20px;
+  }
+}
+
+.footer-wish {
+  margin: 12px 0;
+}
+.footer-wish em {
+  font-style: italic;
+}
+
 /* English labels need a little more room beside the brand on tablet widths. */
 @media (min-width: 769px) and (max-width: 1100px) {
   :global(html[lang='en']) .site-header .navbar .menu-root > .menu-item {

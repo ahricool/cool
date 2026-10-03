@@ -10,7 +10,7 @@ import {
   safeAdminNext,
   type AuthResult,
 } from '../api';
-const { t, localePath } = useCoolI18n();
+const { t } = useCoolI18n();
 const password = ref('');
 const confirmation = ref('');
 const busy = ref(false);
@@ -39,13 +39,8 @@ async function login() {
     error.value = '请输入密码';
     return;
   }
-  if (
-    (firstSetup.value && password.value.length < 16) ||
-    password.value.length > 256
-  ) {
-    error.value = firstSetup.value
-      ? '密码长度需为 16 至 256 个字符'
-      : '密码最多为 256 个字符';
+  if (firstSetup.value && Array.from(password.value).length < 6) {
+    error.value = '密码至少需要 6 个字符';
     return;
   }
   if (firstSetup.value && password.value !== confirmation.value) {
@@ -89,7 +84,7 @@ async function login() {
       <p>
         {{ t('记录热爱，整理思绪。') }}<br />{{ t('这里是属于你的内容空间。') }}
       </p>
-      <span class="login-footnote">Cool · {{ t('创作工作台') }}</span>
+      <span class="login-footnote">梦桜 · {{ t('创作工作台') }}</span>
     </section>
     <section class="login-form">
       <p class="eyebrow">{{ t(firstSetup ? '新的篇章' : '欢迎归来') }}</p>
@@ -136,13 +131,12 @@ async function login() {
             type="password"
             :autocomplete="firstSetup ? 'new-password' : 'current-password'"
             show-password
-            :placeholder="t(firstSetup ? '至少 16 个字符' : '输入密码')"
-            :minlength="firstSetup ? 16 : undefined"
-            maxlength="256"
+            :placeholder="t(firstSetup ? '至少 6 个字符' : '输入密码')"
+            :minlength="firstSetup ? 6 : undefined"
             required
           />
           <small v-if="firstSetup" class="muted">{{
-            t('至少 16 个字符，可使用一句容易记住的话')
+            t('至少 6 个字符，可使用一句容易记住的话')
           }}</small>
         </el-form-item>
         <el-form-item v-if="firstSetup" :label="t('确认密码')">
@@ -152,8 +146,7 @@ async function login() {
             autocomplete="new-password"
             show-password
             :placeholder="t('再次输入密码')"
-            minlength="16"
-            maxlength="256"
+            minlength="6"
             required
           />
         </el-form-item>
@@ -165,28 +158,7 @@ async function login() {
           class="login-submit"
           >{{ t(firstSetup ? '设置密码并进入' : '登录工作空间') }}</el-button
         >
-        <p class="muted login-session-note">
-          {{ t('登录状态保留 15 天，可随时在账户设置中退出所有设备。') }}
-        </p>
       </el-form>
-      <footer class="login-language-footer">
-        <NuxtLink :to="localePath('/')" class="muted">{{
-          t('← 返回博客')
-        }}</NuxtLink
-        ><LanguageSelector />
-      </footer>
     </section>
   </main>
 </template>
-
-<style scoped>
-.login-language-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 24px;
-  padding-bottom: 24px;
-}
-</style>

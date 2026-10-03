@@ -24,13 +24,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import {
-  IsEmail,
-  IsString,
-  Length,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { CookieOptions, Request, Response } from 'express';
 import { Database } from './database';
@@ -60,10 +54,10 @@ const privateUser = (user: User) => ({
 });
 class LoginDto {
   @ApiProperty() @IsEmail() @MaxLength(254) email!: string;
-  @ApiProperty() @IsString() @MinLength(1) @MaxLength(256) password!: string;
+  @ApiProperty() @IsString() @MinLength(1) password!: string;
 }
 class SetupDto {
-  @ApiProperty() @IsString() @Length(16, 256) password!: string;
+  @ApiProperty() @IsString() @MinLength(6) password!: string;
 }
 function constantEqual(first: string, second: string) {
   // Hash first so secrets of different lengths still use a constant-time compare.
