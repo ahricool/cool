@@ -10,7 +10,7 @@ import {
   safeAdminNext,
   type AuthResult,
 } from '../api';
-const { t, localePath } = useCoolI18n();
+const { t } = useCoolI18n();
 const password = ref('');
 const confirmation = ref('');
 const busy = ref(false);
@@ -158,15 +158,9 @@ async function login() {
           class="login-submit"
           >{{ t(firstSetup ? '设置密码并进入' : '登录工作空间') }}</el-button
         >
-        <p class="muted login-session-note">
-          {{ t('登录状态保留 15 天，可随时在账户设置中退出所有设备。') }}
-        </p>
       </el-form>
       <footer class="login-language-footer">
-        <NuxtLink :to="localePath('/')" class="muted">{{
-          t('← 返回博客')
-        }}</NuxtLink
-        ><LanguageSelector />
+        <LanguageSelector variant="text" />
       </footer>
     </section>
   </main>
@@ -177,7 +171,7 @@ async function login() {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 16px;
   margin-top: 24px;
   padding-bottom: 24px;

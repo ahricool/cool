@@ -63,10 +63,6 @@ test('Admin formatting preserves prose and upload buttons work from keyboard', a
   page,
 }, info) => {
   await page.goto(admin + '/login');
-  const blogHref = await page
-    .getByRole('link', { name: '← 返回博客' })
-    .getAttribute('href');
-  expect(new URL(blogHref!, page.url()).href).toBe(new URL(blog).href);
   const loginArt = await page
     .locator('.login-story')
     .evaluate(

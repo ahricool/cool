@@ -29,11 +29,14 @@ type AdminContent = {
 };
 
 async function expectLocale(page: Page, locale: Locale) {
-  if (new URL(page.url()).pathname.startsWith('/admin')) {
+  if (
+    new URL(page.url()).pathname.startsWith('/admin') &&
+    new URL(page.url()).pathname !== '/admin/login'
+  ) {
     await expect(page.getByTestId('language-select')).toHaveValue(locale);
   } else {
     await expect(
-      page.locator('.site-footer').getByRole('button', {
+      page.locator('.site-footer, .login-language-footer').getByRole('button', {
         name: locale === 'zh' ? '中文' : 'English',
         exact: true,
       }),
@@ -149,7 +152,6 @@ test('footer switching persists across reloads and shares the UI choice between 
 }, info) => {
   await page.goto(`${site}/en/search?q=spring#results`);
   await expectLocale(page, 'en');
-  const select = page.getByTestId('language-select');
   await page
     .locator('.site-footer')
     .getByRole('button', { name: '中文', exact: true })
@@ -166,7 +168,10 @@ test('footer switching persists across reloads and shares the UI choice between 
   await page.goto(admin + '/login');
   await expectLocale(page, 'zh');
   await expect(page.getByLabel('密码', { exact: true })).toBeVisible();
-  await select.selectOption('en');
+  await page
+    .locator('.login-language-footer')
+    .getByRole('button', { name: 'English', exact: true })
+    .click();
   await expect(page).toHaveURL(admin + '/login');
   await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
   await expectLocale(page, 'en');
@@ -177,8 +182,7 @@ test('footer switching persists across reloads and shares the UI choice between 
     fullPage: true,
     animations: 'disabled',
   });
-  // Follow the actual Nuxt link so this also covers shared state without a reload.
-  await page.getByRole('link', { name: '← Back to the blog' }).click();
+  await page.goto(site);
   await expect(page).toHaveURL(`${site}/en`);
   await expectLocale(page, 'en');
   await expect(page.locator('html')).toHaveAttribute('data-surface', 'blog');
