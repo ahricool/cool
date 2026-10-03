@@ -183,7 +183,9 @@ useHead(() => ({
     :aria-label="t('关闭导航')"
     @click="menuOpen = false"
   ></button>
+  <!-- Keep the closed drawer hidden before the surface-scoped theme activates. -->
   <section
+    v-show="menuOpen"
     id="mobile-sidebar"
     ref="sidebar"
     class="site-sidebar"
