@@ -94,15 +94,15 @@ docker rm -f cool-test
 
 浏览器测试自动启动后端和统一前端；运行前关闭使用其他数据库的本地服务。也可用 `E2E_EXTERNAL=1`，同时设置 `E2E_BLOG_URL`、`E2E_ADMIN_URL`（同一前端 origin，含 `/admin`）、`E2E_API_URL` 验证已启动的隔离测试栈。测试覆盖首次设置密码、会话恢复、语言检测/切换/保存、独立双语编辑、已发布语言回退、编辑发布、Markdown 高亮与安全渲染、评论审核、路由加载、移动导航和无外部资源请求；截图存入 `test-results/`。
 
-真实 Nginx 边界测试验证两个独立客户端的限流、伪造转发头的覆盖和匿名管理 API 拒绝。CI 安装 Nginx 并启用；本地安装 Nginx 后可设置 `COOL_NGINX_TEST=1`（必要时加 `COOL_NGINX_BIN=/绝对路径/nginx`）再运行 `npm test`，未启用时此项明确跳过。它只启动隔离的高端口测试代理，不修改系统 Nginx 配置。
+真实 Nginx 边界测试验证两个独立客户端的限流、伪造转发头的覆盖和匿名管理 API 拒绝。本地安装 Nginx 后可设置 `COOL_NGINX_TEST=1`（必要时加 `COOL_NGINX_BIN=/绝对路径/nginx`）再运行 `npm test`，未启用时此项明确跳过。它只启动隔离的高端口测试代理，不修改系统 Nginx 配置。
 
-依赖审计记录一项 Nuxt 开发 HTTPS 间接依赖例外，其他未审查的 high/critical 告警会阻断 CI，见 [架构文档](docs/architecture.md#依赖审计)。
+依赖审计记录一项 Nuxt 开发 HTTPS 间接依赖例外，本地运行 `npm run audit` 会阻断其他未审查的 high/critical 告警，见 [架构文档](docs/architecture.md#依赖审计)。
 
 ## 部署与 CI
 
 详见 [部署、备份与恢复](docs/operations.md)。配置好 `.env` 后，直接运行 `bash deploy.sh`：自动更新 main、拉取 latest 镜像、初始化媒体目录权限、迁移、seed 并等待服务健康。部署不自动备份，需要时单独执行 `./backup.sh`。无需输入 SHA；两个应用镜像的 `:latest` 地址直接写在 `docker-compose.prod.yml` 中，`.env` 只保存运行环境与秘密。更新时保持工作区干净，并等待 main 的两个镜像发布完成；脚本会检查拉取的前后端与 main 版本一致。`bash deploy.sh ps` / `bash deploy.sh logs --tail=100 backend` 可直接执行 Compose 命令。`./scripts/build.sh` 构建独立的本地标签，配合 `./scripts/compose.sh --images local` 使用。
 
-GitHub Actions 仅在 push 到 `main` 时运行，非 main 分支和 PR 不触发任何工作流。main 执行类型检查、构建、lint、格式、依赖审计、真实数据库测试、浏览器测试，以及两个应用镜像的构建。独立 Compose 验收用当前代码构建本地镜像，通过真实 Nginx 对生成的静态前端执行浏览器流程和截图，并验证空库首次启动、空库/有内容备份、删除源数据库卷和临时媒体目录后恢复到新项目及独立临时目录，以及媒体字节和迁移记录一致性。镜像构建/发布等待两类验证通过；合入 `main` 后推送：
+GitHub Actions 仅在 push 到 `main` 时运行，非 main 分支和 PR 不触发任何工作流。流水线只构建并发布两个应用镜像，不执行独立测试、类型检查、lint、格式、依赖审计、数据库/浏览器测试、Compose 恢复验收或镜像 smoke/manifest 验证。镜像构建仍包含必要的依赖安装、Prisma 客户端生成和应用编译；测试及验收脚本保留，可在本地按需运行。合入 `main` 后推送：
 
 - `ghcr.io/ahricool/cool-backend`
 - `ghcr.io/ahricool/cool-frontend`
