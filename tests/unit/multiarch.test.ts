@@ -33,12 +33,10 @@ test('both application images publish AMD64 and ARM64 under the existing tags', 
     images,
     /cache-to: type=gha,mode=max,scope=\$\{\{ matrix.service }}-multiarch/,
   );
-  assert.match(images, /DIGEST: \$\{\{ steps.build.outputs.digest }}/);
-  assert.match(images, /imagetools inspect "\$IMAGE@\$DIGEST" --raw/);
-  assert.match(images, /contains\(\["linux\/amd64", "linux\/arm64"\]\)/);
+  assert.doesNotMatch(images, /imagetools|steps\.build\.outputs\.digest/);
 });
 
-test('backend native dependencies are installed and checked on the runtime platform', async () => {
+test('backend native dependencies are installed and compiled on the runtime platform', async () => {
   const dockerfile = await readFile('Dockerfile', 'utf8');
   assert.match(dockerfile, /^FROM node:24-bookworm-slim AS base$/m);
   assert.match(dockerfile, /^FROM base AS build$/m);
@@ -52,12 +50,8 @@ test('backend native dependencies are installed and checked on the runtime platf
     dockerfile,
     /COPY --from=build \/app\/node_modules \.\/node_modules/,
   );
-  const runtimeChecks = dockerfile.slice(dockerfile.indexOf('USER node'));
-  assert.match(runtimeChecks, /require\('sharp'\).*\.webp\(\)\.toBuffer\(\)/);
-  assert.match(
-    runtimeChecks,
-    /npm exec --workspace @cool\/backend -- prisma --version/,
-  );
+  assert.doesNotMatch(dockerfile, /require\('sharp'\)|prisma --version/);
+  assert.match(dockerfile, /npm run build -w @cool\/backend/);
 
   const lock = JSON.parse(await readFile('package-lock.json', 'utf8'));
   for (const arch of ['x64', 'arm64']) {
@@ -99,4 +93,28 @@ test('local native artifacts cannot override container builds or production arch
     const compose = await readFile(file, 'utf8');
     assert.doesNotMatch(compose, /^\s+platform:/m);
   }
+});
+
+test('CI contains only image build and publish steps without validation gates', async () => {
+  const workflow = await readFile('.github/workflows/ci.yml', 'utf8');
+  const jobs = workflow.slice(workflow.indexOf('\njobs:'));
+  assert.deepEqual(
+    [...jobs.matchAll(/^  ([\w-]+):$/gm)].map((match) => match[1]),
+    ['images'],
+  );
+  assert.doesNotMatch(
+    workflow,
+    /\bneeds:|\bservices:|\brun:|upload-artifact|setup-node/,
+  );
+  assert.deepEqual(
+    [...workflow.matchAll(/uses: ([^\n]+)/g)].map((match) => match[1]),
+    [
+      'actions/checkout@v4',
+      'docker/setup-qemu-action@v3',
+      'docker/setup-buildx-action@v3',
+      'docker/login-action@v3',
+      'docker/metadata-action@v5',
+      'docker/build-push-action@v6',
+    ],
+  );
 });

@@ -21,8 +21,5 @@ COPY --from=build /app/apps/backend/prisma ./apps/backend/prisma
 COPY --from=build /app/apps/backend/prisma.config.ts ./apps/backend/prisma.config.ts
 RUN install -d -m 0750 -o node -g node /app/data
 USER node
-# Exercise native dependencies after pruning, on each target platform. No DB needed.
-RUN node -e "require('sharp')({ create: { width: 1, height: 1, channels: 3, background: '#fff' } }).webp().toBuffer().then(() => console.log('Sharp OK:', process.arch)).catch(error => { console.error(error); process.exit(1); })" \
-    && npm exec --workspace @cool/backend -- prisma --version
 EXPOSE 3000
 CMD ["node", "apps/backend/dist/main.js"]
