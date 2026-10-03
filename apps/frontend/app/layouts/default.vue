@@ -82,14 +82,6 @@ function mobileSearch() {
     });
   }
 }
-function toTop() {
-  window.scrollTo({
-    top: 0,
-    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      ? 'auto'
-      : 'smooth',
-  });
-}
 watch(
   () => route.fullPath,
   () => {
@@ -299,24 +291,6 @@ useHead(() => ({
       </div>
     </div>
   </footer>
-  <button
-    class="cd-top"
-    :class="{ 'cd-is-visible': scrolled }"
-    :tabindex="scrolled ? 0 : -1"
-    :aria-label="t('回到顶部')"
-    :inert="menuOpen"
-    @click="toTop"
-  ></button>
-  <button
-    class="m-cd-top"
-    :class="{ 'cd-is-visible': scrolled }"
-    :tabindex="scrolled ? 0 : -1"
-    :aria-label="t('回到顶部')"
-    :inert="menuOpen"
-    @click="toTop"
-  >
-    <SakuraIcon name="alt-arrow-up-linear" />
-  </button>
 </template>
 
 <style scoped>

@@ -24,7 +24,6 @@ export const publicMessages: Record<string, string> = {
   主题设计: 'Theme by',
   资源许可: 'Asset licenses',
   图标设计: 'Icons by',
-  回到顶部: 'Back to top',
   '正在加载…': 'Loading…',
   '暂时无法加载内容。': 'Content could not be loaded right now.',
   重新加载: 'Reload',

@@ -349,10 +349,7 @@ body {
   }
 }
 
-/* Preserve Sakura's original sidebar and scroll decoration; Vue owns state. */
-html:root {
-  --cd-top-image: url('/sakura/images/scroll.png') no-repeat center;
-}
+/* Preserve Sakura's original sidebar; Vue owns state. */
 .site-nav-toggle {
   padding: 0;
   position: relative;
@@ -401,11 +398,6 @@ section.site-sidebar .sidebar-close::after {
 }
 .mobile-sidebar .search-form {
   border-radius: 8px;
-}
-button.cd-top {
-  border: 0;
-  padding: 0;
-  background-size: contain;
 }
 @media (max-width: 768px) {
   #main-container {
