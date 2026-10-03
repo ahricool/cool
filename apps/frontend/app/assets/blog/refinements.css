@@ -512,29 +512,91 @@ body.sakura-ui {
   border-right: 1px solid var(--sakura-border);
   box-sizing: border-box;
 }
-.sakura-ui .mobile-sidebar .glitch-text {
+.sakura-ui .mobile-sidebar {
   font-family: var(--sakura-font);
-  font-weight: 700;
-  letter-spacing: 0;
+  align-items: stretch;
+}
+.sakura-ui .mobile-sidebar .sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 24px 24px;
   color: var(--sakura-heading);
+}
+.sakura-ui .sidebar-brand-mark {
+  width: 36px;
+  height: 36px;
+  font-size: 36px;
+}
+.sakura-ui .sidebar-brand-title {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.4;
+}
+.sakura-ui .sidebar-brand small {
+  display: block;
+  margin-top: 5px;
+  color: var(--sakura-muted);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+.sakura-ui .mobile-sidebar .search {
+  margin: 0 16px 18px;
+}
+.sakura-ui .mobile-sidebar .search .search-form {
+  width: 100%;
+  padding: 8px 12px;
+}
+.sakura-ui .mobile-sidebar .search .search-form .m-search-input {
+  font-size: 13px;
+  text-align: left;
+  background: transparent;
 }
 .sakura-ui .mobile-sidebar .navbar .menu-root {
   width: calc(100% - 32px);
   margin-left: 0;
   padding: 0;
+  gap: 3px;
 }
 .sakura-ui .mobile-sidebar .navbar .menu-root > .menu-item {
   width: 100%;
 }
 .sakura-ui .mobile-sidebar .navbar .menu-root > .menu-item > a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 18px;
-  border-radius: 10px;
+  padding: 11px 16px;
+  border-radius: 8px;
   min-height: 44px;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-align: left;
+  color: var(--sakura-text-regular);
 }
-.sakura-ui .mobile-sidebar a.router-link-exact-active {
+.sakura-ui .sidebar-nav-icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.sakura-ui .mobile-sidebar .navbar .menu-root > .menu-item > a:hover {
   background: var(--sakura-soft);
+  color: var(--sakura-accent);
+}
+.sakura-ui
+  .mobile-sidebar
+  .navbar
+  .menu-root
+  > .menu-item
+  > a.router-link-exact-active {
+  background: var(--sakura-soft);
+  color: var(--sakura-accent-strong);
+  font-weight: 700;
   box-shadow: inset 3px 0 var(--sakura-accent);
 }
 .sakura-ui .mobile-sidebar .footer {

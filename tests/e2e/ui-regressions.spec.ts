@@ -13,7 +13,7 @@ test('Sakura mobile sidebar traps focus, closes, and restores navigation', async
   const dialog = page.getByRole('dialog', { name: '移动端菜单' });
   const firstControl = dialog.locator('button, a[href], input, select').first();
   await expect(firstControl).toBeFocused();
-  await expect(dialog.locator('.avatar img')).toBeVisible();
+  await expect(dialog.locator('.sidebar-brand-mark')).toBeVisible();
   await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
   expect(
     await page.evaluate(

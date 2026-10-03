@@ -1,4 +1,20 @@
 <script setup lang="ts">
+import {
+  House,
+  Notebook,
+  Folder,
+  PriceTag,
+  EditPen,
+  Camera,
+} from '@element-plus/icons-vue';
+const navigationIcons = {
+  '/': House,
+  '/archives': Notebook,
+  '/categories': Folder,
+  '/tags': PriceTag,
+  '/moments': EditPen,
+  '/photos': Camera,
+};
 const { t, localePath, contentLang } = useCoolI18n();
 import { socialIcon } from '~/utils/social-icon';
 const route = useRoute();
@@ -193,20 +209,17 @@ useHead(() => ({
   >
     <div class="sidebar-inner">
       <div class="mobile-sidebar">
-        <div class="avatar">
-          <img
-            :src="store.site.avatarUrl || '/sakura/images/default/avatar.webp'"
-            :alt="store.site.authorName"
-            width="90"
-            height="90"
-          />
+        <div class="sidebar-brand">
+          <SakuraFlower class="sidebar-brand-mark" />
+          <div>
+            <span
+              class="sidebar-brand-title"
+              :lang="contentLang(store.site.contentLocale)"
+              >{{ store.site.title }}</span
+            >
+            <small>{{ t('你的内容，自在生长。') }}</small>
+          </div>
         </div>
-        <p
-          class="glitch-text"
-          :lang="contentLang(store.homepage.contentLocale)"
-        >
-          {{ store.homepage.greeting }}
-        </p>
         <div v-if="store.social.length" class="socials">
           <a
             v-for="link in store.social"
@@ -249,9 +262,14 @@ useHead(() => ({
         <nav class="navbar" :aria-label="t('移动端导航')">
           <ul class="menu-root">
             <li v-for="item in menu" :key="item[0]" class="menu-item">
-              <NuxtLink :to="localePath(item[0]!)" @click="menuOpen = false">{{
-                t(item[1]!)
-              }}</NuxtLink>
+              <NuxtLink :to="localePath(item[0]!)" @click="menuOpen = false">
+                <component
+                  :is="navigationIcons[item[0] as keyof typeof navigationIcons]"
+                  class="sidebar-nav-icon"
+                  aria-hidden="true"
+                />
+                <span>{{ t(item[1]!) }}</span>
+              </NuxtLink>
             </li>
           </ul>
         </nav>
