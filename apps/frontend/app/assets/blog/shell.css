@@ -5,19 +5,49 @@
   z-index: 40;
   inset-inline: 0;
   color: var(--sakura-text-regular);
-  background: color-mix(
-    in srgb,
-    var(--sakura-page) min(100%, calc(var(--header-progress) * 300%)),
-    transparent
-  );
-  backdrop-filter: blur(calc(var(--header-progress) * 18px));
-  box-shadow: 0 1px 0
-    color-mix(
-      in srgb,
-      var(--sakura-border) calc(var(--header-progress) * 100%),
+  isolation: isolate;
+}
+.site-header::before,
+.site-sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--reading-glass-tint);
+  -webkit-backdrop-filter: blur(var(--reading-glass-blur));
+  backdrop-filter: blur(var(--reading-glass-blur));
+}
+.site-header::before {
+  opacity: min(1, calc(var(--header-progress) * 4));
+}
+.site-sidebar::before {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: inherit;
+}
+@supports (mask-image: linear-gradient(black, transparent)) {
+  .site-header::before {
+    inset-block-end: -24px;
+    mask-image: linear-gradient(
+      to bottom,
+      black calc(100% - 32px),
       transparent
     );
+  }
+  .site-sidebar::before {
+    mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+  }
 }
+@media (prefers-reduced-transparency: reduce) {
+  .site-header::before,
+  .site-sidebar::before {
+    background: var(--sakura-page);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 .header-inner {
   max-width: 1440px;
   min-height: var(--reading-header-height);
@@ -200,8 +230,13 @@
   width: min(320px, 85vw);
   padding: 40px 24px;
   overflow-y: auto;
-  background: var(--sakura-surface);
-  box-shadow: var(--sakura-shadow);
+  isolation: isolate;
+  color: var(--sakura-text-regular);
+}
+.sidebar-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
 }
 .sidebar-backdrop {
   position: fixed;
@@ -314,12 +349,12 @@
   font-weight: 700;
   margin-bottom: 28px;
   --wordmark-width: clamp(148px, 16vw, 220px);
+  --wordmark-shadow-offset: 3px;
+  --wordmark-shadow-blur: 8px;
+  --wordmark-shadow-color: #0009;
 }
-.hero-brand .sakura-wordmark {
-  filter: drop-shadow(0 3px 0 #461a2a55) drop-shadow(0 6px 12px #0009);
-}
-.over-banner:not(.header-solid) .sakura-wordmark {
-  filter: drop-shadow(0 2px 5px #0009);
+.over-banner:not(.header-solid) {
+  --wordmark-shadow-color: #0009;
 }
 .header-actions {
   display: flex;

@@ -103,3 +103,9 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 头像直接用 PatternSurface 裁切共享 SakuraPattern；没有固定 viewBox、图形缩放或独立单图标渲染。48/72/80/120px 头像与封面/页面背景使用相同 15px 图案及 72px 横向间距，只改变容器尺寸与圆形裁切。文章底部保留标签和分享，不再显示“全文完”。
 
 页面背景配色的 seed 只在每次 SPA 打开/刷新时创建，当前页面运行周期内保持稳定，不跨刷新持久化。头像与封面保留稳定身份 seed；显式传入 seed 仍可复现。
+
+公共导航的独立非交互背景层使用 18px backdrop blur 和浅深半透明色，底部 24px 延伸用 mask 自然渐隐；header 点击区域和高度不变。顶部仍按滚动透明，reduced transparency 使用不透明底色并停止模糊，旧浏览器保留半透明底色。
+
+移动公共抽屉共用导航的 glass 色/模糊 token 和背景伪元素，右侧 24px 渐隐；视觉层不接收点击，原焦点、遮罩、Esc 和滚动锁定行为不变。
+
+梦桜 wordmark 的 SVG 字形阴影在共享组件内应用一次，小导航用 1.5px/2px，大首页用 3px/8px；SVG overflow visible 避免裁切，原始路径和主题粉色保持。抽屉复用同一 wordmark。

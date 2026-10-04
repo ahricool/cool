@@ -127,6 +127,16 @@ useHead(() => ({
     :aria-label="t('移动端菜单')"
     @keydown="sidebarKeydown"
   >
+    <button
+      class="sidebar-close reading-control"
+      type="button"
+      :aria-label="t('关闭菜单')"
+      @click="menuOpen = false"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m6 6 12 12M18 6 6 18" />
+      </svg>
+    </button>
     <div class="sidebar-inner">
       <div class="mobile-sidebar">
         <div class="sidebar-brand">
@@ -135,8 +145,10 @@ useHead(() => ({
             <span
               class="sidebar-brand-title"
               :lang="contentLang(store.site.contentLocale)"
-              >{{ store.site.title }}</span
-            >
+              role="img"
+              :aria-label="store.site.title"
+              ><SakuraWordmark
+            /></span>
             <small>{{ t('你的内容，自在生长。') }}</small>
           </div>
         </div>

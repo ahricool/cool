@@ -5,6 +5,7 @@
     'Microsoft YaHei', sans-serif;
   --sakura-accent: #ff6699;
   --sakura-flower-color: #ff6699;
+  --sakura-wordmark-shadow: #461a2a66;
   --sakura-accent-strong: #b52e63;
   --sakura-accent-light-3: #ff94b8;
   --sakura-accent-light-5: #ffbad1;
@@ -35,6 +36,8 @@
 :root[data-surface='blog'] {
   --sakura-page: #fff;
   --reading-header-height: 64px;
+  --reading-glass-blur: 18px;
+  --reading-glass-tint: rgba(255, 255, 255, 0.68);
 }
 @media (max-width: 768px) {
   :root[data-surface='blog'] {
@@ -44,6 +47,8 @@
 
 /* Blog's reading preference must never change the admin workspace palette. */
 :root[data-surface='blog'].dark {
+  --reading-glass-tint: rgba(23, 24, 26, 0.68);
+  --sakura-wordmark-shadow: #ff66994d;
   --sakura-accent: #d34e7e;
   --sakura-accent-strong: #f58bae;
   --sakura-text: #ededf0;

@@ -15,5 +15,10 @@ import wordmark from '~/assets/brand/yume-sakura.svg?raw';
   display: block;
   width: 100%;
   height: auto;
+  overflow: visible;
+  filter: drop-shadow(
+    0 var(--wordmark-shadow-offset, 1.5px) var(--wordmark-shadow-blur, 2px)
+      var(--wordmark-shadow-color, var(--sakura-wordmark-shadow))
+  );
 }
 </style>
