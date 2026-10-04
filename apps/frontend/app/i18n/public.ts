@@ -50,7 +50,6 @@ export const publicMessages: Record<string, string> = {
   '阅读 {title}': 'Read {title}',
   '阅读全文 →': 'Read more →',
   首页背景: 'Homepage background',
-  浏览文章: 'Browse posts',
   发现故事: 'Discover stories',
   '查看 {title}': 'View {title}',
   查看图片: 'View photo',

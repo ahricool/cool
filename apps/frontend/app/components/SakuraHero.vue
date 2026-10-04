@@ -2,13 +2,6 @@
 const { t, routePath, contentLang } = useCoolI18n();
 import { socialIcon } from '~/utils/social-icon';
 const store = useSiteStore();
-function scrollDown() {
-  document.getElementById('content')?.scrollIntoView({
-    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      ? 'auto'
-      : 'smooth',
-  });
-}
 </script>
 <template>
   <div class="home-hero">
@@ -77,8 +70,5 @@ function scrollDown() {
         style="background: url('/sakura/images/wave/wave2.png') repeat-x"
       ></div>
     </div>
-    <button class="hero-scroll" :aria-label="t('浏览文章')" @click="scrollDown">
-      <SakuraIcon name="alt-arrow-down-linear" />
-    </button>
   </div>
 </template>

@@ -169,20 +169,7 @@
     transform: translateX(-50%);
   }
 }
-.hero-scroll {
-  position: absolute;
-  right: 56px;
-  bottom: 90px;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid #ffffff70;
-  background: #ffffff18;
-  color: white;
-  font-size: 24px;
-}
+
 .page-header {
   max-width: 1160px;
   margin: 32px auto 0;
@@ -339,10 +326,7 @@
   .hero-content {
     padding: 120px 28px 140px;
   }
-  .hero-scroll {
-    right: 40px;
-    bottom: 90px;
-  }
+
   .page-artwork {
     height: 230px;
     border-radius: 20px;
