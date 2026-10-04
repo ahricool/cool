@@ -81,14 +81,14 @@ useHead(() => ({
     <div class="admin-body">
       <header class="topbar navigation-surface navigation-surface--top">
         <div class="topbar-right">
-          <a :href="blogUrl" target="_blank" rel="noopener">{{
-            t('访问博客 ↗')
-          }}</a
-          ><AdminAccountMenu
+          <AdminAccountMenu
             :owner="session.owner"
             :logging-out="loggingOut"
             @logout="logout"
           />
+          <a :href="blogUrl" target="_blank" rel="noopener">{{
+            t('访问博客 ↗')
+          }}</a>
         </div>
       </header>
       <main class="workspace"><slot /></main>
