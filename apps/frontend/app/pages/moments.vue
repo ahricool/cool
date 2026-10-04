@@ -24,14 +24,12 @@ const { data, pending, error, refresh } = await useAsyncData(
       <ul class="moments-inner">
         <li v-for="moment in data?.items" :key="moment.id" class="moments-item">
           <div class="moment-container">
-            <img
+            <AvatarImage
               class="avatar"
-              :src="
-                store.site.avatarUrl || '/sakura/images/default/avatar.webp'
-              "
+              :src="store.site.avatarUrl"
               :alt="store.site.authorName"
-              width="48"
-              height="48"
+              :width="48"
+              :height="48"
             />
             <div class="moment-inner">
               <div

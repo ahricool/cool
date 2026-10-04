@@ -151,6 +151,17 @@ export interface Comment {
     translations: { locale: ContentLocale; title: string }[];
   };
 }
+export type PatternShape = 'heart' | 'star' | 'dot';
+export interface SiteAppearance {
+  avatar: PatternShape;
+  cover: PatternShape;
+  background: PatternShape | 'none';
+}
+export const defaultAppearance: SiteAppearance = {
+  avatar: 'heart',
+  cover: 'dot',
+  background: 'dot',
+};
 export interface Site extends LocalizedContent {
   title: string;
   description: string;
@@ -158,6 +169,7 @@ export interface Site extends LocalizedContent {
   authorBio: string;
   avatarUrl: string | null;
   commentsEnabled: boolean;
+  appearance: SiteAppearance;
 }
 export interface SiteTranslation {
   locale: ContentLocale;
@@ -169,6 +181,7 @@ export interface AdminSite {
   authorName: string;
   avatarUrl: string | null;
   commentsEnabled: boolean;
+  appearance: SiteAppearance;
   translations: SiteTranslation[];
 }
 export interface Homepage extends LocalizedContent {
@@ -206,7 +219,8 @@ export const defaultSite: Site = {
     first.toUpperCase(),
   ),
   authorBio: '在这里，收藏日常的微光。',
-  avatarUrl: '/sakura/images/default/avatar.webp',
+  avatarUrl: null,
+  appearance: { ...defaultAppearance },
   commentsEnabled: true,
   contentLocale: 'zh',
 };

@@ -89,14 +89,7 @@ h3 {
   text-align: center;
   background: var(--sakura-soft);
 }
-:is(
-    .api-state,
-    .comment-form,
-    .cool-search,
-    .post-footer,
-    .pagination,
-    .site-error
-  )
+:is(.api-state, .cool-search, .post-footer, .pagination, .site-error)
   button:not(.primary-action) {
   padding: 10px 20px;
   border: 1px solid var(--sakura-border);
@@ -104,7 +97,7 @@ h3 {
   background: var(--sakura-surface);
   color: var(--sakura-accent-strong);
 }
-:is(.api-state, .comment-form, .cool-search, .post-footer, .pagination)
+:is(.api-state, .cool-search, .post-footer, .pagination)
   button:not(.primary-action):hover {
   border-color: var(--sakura-accent-light-5);
 }

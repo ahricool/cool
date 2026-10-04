@@ -42,7 +42,7 @@ const posts = [
     author: {
       id: 'owner',
       displayName: 'Sakura',
-      avatarUrl: '/sakura/images/default/avatar.webp',
+      avatarUrl: null,
     },
     publishedAt: '2026-04-12T08:00:00.000Z',
     createdAt: '2026-04-12T08:00:00.000Z',
@@ -77,7 +77,7 @@ const posts = [
     title: '没有目的地的散步，也会遇见好风景',
     excerpt:
       '一条熟悉的路，一首循环播放的歌。给平凡的日子留一点空白，也给自己留一点期待。',
-    coverUrl: '/sakura/images/default/temp.webp',
+    coverUrl: null,
     author: { id: 'owner', displayName: 'Sakura', avatarUrl: null },
     publishedAt: '2026-04-10T08:00:00.000Z',
     createdAt: '2026-04-10T08:00:00.000Z',
@@ -121,7 +121,7 @@ async function fixture(page: Page) {
         description: '记录生活，也记录每一次灵感。',
         authorName: 'Sakura',
         authorBio: '在这里，收藏日常的微光。',
-        avatarUrl: '/sakura/images/default/avatar.webp',
+        avatarUrl: null,
         commentsEnabled: true,
       },
     }),
@@ -144,23 +144,9 @@ async function fixture(page: Page) {
   await page.route(/\/api\/v1\/public\/posts(?:[/?]|$)/, (route) => {
     const path = new URL(route.request().url()).pathname;
     return route.fulfill({
-      json: path.endsWith('/comments')
-        ? {
-            items: [
-              {
-                id: 'reader',
-                name: '路过的读者',
-                content: '喜欢这样的春天，也喜欢清清爽爽的文字。',
-                createdAt: '2026-04-13T08:00:00.000Z',
-              },
-            ],
-            total: 1,
-            page: 1,
-            pageSize: 10,
-          }
-        : path.endsWith('/visual-spring')
-          ? posts[0]
-          : { items: posts, total: 2, page: 1, pageSize: 8 },
+      json: path.endsWith('/visual-spring')
+        ? posts[0]
+        : { items: posts, total: 2, page: 1, pageSize: 8 },
     });
   });
 }

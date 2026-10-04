@@ -12,6 +12,8 @@ export function useReadingShell() {
   let previousOverflow = '';
   const dark = useState('reading-dark', () => false);
   const banner = shallowRef<HTMLElement>();
+  const illustration = shallowRef<Readonly<Ref<boolean>>>();
+  const hasIllustration = computed(() => illustration.value?.value ?? false);
   const hasBanner = computed(() => !!banner.value);
   const scrollProgress = ref(1);
   let bannerObserver: ResizeObserver | undefined;
@@ -31,15 +33,20 @@ export function useReadingShell() {
       Math.max(0, (window.scrollY - top) / distance),
     );
   }
-  function registerBanner(element: HTMLElement) {
+  function registerBanner(
+    element: HTMLElement,
+    hasImage: Readonly<Ref<boolean>>,
+  ) {
     bannerObserver?.disconnect();
     banner.value = element;
+    illustration.value = hasImage;
     bannerObserver?.observe(element);
     updateScroll();
     return () => {
       if (banner.value !== element) return;
       bannerObserver?.unobserve(element);
       banner.value = undefined;
+      illustration.value = undefined;
       updateScroll();
     };
   }
@@ -108,6 +115,7 @@ export function useReadingShell() {
     dark,
     scrollProgress,
     hasBanner,
+    hasIllustration,
     registerBanner,
     mobileQuery,
     mobileSearchFailure,

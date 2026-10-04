@@ -1,8 +1,18 @@
 export const adminSettingsMessages: Record<string, string> = {
+  外观: 'Appearance',
+  默认头像: 'Default avatar',
+  文章默认封面: 'Default post cover',
+  页面背景: 'Page background',
+  心形: 'Hearts',
+  星形: 'Stars',
+  圆点: 'Dots',
+  无图案: 'No pattern',
+  '自定义图片优先；这些图案只用于未设置图片的内容。':
+    'Custom images take priority. These patterns appear only when no image is set.',
+
   站长登录: 'Owner sign-in',
   文章编辑: 'Post editor',
   页面编辑: 'Page editor',
-  评论审核: 'Comment moderation',
 
   请输入密码: 'Enter your password',
   '密码至少需要 6 个字符': 'Use a password with at least 6 characters',
@@ -60,7 +70,6 @@ export const adminSettingsMessages: Record<string, string> = {
   作者名称: 'Author name',
   作者简介: 'Author bio',
   头像: 'Avatar',
-  允许访客评论: 'Allow visitor comments',
   '梦桜 首页': '梦桜 homepage',
   首页背景: 'Homepage background',
   首屏展示: 'Hero display',
@@ -111,7 +120,6 @@ export const adminSettingsMessages: Record<string, string> = {
   全部文章: 'All posts',
   待完成草稿: 'Drafts in progress',
   媒体资源: 'Media files',
-  待审核评论: 'Comments to review',
   '查看详情 ↗': 'View details ↗',
   最近的文章: 'Recent posts',
   '全部文章 →': 'All posts →',
@@ -127,7 +135,6 @@ export const adminSettingsMessages: Record<string, string> = {
   标签: 'Tags',
   瞬间: 'Moments',
   图库: 'Gallery',
-  评论: 'Comments',
   管理: 'Administration',
   工作空间导航: 'Workspace navigation',
   关闭菜单: 'Close menu',

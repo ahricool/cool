@@ -16,11 +16,11 @@ export const useSiteStore = defineStore('site', () => {
   let loadingLocale = '';
   let requestId = 0;
   let pending: Promise<void> | undefined;
-  function load(): Promise<void> {
+  function load(force = false): Promise<void> {
     const requestedLocale = locale.value;
-    if (loaded.value && loadedLocale === requestedLocale)
+    if (!force && loaded.value && loadedLocale === requestedLocale)
       return Promise.resolve();
-    if (pending && loadingLocale === requestedLocale) return pending;
+    if (!force && pending && loadingLocale === requestedLocale) return pending;
     const id = ++requestId;
     loadingLocale = requestedLocale;
     failed.value = false;
@@ -32,7 +32,10 @@ export const useSiteStore = defineStore('site', () => {
         ]);
         // A slower response from a previous language must not replace the current one.
         if (id !== requestId || requestedLocale !== locale.value) return;
-        site.value = s;
+        site.value = {
+          ...s,
+          appearance: { ...defaultSite.appearance, ...s.appearance },
+        };
         homepage.value = c.homepage;
         loadedLocale = requestedLocale;
         loaded.value = true;

@@ -34,7 +34,7 @@ npm workspaces：`apps/backend`、`apps/frontend`、`packages/content`。`apps/f
 
 ## 双语路由与内容选择
 
-只支持 `zh` 和 `en`。公开页面及 API 均不包含语言路径或 query：页面 `/posts/:slug`，API `/api/v1/public/posts/:slug`。首次访问按浏览器语言选择，footer 选择保存在一年期 `cool_locale` cookie（SameSite=Lax，HTTPS 下 Secure）。API 优先采用该 cookie，再按 Accept-Language 权重协商，最终默认英文。所有本地化公开响应声明 `Vary: Accept-Language, Cookie` 和 `Cache-Control: private, no-store`，避免共享缓存交叉语言。后台界面语言使用同一读者偏好，编辑正文语言保持独立。搜索词 q 与分页 page/pageSize 仍是普通 query 字段。
+只支持 `zh` 和 `en`。公开页面及 API 均不包含语言路径或 query：页面 `/posts/:slug`，API `/api/v1/public/posts/:slug`。默认中文，不读取浏览器语言或 Accept-Language；仅 footer 主动选择保存在一年期 `cool_locale` cookie（SameSite=Lax，HTTPS 下 Secure）。API 仅采用有效的语言 cookie，无选择时默认中文。所有本地化公开响应声明 `Vary: Cookie` 和 `Cache-Control: private, no-store`，避免共享缓存交叉语言。后台界面语言使用同一读者偏好，编辑正文语言保持独立。搜索词 q 与分页 page/pageSize 仍是普通 query 字段。
 
 文章和页面只有一个逻辑 ID/slug、作者/封面和分类标签关联。翻译表用 `(parentId, locale)` 唯一约束保存标题、摘要（文章）、正文及各自发布状态/时间。后台界面语言与编辑器内容语言互相独立；例如英文后台可以编辑中文正文，预览链接与当前内容 tab 一致。草稿按记录与语言保存，切换语言保留未保存提醒。
 
@@ -96,4 +96,6 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 
 共享 `assets/tokens.css` 定义 Sakura 颜色、文字和表面。公共样式由 `blog/base.css`（基础控件与状态）、`shell.css`（导航、横幅、抽屉和页脚）、`content.css`（文章、阅读、归档、分类、瞬间和图库）组成；原主题及补丁层已删除。Admin 样式按 shell/workspace/editor/login 分离并清除被后续同选择器覆盖的声明。PostCSS 为每个表面添加低优先级作用域，避免 SPA 切换或传送弹层污染另一表面。`useReadingShell` 管理阅读导航的焦点、滚动和生命周期；内容组件只负责其展示。
 
-公共页与 Admin 外层使用 `SakuraPattern` SVG 平铺背景。组件支持 `shapes`（heart/star/dot）、`size`、`spacing`、`colors`、`opacity`、`seed`；默认 seed 保持图案稳定。SVG pattern 使用错行网格和跨边界副本，元素数量固定，不随页面长度增长。正文面板保留实色表面，公共深色背景独立调整透明度。页脚继续显示原始 `/sakura/images/footer/sakura.svg`。
+公共页与 Admin 外层使用 `SakuraPattern` SVG 平铺背景。组件支持 `shape`（heart/star/dot，默认 heart）、`size`、`spacing`、`colors`、`opacity`、`seed`；默认 seed 保持颜色布局稳定；每次只显示所选的一种形状。默认图案尺寸 15px、水平间距 72px，使用淡红、粉、橙、黄、绿、青、蓝、紫八色。SVG pattern 使用错行网格和跨边界副本，元素数量固定，不随页面长度增长。正文面板保留实色表面，公共深色背景独立调整透明度。页脚继续显示原始 `/sakura/images/footer/sakura.svg`。
+
+外观配置共用现有 settings：默认头像 heart，文章缺省封面 dot，页面背景 dot（可选 none）。自定义图片优先，旧默认头像/封面路径按缺省图案处理；保留首页照片。生成器一次只用一种图形，15px 图案、72px 横向间距、八色固定种子随机分布。公开和后台评论界面已移除，后端接口、数据库及现有评论保留。页脚樱花复用 currentColor/固定浅粉 flower token（#ff6699，opacity 0.8，明暗一致），通过 mask 保留原 SVG 路径，12s 顺时针旋转并尊重 reduced motion。

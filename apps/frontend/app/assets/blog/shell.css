@@ -127,7 +127,7 @@
 .hero-description p > span:not(.desc) {
   display: none;
 }
-.hero-avatar img {
+.hero-avatar :is(img, .pattern-avatar) {
   border-radius: 50%;
   border: 4px solid #ffffff80;
   object-fit: cover;
@@ -166,7 +166,7 @@
 }
 
 .page-heading {
-  color: white;
+  color: inherit;
 }
 .page-heading h1 {
   font-size: clamp(28px, 4vw, 44px);
@@ -390,4 +390,21 @@
   .banner-wave > div {
     animation: none;
   }
+}
+
+.banner-artwork--pattern {
+  background: var(--sakura-page);
+}
+.banner-artwork--pattern::after {
+  display: none;
+}
+.banner-artwork--pattern .banner-content {
+  color: var(--sakura-heading);
+}
+.banner-artwork.banner-artwork--pattern > .pattern-surface {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  z-index: -2;
 }

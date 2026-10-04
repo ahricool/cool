@@ -26,27 +26,10 @@ export const publicMessages: Record<string, string> = {
   重新加载: 'Reload',
   '这里还没有内容，慢慢来，故事总会发生。':
     'Nothing here yet. Every story starts somewhere.',
-  评论: 'Comments',
   上一页: 'Previous',
   下一页: 'Next',
   分页: 'Pagination',
-  留下你的足迹: 'Leave a little note',
-  昵称: 'Name',
-  '请输入昵称。': 'Please enter your name.',
-  '请输入评论内容。': 'Please enter a comment.',
   '请输入搜索关键词。': 'Please enter a search term.',
-  网站: 'Website',
-  '评论审核后显示，请友善交流。':
-    'Comments appear after review. Please be kind.',
-  '提交中…': 'Submitting…',
-  提交评论: 'Post comment',
-  '评论已提交，审核后显示。':
-    'Your comment was submitted and will appear after review.',
-  '提交失败，请稍后再试。短时间内最多提交 3 条评论。':
-    'Unable to submit. Please try again later. You can post up to 3 comments in a short period.',
-  '评论已关闭。': 'Comments are closed.',
-  '{count} 条评论': '{count} comments',
-  '1 条评论': '1 comment',
   '阅读 {title}': 'Read {title}',
   '阅读全文 →': 'Read more →',
   首页背景: 'Homepage background',

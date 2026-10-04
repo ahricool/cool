@@ -1,7 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
 import {
-  detectLocale,
   resolveLocale,
   formatCoolDate,
   isLocale,
@@ -10,18 +9,6 @@ import {
 } from '../../apps/frontend/app/i18n/locale';
 import { translate } from '../../apps/frontend/app/i18n/messages';
 
-test('browser language detection supports simplified Chinese and English in preference order', () => {
-  assert.equal(detectLocale(['zh-CN', 'en-US']), 'zh');
-  assert.equal(detectLocale(['zh-Hans-SG']), 'zh');
-  assert.equal(detectLocale(['zh']), 'zh');
-  assert.equal(detectLocale(['en-GB', 'zh-CN']), 'en');
-  assert.equal(detectLocale(['fr-FR', 'zh-SG']), 'zh');
-  assert.equal(detectLocale(['zh-Hant-TW']), 'en');
-  assert.equal(detectLocale(['ja-JP']), 'en');
-  assert.equal(detectLocale([]), 'en');
-  assert.equal(isLocale('zh-CN'), false);
-  assert.equal(isLocale('zh'), true);
-});
 test('public links remain independent of the reader preference', () => {
   assert.equal(publicPath('/'), '/');
   assert.equal(publicPath('/posts/my-story'), '/posts/my-story');
@@ -46,11 +33,12 @@ test('UI translation interpolates plain values and preserves authored text passe
   );
 });
 
-test('saved explicit preference overrides browser detection and invalid storage falls back safely', () => {
-  assert.equal(resolveLocale('en', ['zh-CN']), 'en');
-  assert.equal(resolveLocale('zh', ['en-US']), 'zh');
-  assert.equal(resolveLocale('fr', ['zh-CN']), 'zh');
-  assert.equal(resolveLocale(null, ['fr-FR']), 'en');
+test('manual preference persists and missing or invalid selection defaults to Chinese', () => {
+  assert.equal(resolveLocale('en'), 'en');
+  assert.equal(resolveLocale('zh'), 'zh');
+  assert.equal(resolveLocale(null), 'zh');
+  assert.equal(resolveLocale('fr'), 'zh');
+  assert.equal(isLocale('zh-CN'), false);
 });
 
 test('localized dates keep the Shanghai site date across UTC day and month boundaries', () => {

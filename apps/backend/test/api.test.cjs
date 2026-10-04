@@ -285,8 +285,8 @@ test('Owner login and full post publication lifecycle', async (t) => {
       .get('/api/v1/public/site')
       .set('Accept-Language', 'en;q=0.9, zh;q=0.2')
       .expect(200);
-    assert.equal(negotiated.body.contentLocale, 'en');
-    assert.match(negotiated.headers.vary, /Accept-Language/);
+    assert.equal(negotiated.body.contentLocale, 'zh');
+    assert.doesNotMatch(negotiated.headers.vary, /Accept-Language/);
     assert.match(negotiated.headers.vary, /Cookie/);
     assert.equal(negotiated.headers['cache-control'], 'private, no-store');
     const remembered = await http
@@ -295,6 +295,11 @@ test('Owner login and full post publication lifecycle', async (t) => {
       .set('Cookie', 'cool_locale=zh')
       .expect(200);
     assert.equal(remembered.body.contentLocale, 'zh');
+    const english = await http
+      .get('/api/v1/public/site')
+      .set('Cookie', 'cool_locale=en')
+      .expect(200);
+    assert.equal(english.body.contentLocale, 'en');
     await http.get('/api/v1/health').expect(200);
     const document = await http.get('/api/openapi.json').expect(200);
     assert.equal(document.body.info.title, 'Cool API');
@@ -591,9 +596,7 @@ test('Owner login and full post publication lifecycle', async (t) => {
         await http
           .post('/api/v1/admin/photos')
           .auth(token, { type: 'bearer' })
-          .send(
-            zh({ title: 'A photo', url: '/sakura/images/default/temp.webp' }),
-          )
+          .send(zh({ title: 'A photo', url: '/sakura/images/default/hd.webp' }))
           .expect(201)
       ).body;
       assert.equal((await http.get('/api/v1/public/photos')).body.total, 0);

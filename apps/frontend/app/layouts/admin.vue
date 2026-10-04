@@ -16,7 +16,6 @@ import {
   Picture,
   Folder,
   PriceTag,
-  ChatDotRound,
   Setting,
   User,
   Camera,
@@ -92,7 +91,6 @@ const nav = [
   { path: '/admin/tags', label: '标签', icon: PriceTag },
   { path: '/admin/moments', label: '瞬间', icon: EditPen },
   { path: '/admin/photos', label: '图库', icon: Camera },
-  { path: '/admin/comments', label: '评论', icon: ChatDotRound },
 ];
 watch(
   () => route.path,

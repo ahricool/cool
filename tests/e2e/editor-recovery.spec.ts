@@ -317,7 +317,7 @@ for (const kind of ['posts', 'pages']) {
     });
     const slug = `${kind}-bilingual-recovery`;
     let currentSlug = slug;
-    const coverUrl = '/sakura/images/default/temp.webp';
+    const coverUrl = '/sakura/images/footer/sakura.svg';
     let currentCover = '/sakura/images/default/hd.webp';
     await page.route('**/api/v1/admin/media/upload', (route) =>
       route.fulfill({ json: { id: 'bilingual-cover', url: currentCover } }),

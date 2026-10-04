@@ -31,6 +31,17 @@ class SiteTranslationDto extends LocaleDto {
   @ApiProperty() @IsString() @MaxLength(300) description!: string;
   @ApiProperty() @IsString() @MaxLength(500) authorBio!: string;
 }
+class AppearanceDto {
+  @ApiProperty({ enum: ['heart', 'star', 'dot'] })
+  @IsIn(['heart', 'star', 'dot'])
+  avatar!: 'heart' | 'star' | 'dot';
+  @ApiProperty({ enum: ['heart', 'star', 'dot'] })
+  @IsIn(['heart', 'star', 'dot'])
+  cover!: 'heart' | 'star' | 'dot';
+  @ApiProperty({ enum: ['heart', 'star', 'dot', 'none'] })
+  @IsIn(['heart', 'star', 'dot', 'none'])
+  background!: 'heart' | 'star' | 'dot' | 'none';
+}
 class SiteDto {
   @ApiProperty() @IsString() @Length(1, 100) @Matches(/\S/) authorName!: string;
   @ApiPropertyOptional({ nullable: true })
@@ -38,6 +49,12 @@ class SiteDto {
   @IsAssetPath()
   avatarUrl?: string | null;
   @ApiProperty() @IsBoolean() commentsEnabled!: boolean;
+  @ApiPropertyOptional({ type: AppearanceDto })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsDefined()
+  @ValidateNested()
+  @Type(() => AppearanceDto)
+  appearance?: AppearanceDto;
   @ApiProperty({ type: [SiteTranslationDto] })
   @IsArray()
   @ArrayMinSize(1)
@@ -81,7 +98,12 @@ class SettingsDto {
 export const defaultSettings = {
   site: {
     authorName: ADMIN_DISPLAY_NAME,
-    avatarUrl: '/sakura/images/default/avatar.webp',
+    avatarUrl: null,
+    appearance: {
+      avatar: 'heart' as const,
+      cover: 'dot' as const,
+      background: 'dot' as const,
+    },
     commentsEnabled: true,
     translations: [
       {
@@ -124,8 +146,17 @@ export async function readSettings(db: Database) {
     where: { key: { in: ['site', 'homepage'] } },
   });
   const saved = Object.fromEntries(rows.map((row) => [row.key, row.value]));
+  const site = (saved.site ?? defaultSettings.site) as unknown as SiteDto;
   return {
-    site: (saved.site ?? defaultSettings.site) as unknown as SiteDto,
+    site: {
+      ...site,
+      // Interpret the retired bundled avatar as the default without rewriting stored user data.
+      avatarUrl:
+        site.avatarUrl === '/sakura/images/default/avatar.webp'
+          ? null
+          : site.avatarUrl,
+      appearance: { ...defaultSettings.site.appearance, ...site.appearance },
+    },
     homepage: (saved.homepage ??
       defaultSettings.homepage) as unknown as HomepageDto,
   };
@@ -140,6 +171,7 @@ export class SettingsController {
     return readSettings(this.db);
   }
   @Put() async save(@Body() d: SettingsDto) {
+    d.site.appearance ??= (await readSettings(this.db)).site.appearance;
     await this.db.$transaction(
       Object.entries(d).map(([key, value]) =>
         this.db.siteSetting.upsert({

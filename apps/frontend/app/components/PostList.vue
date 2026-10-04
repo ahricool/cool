@@ -1,6 +1,8 @@
 <script setup lang="ts">
-const { t, formatDate, routePath, contentLang } = useCoolI18n();
+import { resolveCustomImage } from '~/utils/custom-image';
 import type { Post } from '@cool/content';
+const { t, formatDate, routePath, contentLang } = useCoolI18n();
+const store = useSiteStore();
 defineProps<{ posts: Post[] }>();
 </script>
 <template>
@@ -20,12 +22,7 @@ defineProps<{ posts: Post[] }>();
         </h2></NuxtLink
       >
       <div class="post-meta">
-        <span class="flex-child-center">{{
-          t(post.commentCount === 1 ? '1 条评论' : '{count} 条评论', {
-            count: post.commentCount,
-          })
-        }}</span
-        ><span v-if="post.categories[0]" class="flex-child-center"
+        <span v-if="post.categories[0]" class="flex-child-center"
           ><NuxtLink
             :to="
               routePath(
@@ -52,12 +49,20 @@ defineProps<{ posts: Post[] }>();
     <div class="story-cover">
       <NuxtLink :to="routePath(`/posts/${post.slug}`)"
         ><img
-          :src="post.coverUrl || '/sakura/images/default/temp.webp'"
+          v-if="resolveCustomImage(post.coverUrl)"
+          :src="resolveCustomImage(post.coverUrl)!"
           :alt="post.title"
           :lang="contentLang(post.contentLocale)"
           width="430"
           height="300"
-          loading="lazy"
+          loading="lazy" /><PatternSurface
+          v-else
+          :shape="store.site.appearance.cover"
+          :seed="post.slug"
+          :label="post.title"
+          :lang="contentLang(post.contentLocale)"
+          class="story-pattern"
+          data-pattern="cover"
       /></NuxtLink>
     </div>
   </article>

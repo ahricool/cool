@@ -15,11 +15,11 @@ const store = useSiteStore();
       </div>
       <div v-if="store.homepage.focusMode === 'avatar'" class="hero-avatar">
         <NuxtLink :to="routePath('/')"
-          ><img
-            :src="store.site.avatarUrl || '/sakura/images/default/avatar.webp'"
+          ><AvatarImage
+            :src="store.site.avatarUrl"
             :alt="store.site.authorName"
-            width="120"
-            height="120"
+            :width="120"
+            :height="120"
         /></NuxtLink>
       </div>
       <div class="hero-description">

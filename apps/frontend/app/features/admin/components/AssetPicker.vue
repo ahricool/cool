@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t } = useCoolI18n();
 import { ref } from 'vue';
+import { resolveCustomImage } from '~/utils/custom-image';
 import { ElMessage } from 'element-plus';
 import { api, upload, errorText } from '../api';
 import type { Media, Pagination } from '@cool/content';
@@ -50,7 +51,11 @@ async function browse() {
 </script>
 <template>
   <div class="asset-picker">
-    <img v-if="modelValue" :src="modelValue" :alt="t('所选图片')" />
+    <img
+      v-if="resolveCustomImage(modelValue)"
+      :src="resolveCustomImage(modelValue)!"
+      :alt="t('所选图片')"
+    />
     <div class="asset-actions">
       <el-button
         class="upload-label"

@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createPatternTile } from '../../apps/frontend/app/utils/sakura-pattern';
+import {
+  createPatternTile,
+  patternColors,
+} from '../../apps/frontend/app/utils/sakura-pattern';
 import { masonryPositions } from '../../apps/frontend/app/utils/masonry';
 
 test('masonry preserves order and places the next image in the shortest column', () => {
@@ -27,15 +30,30 @@ test('mobile masonry forms one uncropped column, including empty galleries', () 
 
 test('decorative pattern remains stable and repeats seamlessly across its grid boundaries', () => {
   const tile = createPatternTile({
-    shapes: ['heart', 'star', 'dot'],
+    shape: 'heart',
     spacing: 72,
-    size: 10,
+    size: 15,
     seed: 'spring',
   });
   assert.deepEqual(createPatternTile({ seed: 'spring' }), tile);
   assert.notDeepEqual(createPatternTile({ seed: 'summer' }), tile);
+  for (const shape of ['heart', 'star', 'dot'] as const) {
+    const selected = createPatternTile({ shape });
+    assert.equal(selected.shape, shape);
+    assert.ok(selected.marks.every((mark) => mark.shape === shape));
+  }
+  assert.equal(tile.size, 10 * 1.5);
+  const centers = (size: number) =>
+    createPatternTile({ size }).marks.map(({ x, y }) => ({ x, y }));
+  assert.deepEqual(centers(15), centers(10));
+  assert.equal(patternColors.length, 8);
+  assert.deepEqual(
+    new Set(tile.marks.map((mark) => mark.color)),
+    new Set(patternColors),
+  );
+
   assert.ok(
-    createPatternTile({ shapes: ['dot'], colors: ['#ffb6d1'] }).marks.every(
+    createPatternTile({ shape: 'dot', colors: ['#ffb6d1'] }).marks.every(
       (mark) => mark.shape === 'dot' && mark.color === '#ffb6d1',
     ),
   );

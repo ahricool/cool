@@ -12,6 +12,8 @@ import { api, errorText } from '../api';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
 import AssetPicker from '../components/AssetPicker.vue';
+import AppearanceSettings from '../components/AppearanceSettings.vue';
+const store = useSiteStore();
 
 const { t } = useCoolI18n();
 const contentLocale = ref<CoolLocale>('en');
@@ -33,6 +35,7 @@ const form = reactive<AdminSettings>({
     authorName: defaultSite.authorName,
     avatarUrl: defaultSite.avatarUrl,
     commentsEnabled: defaultSite.commentsEnabled,
+    appearance: { ...defaultSite.appearance },
     translations: locales.map(blankSiteTranslation),
   },
   homepage: {
@@ -62,6 +65,7 @@ async function load() {
     const data = await api<AdminSettings>('/admin/settings');
     form.site = {
       ...data.site,
+      appearance: { ...defaultSite.appearance, ...data.site.appearance },
       translations: locales.map((locale) => ({
         ...blankSiteTranslation(locale),
         ...data.site.translations.find((entry) => entry.locale === locale),
@@ -135,6 +139,7 @@ async function save() {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
+    await store.load(true);
     ElMessage.success(t('配置已保存'));
   } catch (e) {
     error.value = errorText(e);
@@ -209,9 +214,6 @@ onMounted(load);
           <el-form-item :label="t('头像')"
             ><AssetPicker v-model="form.site.avatarUrl"
           /></el-form-item>
-          <el-form-item :label="t('允许访客评论')"
-            ><el-switch v-model="form.site.commentsEnabled"
-          /></el-form-item>
         </el-form>
       </el-tab-pane>
       <el-tab-pane :label="t('梦桜 首页')" name="homepage">
@@ -256,6 +258,9 @@ onMounted(load);
             ><el-switch v-model="form.homepage.wave"
           /></el-form-item>
         </el-form>
+      </el-tab-pane>
+      <el-tab-pane :label="t('外观')" name="appearance">
+        <AppearanceSettings v-model="form.site.appearance" />
       </el-tab-pane>
     </el-tabs>
   </section>

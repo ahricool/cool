@@ -27,6 +27,7 @@ const {
   dark,
   scrollProgress,
   hasBanner,
+  hasIllustration,
   registerBanner,
   mobileQuery,
   mobileSearchFailure,
@@ -41,9 +42,6 @@ const menu = [
   ['/moments', '瞬间'],
   ['/photos', '图库'],
 ];
-onMounted(() => {
-  void store.load();
-});
 function mobileSearch() {
   mobileSearchFailure.value = mobileQuery.value.trim()
     ? ''
@@ -76,8 +74,8 @@ useHead(() => ({
       class="site-header"
       :class="{
         'home-header': isHome,
-        'over-banner': hasBanner,
-        'header-readable': scrollProgress > 0.12,
+        'over-banner': hasBanner && hasIllustration,
+        'header-readable': !hasIllustration || scrollProgress > 0.12,
         'header-solid': scrollProgress >= 1 / 3,
       }"
       :style="{ '--header-progress': scrollProgress }"
@@ -104,7 +102,7 @@ useHead(() => ({
     <main id="page" class="main site wrapper">
       <div v-if="store.failed" class="site-error" role="alert">
         {{ t('网站配置加载失败') }}
-        <button @click="store.load">{{ t('重试') }}</button>
+        <button @click="store.load(true)">{{ t('重试') }}</button>
       </div>
       <slot />
     </main>
