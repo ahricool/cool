@@ -1,8 +1,18 @@
 export const adminSettingsMessages: Record<string, string> = {
+  外观: 'Appearance',
+  默认头像: 'Default avatar',
+  文章默认封面: 'Default post cover',
+  页面背景: 'Page background',
+  心形: 'Hearts',
+  星形: 'Stars',
+  圆点: 'Dots',
+  无图案: 'No pattern',
+  '自定义图片优先；这些图案只用于未设置图片的内容。':
+    'Custom images take priority. These patterns appear only when no image is set.',
+
   站长登录: 'Owner sign-in',
   文章编辑: 'Post editor',
   页面编辑: 'Page editor',
-  评论审核: 'Comment moderation',
 
   请输入密码: 'Enter your password',
   '密码至少需要 6 个字符': 'Use a password with at least 6 characters',
@@ -12,16 +22,12 @@ export const adminSettingsMessages: Record<string, string> = {
     'Add a site title for each language you have started. At least one language is required.',
   '请为已填写的内容语言设置首屏文字，至少填写一种语言。':
     'Add a hero greeting for each language you have started. At least one language is required.',
-  '每个社交链接至少需要一种语言的名称。':
-    'Each social link needs a name in at least one language.',
 
   内容语言: 'Content language',
   '分别编写中英文内容，切换界面语言不会更改这里的内容。保存时会保留两种语言。':
     'Write each language separately. Switching the interface language does not change your content. Saving keeps both versions.',
   共用设置: 'Shared settings',
   '以下设置对两种语言都生效。': 'These settings apply to both languages.',
-  '链接名称按语言分别填写，网址在两种语言中共用。':
-    'Write a link name for each language. The URL is shared by both versions.',
   未命名文章: 'Untitled post',
 
   两次输入的密码不一致: 'The passwords do not match',
@@ -64,7 +70,6 @@ export const adminSettingsMessages: Record<string, string> = {
   作者名称: 'Author name',
   作者简介: 'Author bio',
   头像: 'Avatar',
-  允许访客评论: 'Allow visitor comments',
   '梦桜 首页': '梦桜 homepage',
   首页背景: 'Homepage background',
   首屏展示: 'Hero display',
@@ -73,14 +78,8 @@ export const adminSettingsMessages: Record<string, string> = {
   一句话介绍: 'Short introduction',
   首页公告: 'Homepage notice',
   波浪动画: 'Wave animation',
-  社交链接: 'Social links',
-  '链接在首页首屏显示，最多 10 项。':
-    'Show up to 10 social links in your homepage hero.',
   名称: 'Name',
-  '链接 {index} 名称': 'Link {index} name',
-  '链接 {index} 网址': 'Link {index} URL',
   移除: 'Remove',
-  '＋ 添加链接': '+ Add link',
   账户信息已更新: 'Account information updated',
   '密码已更新，请重新登录': 'Password updated. Please sign in again.',
   '所有设备（包括当前设备）都需要重新登录。':
@@ -121,7 +120,6 @@ export const adminSettingsMessages: Record<string, string> = {
   全部文章: 'All posts',
   待完成草稿: 'Drafts in progress',
   媒体资源: 'Media files',
-  待审核评论: 'Comments to review',
   '查看详情 ↗': 'View details ↗',
   最近的文章: 'Recent posts',
   '全部文章 →': 'All posts →',
@@ -137,7 +135,6 @@ export const adminSettingsMessages: Record<string, string> = {
   标签: 'Tags',
   瞬间: 'Moments',
   图库: 'Gallery',
-  评论: 'Comments',
   管理: 'Administration',
   工作空间导航: 'Workspace navigation',
   关闭菜单: 'Close menu',

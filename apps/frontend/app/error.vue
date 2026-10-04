@@ -3,12 +3,14 @@ const { t, locale, routePath, contentLang } = useCoolI18n();
 import type { NuxtError } from '#app';
 defineProps<{ error: NuxtError }>();
 const route = useRoute();
+const readingDark = useState('reading-dark', () => false);
 const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
 useHead(() => ({
   title: `${t('暂时迷路了')} · 梦桜`,
   htmlAttrs: {
     lang: contentLang(locale.value),
     'data-surface': isAdmin.value ? 'admin' : 'blog',
+    class: !isAdmin.value && readingDark.value ? 'dark' : '',
   },
   bodyAttrs: { class: isAdmin.value ? 'admin-ui' : 'sakura-ui' },
 }));
@@ -21,6 +23,7 @@ useHead(() => ({
       <h1 id="error-title">{{ t('这个页面暂时不在这里。') }}</h1>
       <p>{{ t('也许只是转错了一个路口，回去继续你的故事吧。') }}</p>
       <button
+        class="primary-action"
         @click="clearError({ redirect: isAdmin ? '/admin' : routePath('/') })"
       >
         {{ t(isAdmin ? '返回工作空间' : '返回首页') }}
@@ -36,7 +39,10 @@ useHead(() => ({
   padding: 24px;
   box-sizing: border-box;
   background:
-    linear-gradient(#fff5f9e8, #fcf8fbef),
+    linear-gradient(
+      color-mix(in srgb, var(--sakura-page) 90%, transparent),
+      color-mix(in srgb, var(--sakura-page) 96%, transparent)
+    ),
     url('/sakura/images/default/hd.webp') center / cover;
   color: var(--sakura-text);
   font-family: var(--sakura-font);
@@ -48,7 +54,7 @@ useHead(() => ({
   text-align: center;
   border: 1px solid var(--sakura-border);
   border-radius: 24px;
-  background: #ffffffed;
+  background: var(--sakura-surface);
   box-shadow: var(--sakura-shadow);
 }
 .error-flower {
@@ -66,16 +72,5 @@ h1 {
 }
 button {
   margin-top: 16px;
-  padding: 12px 24px;
-  border: 0;
-  border-radius: 10px;
-  background: var(--sakura-accent);
-  color: white;
-  font: inherit;
-  cursor: pointer;
-}
-button:focus-visible {
-  outline: 2px solid var(--sakura-accent);
-  outline-offset: 4px;
 }
 </style>

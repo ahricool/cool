@@ -5,7 +5,7 @@ defineProps<{ inert?: boolean }>();
   <footer class="site-footer" :inert="inert">
     <div class="site-info">
       <div class="footer-logo">
-        <SakuraFlower class="footer-flower" />
+        <SakuraFlower spinning class="footer-flower" />
       </div>
       <p class="footer-wish" lang="zh-CN">
         <em>愿你的天空永远星光灿烂，<br />愿你的舞台永远明光幻彩。</em>

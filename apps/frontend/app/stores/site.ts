@@ -4,25 +4,23 @@ import {
   defaultHomepage,
   type Site,
   type Homepage,
-  type Social,
 } from '@cool/content';
 export const useSiteStore = defineStore('site', () => {
   const { locale } = useCoolI18n();
   const api = useApi();
   const site = ref<Site>({ ...defaultSite });
   const homepage = ref<Homepage>({ ...defaultHomepage });
-  const social = ref<Social[]>([]);
   const loaded = ref(false);
   const failed = ref(false);
   let loadedLocale = '';
   let loadingLocale = '';
   let requestId = 0;
   let pending: Promise<void> | undefined;
-  function load(): Promise<void> {
+  function load(force = false): Promise<void> {
     const requestedLocale = locale.value;
-    if (loaded.value && loadedLocale === requestedLocale)
+    if (!force && loaded.value && loadedLocale === requestedLocale)
       return Promise.resolve();
-    if (pending && loadingLocale === requestedLocale) return pending;
+    if (!force && pending && loadingLocale === requestedLocale) return pending;
     const id = ++requestId;
     loadingLocale = requestedLocale;
     failed.value = false;
@@ -30,13 +28,15 @@ export const useSiteStore = defineStore('site', () => {
       try {
         const [s, c] = await Promise.all([
           api<Site>('/public/site'),
-          api<{ homepage: Homepage; social: Social[] }>('/public/config'),
+          api<{ homepage: Homepage }>('/public/config'),
         ]);
         // A slower response from a previous language must not replace the current one.
         if (id !== requestId || requestedLocale !== locale.value) return;
-        site.value = s;
+        site.value = {
+          ...s,
+          appearance: { ...defaultSite.appearance, ...s.appearance },
+        };
         homepage.value = c.homepage;
-        social.value = c.social;
         loadedLocale = requestedLocale;
         loaded.value = true;
         failed.value = false;
@@ -53,5 +53,5 @@ export const useSiteStore = defineStore('site', () => {
     loaded.value = false;
     void load();
   });
-  return { site, homepage, social, loaded, failed, load };
+  return { site, homepage, loaded, failed, load };
 });

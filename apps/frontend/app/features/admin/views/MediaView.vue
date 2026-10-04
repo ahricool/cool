@@ -75,12 +75,9 @@ onMounted(load);
   <ViewHeader
     :title="t('媒体库')"
     :description="t('收藏文字之外的风景。上传图片会转换为 WebP，最大 8MB。')"
-    ><el-button
-      class="upload-label primary"
-      type="primary"
-      :disabled="busy"
-      @click="fileInput?.click()"
-      >{{ busy ? t('上传中…') : t('＋ 上传图片') }}</el-button
+    ><el-button type="primary" :disabled="busy" @click="fileInput?.click()">{{
+      busy ? t('上传中…') : t('＋ 上传图片')
+    }}</el-button
     ><input
       ref="fileInput"
       hidden

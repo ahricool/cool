@@ -10,7 +10,9 @@ module.exports = async function verifyBilingual(t, http, token) {
     return body === undefined ? req : req.send(body);
   };
   const read = (locale, resource) =>
-    http.get(`/api/v1/public/${resource}`).set('Accept-Language', locale);
+    http
+      .get(`/api/v1/public/${resource}`)
+      .set('Cookie', `cool_locale=${locale}`);
   const created = [];
   const create = async (kind, body) => {
     const item = (await admin('post', kind, body).expect(201)).body;
@@ -339,7 +341,7 @@ module.exports = async function verifyBilingual(t, http, token) {
           'en',
         );
         const photo = await create('photos', {
-          url: '/sakura/images/default/temp.webp',
+          url: '/sakura/images/default/hd.webp',
           published: true,
           translations: [
             {
@@ -381,7 +383,7 @@ module.exports = async function verifyBilingual(t, http, token) {
       },
     );
     await t.test(
-      'site, homepage and social text use bilingual fallback without duplicating shared assets or leaking private settings',
+      'site and homepage text use bilingual fallback without duplicating shared assets or leaking private settings',
       async () => {
         const original = (await admin('get', 'settings')).body;
         const settings = {
@@ -389,6 +391,7 @@ module.exports = async function verifyBilingual(t, http, token) {
             authorName: 'Shared owner',
             avatarUrl: original.site.avatarUrl,
             commentsEnabled: true,
+            appearance: { avatar: 'star', cover: 'heart', background: 'none' },
             translations: [
               {
                 locale: 'zh',
@@ -411,12 +414,6 @@ module.exports = async function verifyBilingual(t, http, token) {
               },
             ],
           },
-          social: [
-            {
-              url: 'https://example.com',
-              translations: [{ locale: 'zh', label: '链接' }],
-            },
-          ],
         };
         try {
           await admin('put', 'settings', settings).expect(200);
@@ -424,11 +421,27 @@ module.exports = async function verifyBilingual(t, http, token) {
           assert.equal(site.title, '中文站点');
           assert.equal(site.contentLocale, 'zh');
           assert.equal(site.authorName, 'Shared owner');
+          assert.deepEqual(site.appearance, settings.site.appearance);
+          assert.deepEqual(
+            (await admin('get', 'settings')).body.site.appearance,
+            settings.site.appearance,
+          );
+          await admin('put', 'settings', {
+            ...settings,
+            site: {
+              ...settings.site,
+              appearance: {
+                avatar: 'invalid',
+                cover: 'dot',
+                background: 'none',
+              },
+            },
+          }).expect(400);
           assert.equal(site.translations, undefined);
           const config = (await read('zh', 'config')).body;
           assert.equal(config.homepage.greeting, 'Hello');
           assert.equal(config.homepage.contentLocale, 'en');
-          assert.equal(config.social[0].contentLocale, 'zh');
+          assert.equal(Object.hasOwn(config, 'social'), false);
           await admin('put', 'settings', {
             ...settings,
             site: { ...settings.site, translations: [] },

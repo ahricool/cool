@@ -4,12 +4,19 @@
     Ubuntu, 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC',
     'Microsoft YaHei', sans-serif;
   --sakura-accent: #ff6699;
+  --sakura-flower-color: #ff6699;
+  --sakura-wordmark-shadow: #461a2a66;
   --sakura-accent-strong: #b52e63;
   --sakura-accent-light-3: #ff94b8;
   --sakura-accent-light-5: #ffbad1;
   --sakura-accent-light-7: #efcedc;
   --sakura-accent-light-8: #f6e2eb;
   --sakura-danger: #c23d5a;
+  --sakura-button-primary: #c7366b;
+  --sakura-button-hover: #b62d60;
+  --sakura-button-active: #a22454;
+  --sakura-button-disabled: #df9cb5;
+  --sakura-button-foreground: #fff;
   --sakura-text: #303236;
   --sakura-text-regular: #505258;
   --sakura-muted: #686b72;
@@ -20,13 +27,28 @@
   --sakura-control-border: #dcdde2;
   --sakura-border-light: #ececf0;
   --sakura-fill-light: #fff5f9;
-  --sakura-page: #f8f8fa;
+  --sakura-page: #fff;
+  --sakura-pattern-opacity: 0.45;
   --sakura-header-background: #fffafdef;
   --sakura-shadow: 0 8px 32px #593b5808;
 }
 
+:root[data-surface='blog'] {
+  --sakura-page: #fff;
+  --reading-header-height: 64px;
+  --reading-glass-blur: 18px;
+  --reading-glass-tint: rgba(255, 255, 255, 0.68);
+}
+@media (max-width: 768px) {
+  :root[data-surface='blog'] {
+    --reading-header-height: 56px;
+  }
+}
+
 /* Blog's reading preference must never change the admin workspace palette. */
 :root[data-surface='blog'].dark {
+  --reading-glass-tint: rgba(23, 24, 26, 0.68);
+  --sakura-wordmark-shadow: #ff66994d;
   --sakura-accent: #d34e7e;
   --sakura-accent-strong: #f58bae;
   --sakura-text: #ededf0;
@@ -42,6 +64,7 @@
   --sakura-accent-light-5: #88617b;
   --sakura-accent-light-7: #654258;
   --sakura-page: #17181a;
+  --sakura-pattern-opacity: 0.16;
   --sakura-header-background: #222327f2;
   --sakura-shadow: 0 5px 24px #0b070f20;
 }

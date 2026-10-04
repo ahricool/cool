@@ -14,7 +14,6 @@ import {
   IsBoolean,
   IsIn,
   IsString,
-  IsUrl,
   Length,
   Matches,
   MaxLength,
@@ -24,29 +23,24 @@ import {
 import { Type } from 'class-transformer';
 import { Database } from './database';
 import { AuthGuard } from './auth';
+import { ADMIN_DISPLAY_NAME } from './auth.constants';
 import { IsAssetPath } from './validators';
 import { LocaleDto } from './dto';
-class SocialTranslationDto extends LocaleDto {
-  @ApiProperty() @IsString() @Length(1, 50) @Matches(/\S/) label!: string;
-}
-class SocialDto {
-  @ApiProperty()
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
-  @MaxLength(2048)
-  url!: string;
-  @ApiProperty({ type: [SocialTranslationDto] })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(2)
-  @ArrayUnique((item: LocaleDto) => item?.locale)
-  @ValidateNested({ each: true })
-  @Type(() => SocialTranslationDto)
-  translations!: SocialTranslationDto[];
-}
 class SiteTranslationDto extends LocaleDto {
   @ApiProperty() @IsString() @Length(1, 80) @Matches(/\S/) title!: string;
   @ApiProperty() @IsString() @MaxLength(300) description!: string;
   @ApiProperty() @IsString() @MaxLength(500) authorBio!: string;
+}
+class AppearanceDto {
+  @ApiProperty({ enum: ['heart', 'star', 'dot'] })
+  @IsIn(['heart', 'star', 'dot'])
+  avatar!: 'heart' | 'star' | 'dot';
+  @ApiProperty({ enum: ['heart', 'star', 'dot'] })
+  @IsIn(['heart', 'star', 'dot'])
+  cover!: 'heart' | 'star' | 'dot';
+  @ApiProperty({ enum: ['heart', 'star', 'dot', 'none'] })
+  @IsIn(['heart', 'star', 'dot', 'none'])
+  background!: 'heart' | 'star' | 'dot' | 'none';
 }
 class SiteDto {
   @ApiProperty() @IsString() @Length(1, 100) @Matches(/\S/) authorName!: string;
@@ -55,6 +49,12 @@ class SiteDto {
   @IsAssetPath()
   avatarUrl?: string | null;
   @ApiProperty() @IsBoolean() commentsEnabled!: boolean;
+  @ApiPropertyOptional({ type: AppearanceDto })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsDefined()
+  @ValidateNested()
+  @Type(() => AppearanceDto)
+  appearance?: AppearanceDto;
   @ApiProperty({ type: [SiteTranslationDto] })
   @IsArray()
   @ArrayMinSize(1)
@@ -94,17 +94,16 @@ class SettingsDto {
   @ValidateNested()
   @Type(() => HomepageDto)
   homepage!: HomepageDto;
-  @ApiProperty({ type: [SocialDto] })
-  @IsArray()
-  @ArrayMaxSize(10)
-  @ValidateNested({ each: true })
-  @Type(() => SocialDto)
-  social!: SocialDto[];
 }
 export const defaultSettings = {
   site: {
-    authorName: 'Administrator',
-    avatarUrl: '/sakura/images/default/avatar.webp',
+    authorName: ADMIN_DISPLAY_NAME,
+    avatarUrl: null,
+    appearance: {
+      avatar: 'heart' as const,
+      cover: 'dot' as const,
+      background: 'dot' as const,
+    },
     commentsEnabled: true,
     translations: [
       {
@@ -141,18 +140,25 @@ export const defaultSettings = {
       },
     ],
   },
-  social: [] as SocialDto[],
 };
 export async function readSettings(db: Database) {
   const rows = await db.siteSetting.findMany({
-    where: { key: { in: ['site', 'homepage', 'social'] } },
+    where: { key: { in: ['site', 'homepage'] } },
   });
   const saved = Object.fromEntries(rows.map((row) => [row.key, row.value]));
+  const site = (saved.site ?? defaultSettings.site) as unknown as SiteDto;
   return {
-    site: (saved.site ?? defaultSettings.site) as unknown as SiteDto,
+    site: {
+      ...site,
+      // Interpret the retired bundled avatar as the default without rewriting stored user data.
+      avatarUrl:
+        site.avatarUrl === '/sakura/images/default/avatar.webp'
+          ? null
+          : site.avatarUrl,
+      appearance: { ...defaultSettings.site.appearance, ...site.appearance },
+    },
     homepage: (saved.homepage ??
       defaultSettings.homepage) as unknown as HomepageDto,
-    social: (saved.social ?? defaultSettings.social) as unknown as SocialDto[],
   };
 }
 @ApiTags('Settings')
@@ -165,6 +171,7 @@ export class SettingsController {
     return readSettings(this.db);
   }
   @Put() async save(@Body() d: SettingsDto) {
+    d.site.appearance ??= (await readSettings(this.db)).site.appearance;
     await this.db.$transaction(
       Object.entries(d).map(([key, value]) =>
         this.db.siteSetting.upsert({

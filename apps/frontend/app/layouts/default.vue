@@ -16,20 +16,24 @@ const navigationIcons = {
   '/photos': Camera,
 };
 const { t, routePath, contentLang } = useCoolI18n();
-import { socialIcon } from '~/utils/social-icon';
+import { readingShellKey } from '~/utils/reading-shell';
 const route = useRoute();
 const store = useSiteStore();
 const isHome = computed(() => route.path === '/');
 const {
   menuOpen,
-  menuTrigger,
+  openMenu,
   sidebar,
   dark,
   scrollProgress,
+  hasBanner,
+  hasIllustration,
+  registerBanner,
   mobileQuery,
   mobileSearchFailure,
   sidebarKeydown,
 } = useReadingShell();
+provide(readingShellKey, { menuOpen, openMenu, registerBanner });
 const menu = [
   ['/', '首页'],
   ['/archives', '归档'],
@@ -38,9 +42,6 @@ const menu = [
   ['/moments', '瞬间'],
   ['/photos', '图库'],
 ];
-onMounted(() => {
-  void store.load();
-});
 function mobileSearch() {
   mobileSearchFailure.value = mobileQuery.value.trim()
     ? ''
@@ -73,21 +74,19 @@ useHead(() => ({
       class="site-header"
       :class="{
         'home-header': isHome,
-        'header-readable': scrollProgress > 0.12,
+        'over-banner': hasBanner && hasIllustration,
+        'header-readable': !hasIllustration || scrollProgress > 0.12,
         'header-solid': scrollProgress >= 1 / 3,
       }"
-      :style="{ '--header-progress': isHome ? scrollProgress : 1 }"
+      :style="{ '--header-progress': scrollProgress }"
     >
       <div class="header-inner">
-        <NuxtLink
+        <ReadingBrand
+          placement="header"
           class="header-brand"
           :inert="isHome && scrollProgress < 0.1"
           :aria-hidden="isHome && scrollProgress < 0.1"
-          :to="routePath('/')"
-          :lang="contentLang(store.site.contentLocale)"
-          :aria-label="store.site.title"
-          ><SakuraWordmark
-        /></NuxtLink>
+        />
         <nav class="header-content" :aria-label="t('主导航')">
           <ul class="menu-root">
             <li v-for="item in menu" :key="item[0]" class="menu-item">
@@ -96,19 +95,6 @@ useHead(() => ({
           </ul>
         </nav>
         <div class="header-actions">
-          <button
-            ref="menuTrigger"
-            class="mobile-menu reading-control"
-            type="button"
-            :aria-label="t('打开导航')"
-            aria-controls="mobile-sidebar"
-            :aria-expanded="menuOpen"
-            @click="menuOpen = !menuOpen"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
           <ReadingControls />
         </div>
       </div>
@@ -116,7 +102,7 @@ useHead(() => ({
     <main id="page" class="main site wrapper">
       <div v-if="store.failed" class="site-error" role="alert">
         {{ t('网站配置加载失败') }}
-        <button @click="store.load">{{ t('重试') }}</button>
+        <button @click="store.load(true)">{{ t('重试') }}</button>
       </div>
       <slot />
     </main>
@@ -141,6 +127,16 @@ useHead(() => ({
     :aria-label="t('移动端菜单')"
     @keydown="sidebarKeydown"
   >
+    <button
+      class="sidebar-close reading-control"
+      type="button"
+      :aria-label="t('关闭菜单')"
+      @click="menuOpen = false"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m6 6 12 12M18 6 6 18" />
+      </svg>
+    </button>
     <div class="sidebar-inner">
       <div class="mobile-sidebar">
         <div class="sidebar-brand">
@@ -149,24 +145,12 @@ useHead(() => ({
             <span
               class="sidebar-brand-title"
               :lang="contentLang(store.site.contentLocale)"
-              >{{ store.site.title }}</span
-            >
+              role="img"
+              :aria-label="store.site.title"
+              ><SakuraWordmark
+            /></span>
             <small>{{ t('你的内容，自在生长。') }}</small>
           </div>
-        </div>
-        <div v-if="store.social.length" class="socials">
-          <a
-            v-for="link in store.social"
-            :key="link.url"
-            class="social-item"
-            :href="link.url"
-            target="_blank"
-            rel="noopener noreferrer"
-            :aria-label="link.label"
-            :title="link.label"
-            :lang="contentLang(link.contentLocale)"
-            ><img :src="socialIcon(link.url)" alt="" width="18" height="18"
-          /></a>
         </div>
         <div class="search">
           <form

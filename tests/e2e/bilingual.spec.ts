@@ -7,7 +7,7 @@ test('reader choice persists without changing URLs across navigation, history an
   context,
 }) => {
   await page.goto(site);
-  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
   await page
     .locator('.site-footer')
     .getByRole('button', { name: '中文', exact: true })

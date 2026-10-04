@@ -6,7 +6,7 @@ import type { AdminPost, Pagination } from '@cool/content';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
 const { t, locale, formatDate } = useCoolI18n();
-const counts = ref({ posts: 0, drafts: 0, media: 0, comments: 0 });
+const counts = ref({ posts: 0, drafts: 0, media: 0 });
 const posts = ref<AdminPost[]>([]);
 const error = ref('');
 const recentPosts = computed(() =>
@@ -57,11 +57,6 @@ onMounted(load);
         { label: '全部文章', value: counts.posts, path: '/admin/posts' },
         { label: '待完成草稿', value: counts.drafts, path: '/admin/posts' },
         { label: '媒体资源', value: counts.media, path: '/admin/media' },
-        {
-          label: '待审核评论',
-          value: counts.comments,
-          path: '/admin/comments',
-        },
       ]"
       :key="stat.label"
       :to="stat.path"

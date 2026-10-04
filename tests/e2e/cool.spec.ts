@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 const email = 'whoreahri@gmail.com';
 const password = process.env.E2E_PASSWORD ?? 'cool-e2e-owner-password';
-test('owner writes, previews and publishes; visitors read and comment; owner moderates', async ({
+test('owner writes, previews and publishes; readers browse; owner manages content', async ({
   page,
   context,
   request,
@@ -30,7 +30,6 @@ test('owner writes, previews and publishes; visitors read and comment; owner mod
     '标签',
     '瞬间',
     '图库',
-    '评论',
     '网站配置',
     '我的账户',
   ]) {
@@ -93,13 +92,6 @@ test('owner writes, previews and publishes; visitors read and comment; owner mod
   );
   await expect(page.locator('.toc-sidebar a')).toHaveCount(2);
   expect(await page.evaluate(() => '__unsafe' in window)).toBe(false);
-  await page.getByLabel('昵称', { exact: true }).fill('路过的读者');
-  await page.getByLabel('评论', { exact: true }).fill('喜欢这样的春天。');
-  await page.getByRole('button', { name: '提交评论' }).click();
-  await expect(page.getByRole('status')).toContainText('审核后显示');
-  await expect(page.locator('.comment-list')).not.toContainText(
-    '喜欢这样的春天',
-  );
   await page.screenshot({
     path: info.outputPath('blog-post.png'),
     fullPage: true,
@@ -111,20 +103,6 @@ test('owner writes, previews and publishes; visitors read and comment; owner mod
   )?.value;
   expect(token).toBeDefined();
   const headers = { Authorization: `Bearer ${token}` };
-  const comments = await request.get(api + '/admin/comments', { headers });
-  const comment = (await comments.json()).items.find(
-    (c: { post: { slug: string } }) => c.post.slug === slug,
-  );
-  expect(
-    (
-      await request.put(api + '/admin/comments/' + comment.id, {
-        headers,
-        data: { status: 'APPROVED' },
-      })
-    ).ok(),
-  ).toBeTruthy();
-  await page.reload();
-  await expect(page.locator('.comment-list')).toContainText('喜欢这样的春天');
   expect(
     (await request.delete(api + '/admin/posts/' + postId, { headers })).ok(),
   ).toBeTruthy();
@@ -179,10 +157,12 @@ test('all blog routes load on desktop and mobile without external resources', as
   await expect(page.locator('#page')).toHaveCSS('opacity', '1');
   await expect
     .poll(() =>
-      page.locator('#hero-artwork .cover-bg').evaluate((element) => {
-        const image = element as HTMLImageElement;
-        return image.complete && image.naturalWidth > 0;
-      }),
+      page
+        .locator('.reading-banner--home .banner-image')
+        .evaluate((element) => {
+          const image = element as HTMLImageElement;
+          return image.complete && image.naturalWidth > 0;
+        }),
     )
     .toBe(true);
   const notice = page.locator('.notice');

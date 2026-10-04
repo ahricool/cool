@@ -1,6 +1,7 @@
 <script setup lang="ts">
-const { t, locale, formatDate, routePath, contentLang } = useCoolI18n();
+import { resolveCustomImage } from '~/utils/custom-image';
 import { renderMarkdown, type Post } from '@cool/content';
+const { t, locale, formatDate, routePath, contentLang } = useCoolI18n();
 const route = useRoute();
 const store = useSiteStore();
 const api = useApi();
@@ -34,6 +35,8 @@ useHead(() => ({
     ><template #header
       ><div class="post-header">
         <PageHeader
+          fallback="cover"
+          :seed="slug"
           :title="data?.title ?? t('文章')"
           :title-lang="data ? contentLang(data.contentLocale) : undefined"
           :cover="data?.coverUrl"
@@ -42,12 +45,7 @@ useHead(() => ({
               <span class="post-meta-item"
                 ><span
                   >{{ data.author.displayName }} ·
-                  {{ formatDate(data.publishedAt) }} ·
-                  {{
-                    t(data.commentCount === 1 ? '1 条评论' : '{count} 条评论', {
-                      count: data.commentCount,
-                    })
-                  }}</span
+                  {{ formatDate(data.publishedAt) }}</span
                 ></span
               >
             </div>
@@ -84,9 +82,6 @@ useHead(() => ({
           v-html="rendered.html"
         ></div>
         <footer class="post-footer" :lang="contentLang(locale)">
-          <div>
-            <p class="flex-child-center">{{ t('全文完') }} ❀</p>
-          </div>
           <div class="post-footer-meta">
             <div class="post-tags flex-child-center">
               <NuxtLink
@@ -97,22 +92,21 @@ useHead(() => ({
                 >#{{ tag.tag.name }}</NuxtLink
               >
             </div>
-            <button @click="share">
-              {{ t(copied ? '链接已复制' : '分享 · 复制链接') }}
-            </button>
+            <div class="post-share flex-child-center">
+              <span v-if="copied" class="share-feedback" role="status">{{
+                t('链接已复制')
+              }}</span>
+              <button @click="share">{{ t('分享') }}</button>
+            </div>
           </div>
         </footer>
       </article>
       <section class="author-profile">
-        <img
-          :src="
-            data.author.avatarUrl ||
-            store.site.avatarUrl ||
-            '/sakura/images/default/avatar.webp'
-          "
+        <AvatarImage
+          :src="resolveCustomImage(data.author.avatarUrl, store.site.avatarUrl)"
           :alt="data.author.displayName"
-          width="80"
-          height="80"
+          :width="80"
+          :height="80"
         />
         <div>
           <h3>{{ data.author.displayName }}</h3>
@@ -121,7 +115,6 @@ useHead(() => ({
           </p>
         </div>
       </section>
-      <Comments :slug="slug" :enabled="store.site.commentsEnabled" />
     </div>
   </PageFrame>
 </template>

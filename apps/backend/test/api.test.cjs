@@ -6,7 +6,7 @@ require('reflect-metadata');
 const { createApp } = require('../dist/app');
 const { Database } = require('../dist/database');
 const { verifyPassword } = require('../dist/password');
-const { ADMIN_EMAIL } = require('../dist/auth.constants');
+const { ADMIN_EMAIL, defaultDisplayName } = require('../dist/auth.constants');
 const { JwtService } = require('@nestjs/jwt');
 const { execFileSync } = require('node:child_process');
 let app, db, http, owner, token, initialToken;
@@ -57,14 +57,29 @@ test('Owner login and full post publication lifecycle', async (t) => {
   await t.test(
     'seed leaves password unset and concurrent first setup has one winner',
     async () => {
-      for (let i = 0; i < 2; i++)
+      for (let i = 0; i < 2; i++) {
         execFileSync(process.execPath, ['dist/seed.js'], {
           env: process.env,
           stdio: 'pipe',
         });
+        if (i === 0)
+          await db.user.update({
+            where: { email: ADMIN_EMAIL },
+            data: { displayName: 'Administrator' },
+          });
+      }
       owner = await db.user.findUnique({ where: { email: ADMIN_EMAIL } });
       assert.equal(owner.passwordHash, null);
+      assert.equal(owner.displayName, 'Whoreahri');
+      assert.equal(
+        defaultDisplayName('jANE.doe+tag@example.test'),
+        'JANE.doe+tag',
+      );
       assert.equal(await db.user.count(), 1);
+      await db.user.update({
+        where: { id: owner.id },
+        data: { displayName: 'Administrator' },
+      });
       const status = await http.get('/api/v1/admin/auth/status').expect(200);
       assert.deepEqual(status.body, {
         email: ADMIN_EMAIL,
@@ -116,6 +131,7 @@ test('Owner login and full post publication lifecycle', async (t) => {
       }
       assert.equal(await db.user.count(), 1);
       assert.equal(winner.body.user.email, ADMIN_EMAIL);
+      assert.equal(winner.body.user.displayName, 'Whoreahri');
       assert.equal(winner.body.user.passwordHash, undefined);
       assert.equal(
         (await http.get('/api/v1/admin/auth/status')).body.initialized,
@@ -269,8 +285,8 @@ test('Owner login and full post publication lifecycle', async (t) => {
       .get('/api/v1/public/site')
       .set('Accept-Language', 'en;q=0.9, zh;q=0.2')
       .expect(200);
-    assert.equal(negotiated.body.contentLocale, 'en');
-    assert.match(negotiated.headers.vary, /Accept-Language/);
+    assert.equal(negotiated.body.contentLocale, 'zh');
+    assert.doesNotMatch(negotiated.headers.vary, /Accept-Language/);
     assert.match(negotiated.headers.vary, /Cookie/);
     assert.equal(negotiated.headers['cache-control'], 'private, no-store');
     const remembered = await http
@@ -279,6 +295,11 @@ test('Owner login and full post publication lifecycle', async (t) => {
       .set('Cookie', 'cool_locale=zh')
       .expect(200);
     assert.equal(remembered.body.contentLocale, 'zh');
+    const english = await http
+      .get('/api/v1/public/site')
+      .set('Cookie', 'cool_locale=en')
+      .expect(200);
+    assert.equal(english.body.contentLocale, 'en');
     await http.get('/api/v1/health').expect(200);
     const document = await http.get('/api/openapi.json').expect(200);
     assert.equal(document.body.info.title, 'Cool API');
@@ -291,7 +312,10 @@ test('Owner login and full post publication lifecycle', async (t) => {
   await t.test(
     'seed never changes an initialized owner or creates extra accounts',
     async () => {
-      const before = await db.user.findUnique({ where: { id: owner.id } });
+      const before = await db.user.update({
+        where: { id: owner.id },
+        data: { displayName: 'Custom.Owner' },
+      });
       const env = {
         ...process.env,
         ADMIN_EMAIL: 'ignored@example.test',
@@ -306,6 +330,7 @@ test('Owner login and full post publication lifecycle', async (t) => {
       const after = await db.user.findUnique({ where: { id: owner.id } });
       assert.equal(after.email, ADMIN_EMAIL);
       assert.equal(after.passwordHash, before.passwordHash);
+      assert.equal(after.displayName, before.displayName);
     },
   );
   await t.test(
@@ -571,9 +596,7 @@ test('Owner login and full post publication lifecycle', async (t) => {
         await http
           .post('/api/v1/admin/photos')
           .auth(token, { type: 'bearer' })
-          .send(
-            zh({ title: 'A photo', url: '/sakura/images/default/temp.webp' }),
-          )
+          .send(zh({ title: 'A photo', url: '/sakura/images/default/hd.webp' }))
           .expect(201)
       ).body;
       assert.equal((await http.get('/api/v1/public/photos')).body.total, 0);
@@ -777,7 +800,7 @@ test('Owner login and full post publication lifecycle', async (t) => {
       await http
         .put('/api/v1/admin/settings')
         .auth(token, { type: 'bearer' })
-        .send({ site: null, homepage: config.homepage, social: [] })
+        .send({ site: null, homepage: config.homepage })
         .expect(400);
       config.site.commentsEnabled = true;
       await http

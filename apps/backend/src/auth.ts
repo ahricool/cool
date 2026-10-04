@@ -31,6 +31,7 @@ import { Database } from './database';
 import { verifyPassword, hashPassword } from './password';
 import {
   ADMIN_EMAIL,
+  ADMIN_DISPLAY_NAME,
   SESSION_COOKIE,
   SESSION_COOKIE_AGE_MS,
 } from './auth.constants';
@@ -221,14 +222,20 @@ export class AuthController {
         create: {
           email: ADMIN_EMAIL,
           passwordHash: null,
-          displayName: 'Administrator',
+          displayName: ADMIN_DISPLAY_NAME,
         },
       });
       if (owner.passwordHash)
         throw new ConflictException('Administrator is already initialized');
       const changed = await tx.user.updateMany({
         where: { id: owner.id, passwordHash: null },
-        data: { passwordHash, authVersion: { increment: 1 } },
+        data: {
+          passwordHash,
+          authVersion: { increment: 1 },
+          ...(owner.displayName === 'Administrator'
+            ? { displayName: ADMIN_DISPLAY_NAME }
+            : {}),
+        },
       });
       if (changed.count !== 1)
         throw new ConflictException('Administrator is already initialized');

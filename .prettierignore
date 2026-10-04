@@ -11,3 +11,6 @@ test-results/
 deployment/
 
 apps/frontend/app/assets/blog/sakura.css
+
+# Preserve the exact user-requested public FA vector.
+apps/frontend/public/favicon.svg

@@ -5,6 +5,7 @@ test.use({ locale: 'en-US' });
 
 test('a pending moment image upload locks language, save, and dismissal and updates only its authored language', async ({
   page,
+  context,
 }) => {
   const owner = {
     id: 'moment-owner',
@@ -56,6 +57,7 @@ test('a pending moment image upload locks language, save, and dismissal and upda
       json: { message: 'Unexpected fixture endpoint' },
     });
   });
+  await context.addCookies([{ name: 'cool_locale', value: 'en', url: admin }]);
   await page.goto(admin + '/moments');
   await page
     .getByRole('button', { name: '＋ Create Moments', exact: true })

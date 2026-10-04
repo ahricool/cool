@@ -1,6 +1,6 @@
 # Third-party notices
 
-The Sakura images and flower artwork originate from Halo Sakura (https://github.com/LIlGG/halo-theme-sakura), commit a31ff6520b34e45beab20ef91204f958dcf1cd81. Image credits and watermarks remain intact. The original compiled stylesheet is no longer shipped.
+The remaining default avatar and fallback cover, wave masks, and flower artwork originate from Halo Sakura (https://github.com/LIlGG/halo-theme-sakura), commit a31ff6520b34e45beab20ef91204f958dcf1cd81. Image credits and watermarks remain intact. The original compiled stylesheet and unused legacy images are no longer shipped. The default background was supplied by the site owner and converted to WebP.
 
 Solar SVG paths in app/assets/icons.json are by 480 Design, CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/), sourced from https://github.com/iconify/icon-sets/blob/master/json/solar.json. Paths are unchanged.
 

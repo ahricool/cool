@@ -1,3 +1,4 @@
+export const DEFAULT_OWNER_EMAIL = 'whoreahri@gmail.com';
 export type ContentLocale = 'zh' | 'en';
 export type Locale = ContentLocale;
 export interface LocalizedContent {
@@ -150,6 +151,17 @@ export interface Comment {
     translations: { locale: ContentLocale; title: string }[];
   };
 }
+export type PatternShape = 'heart' | 'star' | 'dot';
+export interface SiteAppearance {
+  avatar: PatternShape;
+  cover: PatternShape;
+  background: PatternShape | 'none';
+}
+export const defaultAppearance: SiteAppearance = {
+  avatar: 'heart',
+  cover: 'dot',
+  background: 'dot',
+};
 export interface Site extends LocalizedContent {
   title: string;
   description: string;
@@ -157,6 +169,7 @@ export interface Site extends LocalizedContent {
   authorBio: string;
   avatarUrl: string | null;
   commentsEnabled: boolean;
+  appearance: SiteAppearance;
 }
 export interface SiteTranslation {
   locale: ContentLocale;
@@ -168,6 +181,7 @@ export interface AdminSite {
   authorName: string;
   avatarUrl: string | null;
   commentsEnabled: boolean;
+  appearance: SiteAppearance;
   translations: SiteTranslation[];
 }
 export interface Homepage extends LocalizedContent {
@@ -190,34 +204,23 @@ export interface AdminHomepage {
   wave: boolean;
   translations: HomepageTranslation[];
 }
-export interface Social extends LocalizedContent {
-  label: string;
-  url: string;
-}
-export interface SocialTranslation {
-  locale: ContentLocale;
-  label: string;
-}
-export interface AdminSocial {
-  url: string;
-  translations: SocialTranslation[];
-}
 export interface Settings {
   site: Site;
   homepage: Homepage;
-  social: Social[];
 }
 export interface AdminSettings {
   site: AdminSite;
   homepage: AdminHomepage;
-  social: AdminSocial[];
 }
 export const defaultSite: Site = {
   title: '梦桜',
   description: '记录生活，也记录每一次灵感。',
-  authorName: 'Administrator',
+  authorName: DEFAULT_OWNER_EMAIL.split('@')[0]!.replace(/^./u, (first) =>
+    first.toUpperCase(),
+  ),
   authorBio: '在这里，收藏日常的微光。',
-  avatarUrl: '/sakura/images/default/avatar.webp',
+  avatarUrl: null,
+  appearance: { ...defaultAppearance },
   commentsEnabled: true,
   contentLocale: 'zh',
 };

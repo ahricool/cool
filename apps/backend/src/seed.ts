@@ -1,19 +1,28 @@
 import { defaultSettings } from './settings';
 import { Database } from './database';
-import { ADMIN_EMAIL } from './auth.constants';
+import { ADMIN_EMAIL, ADMIN_DISPLAY_NAME } from './auth.constants';
 async function seed() {
   const db = new Database();
   try {
     await db.$transaction(
       async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(732019)`;
-        await tx.user.upsert({
+        // Only an uninitialized account with the old seed placeholder is recognizable as a default.
+        await tx.user.updateMany({
+          where: {
+            email: ADMIN_EMAIL,
+            passwordHash: null,
+            displayName: 'Administrator',
+          },
+          data: { displayName: ADMIN_DISPLAY_NAME },
+        });
+        const owner = await tx.user.upsert({
           where: { email: ADMIN_EMAIL },
           update: {},
           create: {
             email: ADMIN_EMAIL,
             passwordHash: null,
-            displayName: 'Administrator',
+            displayName: ADMIN_DISPLAY_NAME,
           },
         });
         await tx.siteSetting.upsert({
@@ -23,7 +32,7 @@ async function seed() {
             key: 'site',
             value: {
               ...defaultSettings.site,
-              authorName: 'Administrator',
+              authorName: owner.displayName,
             },
           },
         });

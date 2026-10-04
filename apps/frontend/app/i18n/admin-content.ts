@@ -28,8 +28,6 @@ export const adminContentMessages: Record<string, string> = {
   上传完成: 'Upload complete',
   丢弃草稿: 'Discard draft',
   中文: 'ZH',
-  '交流让文字有回响。审核通过的评论才会公开显示。':
-    'Keep the conversation growing. Only approved comments are shown publicly.',
   从媒体库选择: 'Choose from media',
   '从这里开始写作…\n支持 Markdown、代码高亮和图片上传。':
     'Start writing here…\nMarkdown, syntax highlighting and image uploads are supported.',
@@ -53,7 +51,6 @@ export const adminContentMessages: Record<string, string> = {
     'This will remove the association from posts. The posts themselves will be kept.',
   删除媒体: 'Delete media',
   删除确认: 'Confirm deletion',
-  删除评论: 'Delete comment',
   '删除这张图片？仍被内容引用的图片不能删除。':
     'Delete this image? Images still used by content cannot be deleted.',
   加粗文字: 'Bold text',
@@ -68,7 +65,6 @@ export const adminContentMessages: Record<string, string> = {
   图片: 'Image',
   图片地址已复制: 'Image URL copied',
   图片描述: 'Image description',
-  垃圾评论: 'Spam',
   复制地址: 'Copy URL',
   头像: 'Avatar',
   媒体库: 'Media',
@@ -111,7 +107,6 @@ export const adminContentMessages: Record<string, string> = {
   新建页面: 'Create page',
   无法访问剪贴板: 'Clipboard access is unavailable',
   '暂无内容，开始写下第一篇吧': 'No content yet. Write your first piece.',
-  暂时没有评论: 'No comments yet',
   更新于: 'Updated',
   '有未保存的修改 · 浏览器草稿已保留': 'Unsaved changes · Browser draft kept',
   '有未保存的修改。浏览器草稿已保留，确定离开？':
@@ -129,7 +124,6 @@ export const adminContentMessages: Record<string, string> = {
   每种语言独立保存和发布: 'Each language is saved and published separately',
   '永久删除「{title}」？此操作无法撤销。':
     'Permanently delete “{title}”? This cannot be undone.',
-  '永久删除这条评论？': 'Permanently delete this comment?',
   状态: 'Status',
   独立页面: 'Pages',
   相册: 'Album',
@@ -147,7 +141,6 @@ export const adminContentMessages: Record<string, string> = {
   '让文字保持你的温度。': 'Keep your own voice in every word.',
   '设置未来时间后，访客会在该时间开始看到内容。':
     'Choose a future date to make this language public at that time.',
-  评论: 'Comments',
   '请填写标题和有效的 URL 标识（小写字母、数字、连字符）':
     'Enter a title and a valid URL slug (lowercase letters, numbers and hyphens).',
   请至少填写一种语言的内容: 'Enter content in at least one language.',
@@ -174,7 +167,6 @@ export const adminContentMessages: Record<string, string> = {
   '无法连接服务器，请稍后重试':
     'Cannot reach the server. Please try again later.',
   内容不存在: 'Content not found',
-  评论已关闭: 'Comments are closed',
   请检查填写内容: 'Please check the entered values',
   服务暂时不可用: 'Service temporarily unavailable',
 };
