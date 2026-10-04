@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{ spinning?: boolean }>();
+withDefaults(defineProps<{ spinning?: boolean }>(), { spinning: false });
 </script>
 <template>
   <img
