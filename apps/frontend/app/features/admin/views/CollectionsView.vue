@@ -193,7 +193,10 @@ onMounted(load);
             published(row as Item) ? t('已公开') : t('未公开')
           }}</el-tag></template
         ></el-table-column
-      ><el-table-column :label="t('操作')" width="150"
+      ><el-table-column
+        :label="t('操作')"
+        width="150"
+        class-name="table-actions-cell"
         ><template #default="{ row }"
           ><el-button text @click="edit(row as Item)">{{ t('编辑') }}</el-button
           ><el-button text type="danger" @click="remove(row as Item)">{{

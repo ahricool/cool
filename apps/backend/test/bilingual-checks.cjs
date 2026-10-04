@@ -386,10 +386,9 @@ module.exports = async function verifyBilingual(t, http, token) {
       'site and homepage text use bilingual fallback without duplicating shared assets or leaking private settings',
       async () => {
         const original = (await admin('get', 'settings')).body;
+        const originalOwner = (await admin('get', 'auth/me')).body;
         const settings = {
           site: {
-            authorName: 'Shared owner',
-            avatarUrl: original.site.avatarUrl,
             commentsEnabled: true,
             appearance: {
               font: 'bubble-candy',
@@ -426,7 +425,29 @@ module.exports = async function verifyBilingual(t, http, token) {
           const site = (await read('en', 'site')).body;
           assert.equal(site.title, '中文站点');
           assert.equal(site.contentLocale, 'zh');
-          assert.equal(site.authorName, 'Shared owner');
+          await admin('put', 'auth/profile', {
+            displayName: 'Shared owner',
+            avatarUrl: null,
+          }).expect(200);
+          const refreshedSite = (await read('en', 'site')).body;
+          assert.deepEqual(refreshedSite.author, {
+            displayName: 'Shared owner',
+            avatarUrl: null,
+          });
+          const articles = (await read('zh', 'posts')).body.items;
+          for (const article of articles)
+            assert.equal(article.author.displayName, 'Shared owner');
+          const owner = originalOwner;
+          assert.deepEqual(site.author, {
+            displayName: owner.displayName,
+            avatarUrl: owner.avatarUrl,
+          });
+          assert.equal(Object.hasOwn(site, 'authorName'), false);
+          assert.equal(Object.hasOwn(site, 'avatarUrl'), false);
+          assert.deepEqual(Object.keys(site.author).sort(), [
+            'avatarUrl',
+            'displayName',
+          ]);
           assert.deepEqual(site.appearance, settings.site.appearance);
           assert.deepEqual(
             (await admin('get', 'settings')).body.site.appearance,
@@ -468,6 +489,10 @@ module.exports = async function verifyBilingual(t, http, token) {
           }).expect(400);
         } finally {
           await admin('put', 'settings', original).expect(200);
+          await admin('put', 'auth/profile', {
+            displayName: originalOwner.displayName,
+            avatarUrl: originalOwner.avatarUrl,
+          }).expect(200);
         }
       },
     );

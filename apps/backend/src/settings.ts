@@ -26,7 +26,6 @@ import {
 import { Type } from 'class-transformer';
 import { Database } from './database';
 import { AuthGuard } from './auth';
-import { ADMIN_DISPLAY_NAME } from './auth.constants';
 import { IsAssetPath } from './validators';
 import { LocaleDto } from './dto';
 class SiteTranslationDto extends LocaleDto {
@@ -56,11 +55,6 @@ class AppearanceDto {
   background!: 'heart' | 'star' | 'dot' | 'none';
 }
 class SiteDto {
-  @ApiProperty() @IsString() @Length(1, 100) @Matches(/\S/) authorName!: string;
-  @ApiPropertyOptional({ nullable: true })
-  @ValidateIf((_o, v) => v !== undefined && v !== null)
-  @IsAssetPath()
-  avatarUrl?: string | null;
   @ApiProperty() @IsBoolean() commentsEnabled!: boolean;
   @ApiPropertyOptional({ type: AppearanceDto })
   @ValidateIf((_o, value) => value !== undefined)
@@ -110,8 +104,6 @@ class SettingsDto {
 }
 export const defaultSettings = {
   site: {
-    authorName: ADMIN_DISPLAY_NAME,
-    avatarUrl: null,
     appearance: {
       font: 'default' as const,
       fontSize: 100,
@@ -161,16 +153,17 @@ export async function readSettings(db: Database) {
     where: { key: { in: ['site', 'homepage'] } },
   });
   const saved = Object.fromEntries(rows.map((row) => [row.key, row.value]));
-  const site = (saved.site ?? defaultSettings.site) as unknown as SiteDto;
+  // Ignore retired site identity fields without rewriting existing JSON.
+  const savedSite = (saved.site ?? defaultSettings.site) as unknown as SiteDto;
+  const site = {
+    commentsEnabled: savedSite.commentsEnabled,
+    appearance: savedSite.appearance,
+    translations: savedSite.translations,
+  };
   const fontSize = site.appearance?.fontSize;
   return {
     site: {
       ...site,
-      // Interpret the retired bundled avatar as the default without rewriting stored user data.
-      avatarUrl:
-        site.avatarUrl === '/sakura/images/default/avatar.webp'
-          ? null
-          : site.avatarUrl,
       appearance: {
         ...defaultSettings.site.appearance,
         ...site.appearance,

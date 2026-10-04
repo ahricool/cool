@@ -255,20 +255,56 @@ for (const target of ['cover', 'content']) {
         json: { id: 'test-media', url: '/api/v1/media/test.webp' },
       });
     });
-    const selector = target === 'cover' ? '.asset-picker' : '.markdown-editor';
-    await page
-      .locator(`${selector} input[type="file"]`)
-      .setInputFiles('apps/frontend/public/sakura/images/default/hd.webp');
+    if (target === 'content') {
+      await page.route('**/api/v1/admin/media?*', (route) =>
+        route.fulfill({
+          json: {
+            items: [
+              {
+                id: 'test-media',
+                url: '/api/v1/media/test.webp',
+                originalName: 'test-image.webp',
+              },
+            ],
+            total: 1,
+            page: 1,
+            pageSize: 12,
+          },
+        }),
+      );
+      await page.getByRole('button', { name: '插入图片', exact: true }).click();
+    }
+    const input =
+      target === 'cover'
+        ? page.locator('.asset-picker input[type="file"]')
+        : page
+            .getByRole('dialog', { name: '选择图片' })
+            .locator('input[type="file"]');
+    await input.setInputFiles(
+      'apps/frontend/public/sakura/images/default/hd.webp',
+    );
     await expect.poll(() => uploadStarted).toBe(true);
     const save = page.getByRole('button', { name: '保存草稿', exact: true });
     await expect(save).toBeDisabled();
-    await page
-      .locator('.sidebar')
-      .getByRole('link', { name: '概览', exact: true })
-      .click();
+    if (target === 'cover')
+      await page
+        .locator('.sidebar')
+        .getByRole('link', { name: '概览', exact: true })
+        .click();
+    else {
+      await page.keyboard.press('Escape');
+      await expect(
+        page.getByRole('dialog', { name: '选择图片' }),
+      ).toBeVisible();
+    }
     await expect(page).toHaveURL((url) => url.pathname === '/admin/posts/new');
     expect(delay.submitted).toHaveLength(0);
     releaseUpload();
+    if (target === 'content')
+      await page
+        .getByRole('dialog', { name: '选择图片' })
+        .getByRole('button', { name: 'test-image.webp', exact: true })
+        .click();
     await expect(save).toBeEnabled();
     await save.click();
     await delay.requestSeen;

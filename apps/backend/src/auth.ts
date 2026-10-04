@@ -32,6 +32,7 @@ import { verifyPassword, hashPassword } from './password';
 import {
   ADMIN_EMAIL,
   ADMIN_DISPLAY_NAME,
+  normalizeOwner,
   SESSION_COOKIE,
   SESSION_COOKIE_AGE_MS,
 } from './auth.constants';
@@ -50,7 +51,7 @@ export const publicUser = {
 const privateUser = (user: User) => ({
   id: user.id,
   email: user.email,
-  displayName: user.displayName,
+  displayName: normalizeOwner(user).displayName,
   avatarUrl: user.avatarUrl,
 });
 class LoginDto {
@@ -274,10 +275,12 @@ export class AuthController {
   @ApiCookieAuth()
   @UseGuards(AuthGuard)
   me(@Req() req: AuthRequest) {
-    return this.db.user.findUniqueOrThrow({
-      where: { id: req.userId },
-      select: { ...publicUser, email: true },
-    });
+    return this.db.user
+      .findUniqueOrThrow({
+        where: { id: req.userId },
+        select: { ...publicUser, email: true },
+      })
+      .then(normalizeOwner);
   }
   @Post('logout')
   @ApiBearerAuth()
@@ -320,11 +323,13 @@ export class AuthController {
   @ApiCookieAuth()
   @UseGuards(AuthGuard)
   profile(@Req() req: AuthRequest, @Body() data: ProfileDto) {
-    return this.db.user.update({
-      where: { id: req.userId },
-      data,
-      select: { ...publicUser, email: true },
-    });
+    return this.db.user
+      .update({
+        where: { id: req.userId },
+        data,
+        select: { ...publicUser, email: true },
+      })
+      .then(normalizeOwner);
   }
   @Put('password')
   @ApiBearerAuth()

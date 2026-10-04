@@ -135,12 +135,14 @@ onMounted(load);
         ><template #default="{ row }">{{
           formatDate(row.updatedAt)
         }}</template></el-table-column
-      ><el-table-column :label="t('操作')" width="150"
+      ><el-table-column
+        :label="t('操作')"
+        width="150"
+        class-name="table-actions-cell"
         ><template #default="{ row }"
-          ><RouterLink :to="`/admin/${kind}/${row.id}`"
-            ><el-button text type="primary">{{
-              t('编辑')
-            }}</el-button></RouterLink
+          ><RouterLink class="table-action" :to="`/admin/${kind}/${row.id}`">{{
+            t('编辑')
+          }}</RouterLink
           ><el-button
             text
             type="danger"

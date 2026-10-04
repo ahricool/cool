@@ -43,6 +43,7 @@ async function save() {
         avatarUrl: profile.avatarUrl,
       }),
     });
+    await useSiteStore().load(true);
     toast.success(t('账户信息已更新'));
   } catch (e) {
     error.value = errorText(e);
@@ -120,7 +121,7 @@ async function revokeAll() {
             v-model="profile.email"
             type="email"
             readonly /></el-form-item
-        ><el-form-item :label="t('文章作者头像')"
+        ><el-form-item :label="t('账户头像')"
           ><AssetPicker avatar v-model="profile.avatarUrl" /></el-form-item
         ><el-button type="primary" native-type="submit" :loading="busy">{{
           t('保存账户信息')

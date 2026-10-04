@@ -32,8 +32,6 @@ const blankHomepageTranslation = (locale: CoolLocale) => ({
 });
 const form = reactive<AdminSettings>({
   site: {
-    authorName: defaultSite.authorName,
-    avatarUrl: defaultSite.avatarUrl,
     commentsEnabled: defaultSite.commentsEnabled,
     appearance: { ...defaultSite.appearance },
     translations: locales.map(blankSiteTranslation),
@@ -198,14 +196,6 @@ onMounted(load);
               v-model="siteTranslation.authorBio"
               type="textarea"
               maxlength="500"
-          /></el-form-item>
-          <h3>{{ t('共用设置') }}</h3>
-          <p class="muted">{{ t('以下设置对两种语言都生效。') }}</p>
-          <el-form-item :label="t('作者名称')"
-            ><el-input v-model="form.site.authorName" maxlength="100"
-          /></el-form-item>
-          <el-form-item :label="t('头像')"
-            ><AssetPicker avatar v-model="form.site.avatarUrl"
           /></el-form-item>
         </el-form>
       </el-tab-pane>

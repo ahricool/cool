@@ -103,7 +103,7 @@ useHead(() => ({
       </article>
       <section class="author-profile">
         <AvatarImage
-          :src="resolveCustomImage(data.author.avatarUrl, store.site.avatarUrl)"
+          :src="resolveCustomImage(data.author.avatarUrl)"
           :alt="data.author.displayName"
           :width="80"
           :height="80"

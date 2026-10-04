@@ -1,3 +1,4 @@
+import { ADMIN_EMAIL, ADMIN_DISPLAY_NAME } from './auth.constants';
 import { ReaderLocale } from './request-locale';
 import { readSettings } from './settings';
 import { Controller, Get, Param, Query } from '@nestjs/common';
@@ -46,7 +47,17 @@ export class PublicController {
     return this.posts.list(query, locale);
   }
   @Get('site') async site(@ReaderLocale() locale: ContentLocale) {
-    return localize((await readSettings(this.db)).site, locale);
+    const author = await this.db.user.findUnique({
+      where: { email: ADMIN_EMAIL },
+      select: { displayName: true, avatarUrl: true },
+    });
+    return {
+      ...localize((await readSettings(this.db)).site, locale),
+      author: {
+        displayName: author?.displayName.trim() || ADMIN_DISPLAY_NAME,
+        avatarUrl: author?.avatarUrl ?? null,
+      },
+    };
   }
   @Get('config') async config(@ReaderLocale() locale: ContentLocale) {
     const settings = await readSettings(this.db);

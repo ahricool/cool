@@ -27,7 +27,7 @@ npm workspaces：`apps/backend`、`apps/frontend`、`packages/content`。`apps/f
 - 首次发布自动填时间；撤回保留原时间，再发布继续使用。显式清空时间并发布会设为当前时间。
 - 管理 API 返回 `translations` 数组。PUT 中提交的语言记录按 locale upsert，未提交的另一语言保持不变；共享 slug/封面/分类/标签在逻辑内容记录保存。省略保持不变，null 清空可空字段，空数组清空分类/标签；关联事务失败时整体回滚。
 - slug 唯一，可编辑；当前不提供旧 slug 重定向。SEO 阶段再增加重定向记录。
-- 列表不返回正文；作者公开字段仅 id/displayName/avatarUrl。密码哈希与邮箱不出现在公开文章中。
+- 列表不返回正文；作者公开字段仅 id/displayName/avatarUrl。密码哈希与邮箱不出现在公开文章中。全站姓名与头像唯一来源为 users 账户；公开 site.author 仅 displayName/avatarUrl，不返回邮箱。网站设置不再存储作者姓名/头像，旧 JSON 字段读取时忽略且不覆盖账户，作者简介仍支持双语。
 - viewCount 保留字段，暂不采集阅读量；commentCount 随审核事务维护，只计通过审核的评论。
 - `site`、`homepage` 是公开配置命名空间，使用嵌套 DTO 校验；禁止在配置中存秘密。它们不构成后端主题实体。
 - media 是存储对象；photos 是有标题、描述、相册与公开开关的图库条目。

@@ -105,6 +105,7 @@ onMounted(load);
       ><el-table-column prop="slug" :label="t('链接名称')" /><el-table-column
         :label="t('操作')"
         width="160"
+        class-name="table-actions-cell"
         ><template #default="{ row }"
           ><el-button text type="primary" @click="edit(row as AdminTaxonomy)">{{
             t('编辑')
