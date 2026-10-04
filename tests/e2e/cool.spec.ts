@@ -32,8 +32,15 @@ test('owner writes, previews and publishes; readers browse; owner manages conten
     '我的账户',
   ]) {
     if (['网站配置', '我的账户'].includes(label)) {
-      await page.getByRole('button', { name: '我的账户', exact: true }).focus();
+      const account = page.getByRole('button', {
+        name: '我的账户',
+        exact: true,
+      });
+      await account.hover();
+      await account.focus();
       await page.keyboard.press('ArrowDown');
+      await expect(page.getByRole('menuitem').first()).toBeFocused();
+      await page.mouse.move(0, 0);
       await page.getByRole('menuitem', { name: label, exact: true }).click();
     } else {
       await page

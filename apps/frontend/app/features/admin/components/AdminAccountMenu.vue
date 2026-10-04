@@ -29,8 +29,14 @@ function hover(event: PointerEvent) {
   open.value = true;
 }
 function leave(event: PointerEvent) {
-  if (event.pointerType === 'mouse')
-    closeTimer = setTimeout(() => close(), 180);
+  if (
+    event.pointerType !== 'mouse' ||
+    menu.value?.contains(document.activeElement)
+  )
+    return;
+  closeTimer = setTimeout(() => {
+    if (!menu.value?.contains(document.activeElement)) close();
+  }, 180);
 }
 function outside(event: PointerEvent) {
   if (
