@@ -33,10 +33,16 @@ test('owner writes, previews and publishes; readers browse; owner manages conten
     '网站配置',
     '我的账户',
   ]) {
-    await page
-      .locator('.sidebar')
-      .getByRole('link', { name: label, exact: true })
-      .click();
+    if (['网站配置', '我的账户'].includes(label)) {
+      await page.getByRole('button', { name: '我的账户', exact: true }).focus();
+      await page.keyboard.press('ArrowDown');
+      await page.getByRole('menuitem', { name: label, exact: true }).click();
+    } else {
+      await page
+        .locator('.sidebar')
+        .getByRole('link', { name: label, exact: true })
+        .click();
+    }
     await expect(page.locator('.workspace h1')).toBeVisible();
     await expect(page.locator('.workspace [role="alert"]')).toHaveCount(0);
   }

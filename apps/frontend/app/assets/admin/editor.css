@@ -4,7 +4,7 @@
 }
 .title-input .el-input__wrapper {
   box-shadow: none !important;
-  border-bottom: 1px solid var(--sakura-border);
+  border-bottom: 0;
   border-radius: 0;
   padding: 20px 24px;
 }
@@ -18,11 +18,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--sakura-border);
+  border-bottom: 0;
   gap: 10px;
 }
 .editor-toolbar > div {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 3px;
 }
@@ -48,7 +49,7 @@
 }
 .markdown-preview {
   padding: 24px;
-  border-left: 1px solid var(--sakura-border);
+  border-left: 0;
   overflow: auto;
   overflow-wrap: anywhere;
   line-height: 1.9;
@@ -74,7 +75,7 @@
 .editor-status {
   display: flex;
   justify-content: space-between;
-  border-top: 1px solid var(--sakura-border);
+  border-top: 0;
   padding: 10px 20px;
 }
 .editor-settings .el-date-editor {
@@ -102,7 +103,8 @@
 }
 .media-picker-grid button {
   padding: 0;
-  border: 1px solid var(--sakura-border);
+  border: 0;
+  box-shadow: var(--sakura-button-shadow);
   border-radius: 8px;
   overflow: hidden;
   background: var(--sakura-surface);
@@ -136,12 +138,11 @@
   }
   .markdown-preview {
     border-left: 0;
-    border-top: 1px solid var(--sakura-border);
+    border-top: 0;
   }
 }
 .editor-toolbar {
   background: var(--sakura-soft);
-  border-color: var(--sakura-border);
 }
 .editor-status {
   color: var(--sakura-muted);
@@ -159,7 +160,7 @@
 }
 .media-picker-grid button:hover,
 .media-picker-grid button:focus-visible {
-  border-color: var(--sakura-accent);
+  box-shadow: var(--sakura-button-hover-shadow);
 }
 .editor-panes textarea:focus-visible {
   outline-offset: -3px;
@@ -174,7 +175,8 @@
 .content-language-tabs button {
   min-height: 38px;
   padding: 7px 16px;
-  border: 1px solid var(--sakura-border);
+  border: 0;
+  box-shadow: var(--sakura-button-shadow);
   border-radius: 8px;
   color: inherit;
   background: transparent;
@@ -184,7 +186,7 @@
 .content-language-tabs button[aria-pressed='true'] {
   color: var(--sakura-accent-strong);
   background: var(--sakura-soft);
-  border-color: var(--sakura-accent-light-5);
+  box-shadow: var(--sakura-button-hover-shadow);
 }
 .content-language-tabs button:focus-visible {
   outline: 2px solid var(--sakura-accent-strong);

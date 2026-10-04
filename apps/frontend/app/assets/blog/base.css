@@ -90,14 +90,15 @@ h3 {
 :is(.api-state, .cool-search, .post-footer, .pagination, .site-error)
   button:not(.primary-action) {
   padding: 10px 20px;
-  border: 1px solid var(--sakura-border);
+  border: 0;
+  box-shadow: var(--sakura-button-shadow);
   border-radius: 12px;
   background: var(--sakura-surface);
   color: var(--sakura-accent-strong);
 }
 :is(.api-state, .cool-search, .post-footer, .pagination)
   button:not(.primary-action):hover {
-  border-color: var(--sakura-accent-light-5);
+  box-shadow: var(--sakura-button-hover-shadow);
 }
 .pagination {
   display: flex;

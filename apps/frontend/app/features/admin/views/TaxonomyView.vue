@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessageBox } from 'element-plus';
+import { toast } from '~/utils/toast';
 import { api, errorText } from '../api';
 import type { AdminTaxonomy } from '@cool/content';
 import ViewHeader from '../components/ViewHeader.vue';
@@ -37,11 +38,11 @@ function edit(item?: AdminTaxonomy) {
 async function save() {
   if (busy.value) return;
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug)) {
-    ElMessage.warning(t('请填写有效的 链接名称'));
+    toast.warning(t('请填写有效的 链接名称'));
     return;
   }
   if (!names.zh.trim() && !names.en.trim()) {
-    ElMessage.warning(t('请至少填写一种语言的内容'));
+    toast.warning(t('请至少填写一种语言的内容'));
     return;
   }
   busy.value = true;
@@ -58,7 +59,7 @@ async function save() {
     dialog.value = false;
     await load();
   } catch (e) {
-    ElMessage.error(t(errorText(e)));
+    toast.error(t(errorText(e)));
   } finally {
     busy.value = false;
   }
@@ -77,7 +78,7 @@ async function remove(item: AdminTaxonomy) {
     await api(`/admin/${props.kind}/${item.id}`, { method: 'DELETE' });
     await load();
   } catch (e) {
-    ElMessage.error(t(errorText(e)));
+    toast.error(t(errorText(e)));
   }
 }
 onMounted(load);

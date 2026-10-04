@@ -35,11 +35,11 @@ class SiteTranslationDto extends LocaleDto {
   @ApiProperty() @IsString() @MaxLength(500) authorBio!: string;
 }
 class AppearanceDto {
-  @ApiPropertyOptional({ minimum: 85, maximum: 115, default: 100 })
+  @ApiPropertyOptional({ minimum: 80, maximum: 150, default: 100 })
   @ValidateIf((_o, value) => value !== undefined)
   @IsInt()
-  @Min(85)
-  @Max(115)
+  @Min(80)
+  @Max(150)
   fontSize?: number;
   @ApiPropertyOptional({ enum: ['default', 'bubble-candy'] })
   @ValidateIf((_o, value) => value !== undefined)
@@ -162,6 +162,7 @@ export async function readSettings(db: Database) {
   });
   const saved = Object.fromEntries(rows.map((row) => [row.key, row.value]));
   const site = (saved.site ?? defaultSettings.site) as unknown as SiteDto;
+  const fontSize = site.appearance?.fontSize;
   return {
     site: {
       ...site,
@@ -170,7 +171,17 @@ export async function readSettings(db: Database) {
         site.avatarUrl === '/sakura/images/default/avatar.webp'
           ? null
           : site.avatarUrl,
-      appearance: { ...defaultSettings.site.appearance, ...site.appearance },
+      appearance: {
+        ...defaultSettings.site.appearance,
+        ...site.appearance,
+        fontSize:
+          typeof fontSize === 'number' &&
+          Number.isInteger(fontSize) &&
+          fontSize >= 80 &&
+          fontSize <= 150
+            ? fontSize
+            : 100,
+      },
     },
     homepage: (saved.homepage ??
       defaultSettings.homepage) as unknown as HomepageDto,

@@ -1,5 +1,5 @@
 export const adminSettingsMessages: Record<string, string> = {
-  字号: 'Text size',
+  字体大小: 'Font size',
   恢复默认: 'Reset to default',
   全站字体: 'Site font',
   默认字体: 'Default font',

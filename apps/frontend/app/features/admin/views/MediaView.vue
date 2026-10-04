@@ -1,7 +1,8 @@
 <script setup lang="ts">
 const { t } = useCoolI18n();
 import { onMounted, ref } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessageBox } from 'element-plus';
+import { toast } from '~/utils/toast';
 import { api, upload, errorText } from '../api';
 import type { Media, Pagination } from '@cool/content';
 import ViewHeader from '../components/ViewHeader.vue';
@@ -31,9 +32,9 @@ async function select(event: Event) {
   try {
     for (const file of files) await upload(file);
     await load();
-    ElMessage.success(t('上传完成'));
+    toast.success(t('上传完成'));
   } catch (e) {
-    ElMessage.error(t(errorText(e)));
+    toast.error(t(errorText(e)));
     await load();
   } finally {
     busy.value = false;
@@ -43,9 +44,9 @@ async function select(event: Event) {
 async function copy(url: string) {
   try {
     await navigator.clipboard.writeText(url);
-    ElMessage.success(t('图片地址已复制'));
+    toast.success(t('图片地址已复制'));
   } catch {
-    ElMessage.error(t('无法访问剪贴板'));
+    toast.error(t('无法访问剪贴板'));
   }
 }
 async function remove(item: Media) {
@@ -66,7 +67,7 @@ async function remove(item: Media) {
     await api(`/admin/media/${item.id}`, { method: 'DELETE' });
     await load();
   } catch (e) {
-    ElMessage.error(t(errorText(e)));
+    toast.error(t(errorText(e)));
   }
 }
 onMounted(load);

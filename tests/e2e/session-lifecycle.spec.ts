@@ -58,7 +58,11 @@ test('cookie session survives reload and all-device logout revokes browser and s
   const secondTab = await context.newPage();
   await secondTab.goto(admin + '/profile');
   await secondTab
-    .getByRole('button', { name: '退出登录', exact: true })
+    .getByRole('button', { name: '我的账户', exact: true })
+    .focus();
+  await secondTab.keyboard.press('ArrowDown');
+  await secondTab
+    .getByRole('menuitem', { name: '退出登录', exact: true })
     .click();
   await expect(secondTab).toHaveURL((url) => url.pathname === '/admin/login');
   await secondTab.getByLabel('密码', { exact: true }).fill(password);
@@ -90,10 +94,9 @@ test('cookie session survives reload and all-device logout revokes browser and s
       })
     ).ok(),
   ).toBeTruthy();
-  await page
-    .locator('.sidebar')
-    .getByRole('link', { name: '我的账户', exact: true })
-    .click();
+  await page.getByRole('button', { name: '我的账户', exact: true }).focus();
+  await page.keyboard.press('ArrowDown');
+  await page.getByRole('menuitem', { name: '我的账户', exact: true }).click();
   await page
     .locator('.workspace')
     .getByRole('button', { name: '退出所有设备', exact: true })

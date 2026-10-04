@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage } from 'element-plus';
+import { toast } from '~/utils/toast';
 import {
   defaultSite,
   defaultHomepage,
@@ -140,7 +140,7 @@ async function save() {
       body: JSON.stringify(payload),
     });
     await store.load(true);
-    ElMessage.success(t('配置已保存'));
+    toast.success(t('配置已保存'));
   } catch (e) {
     error.value = errorText(e);
   } finally {
@@ -205,7 +205,7 @@ onMounted(load);
             ><el-input v-model="form.site.authorName" maxlength="100"
           /></el-form-item>
           <el-form-item :label="t('头像')"
-            ><AssetPicker v-model="form.site.avatarUrl"
+            ><AssetPicker avatar v-model="form.site.avatarUrl"
           /></el-form-item>
         </el-form>
       </el-tab-pane>

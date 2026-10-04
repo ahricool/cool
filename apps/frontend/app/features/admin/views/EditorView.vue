@@ -15,7 +15,8 @@ import {
   useRouter,
   type RouteLocationNormalized,
 } from 'vue-router';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessageBox } from 'element-plus';
+import { toast } from '~/utils/toast';
 import type {
   AdminPost,
   AdminPage,
@@ -309,9 +310,7 @@ watch(
 async function save(status: Status) {
   if (busy.value || uploading.value || !loaded.value || draft.value) return;
   if (!form.title.trim() || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug)) {
-    ElMessage.warning(
-      t('请填写标题和有效的 链接名称（小写字母、数字、连字符）'),
-    );
+    toast.warning(t('请填写标题和有效的 链接名称（小写字母、数字、连字符）'));
     return;
   }
   busy.value = true;
@@ -358,9 +357,7 @@ async function save(status: Status) {
       sessionStorage.removeItem(key.value);
       sessionStorage.removeItem(sharedKey.value);
     }
-    ElMessage.success(
-      status === 'PUBLISHED' ? t('已保存发布状态') : t('已保存'),
-    );
+    toast.success(status === 'PUBLISHED' ? t('已保存发布状态') : t('已保存'));
     if (isNew) {
       // Associate drafts in the other language with the newly created identity.
       for (const language of ['zh', 'en'] as const) {
@@ -422,7 +419,7 @@ async function confirmNavigation(to: RouteLocationNormalized) {
   // author behind a stale authenticated screen or a leave-confirm dialog.
   if (to.path === '/admin/login' || to.path === savedRoute) return true;
   if (busy.value || uploading.value) {
-    ElMessage.info(t('正在保存或上传，请稍候再离开'));
+    toast.info(t('正在保存或上传，请稍候再离开'));
     return false;
   }
   if (!dirty.value) return true;

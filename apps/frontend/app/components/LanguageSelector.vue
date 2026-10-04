@@ -81,7 +81,8 @@ const { locale, setLocale } = useCoolI18n();
 .language-selector select {
   min-height: 36px;
   padding: 6px 24px 6px 8px;
-  border: 1px solid currentColor;
+  border: 0;
+  box-shadow: var(--sakura-button-shadow);
   border-radius: 8px;
   background: transparent;
   color: inherit;
@@ -93,7 +94,7 @@ const { locale, setLocale } = useCoolI18n();
   outline-offset: 3px;
 }
 .language-selector option {
-  color: #34333d;
-  background: #fff;
+  color: var(--sakura-text-regular);
+  background: var(--sakura-surface);
 }
 </style>

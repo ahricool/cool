@@ -160,6 +160,14 @@ export interface SiteAppearance {
   cover: PatternShape;
   background: PatternShape | 'none';
 }
+export function normalizeFontSize(value: unknown): number {
+  return typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= 80 &&
+    value <= 150
+    ? value
+    : 100;
+}
 export const defaultAppearance: SiteAppearance = {
   font: 'default',
   fontSize: 100,

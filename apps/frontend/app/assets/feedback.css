@@ -1,0 +1,65 @@
+/* Shared feedback stays beneath navigation and outside the fixed Admin rail. */
+:root[data-surface='admin'] {
+  --toast-left: 296px;
+}
+.el-message.sakura-toast {
+  position: fixed;
+  left: var(--toast-left);
+  right: auto;
+  transform: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: max-content;
+  max-width: min(420px, calc(100vw - var(--toast-left) - 16px));
+  border: 0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: var(--sakura-text-regular);
+  background: var(--sakura-surface);
+  box-shadow: var(--sakura-toast-shadow);
+  font: calc(14px * var(--sakura-font-scale)) / 1.6 var(--sakura-font);
+}
+.sakura-toast .el-message__content {
+  margin: 0;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+.sakura-toast .el-message__icon {
+  flex-shrink: 0;
+  width: 1.3em;
+  height: 1.3em;
+  margin-top: 0.15em;
+  margin-right: 0;
+  color: var(--sakura-accent-strong);
+}
+.sakura-toast--warning .el-message__icon,
+.sakura-toast--info .el-message__icon {
+  color: var(--sakura-muted);
+}
+.sakura-toast--error,
+.sakura-toast--danger {
+  --sakura-toast-shadow: 0 5px 22px
+    color-mix(in srgb, var(--sakura-danger) 22%, transparent);
+}
+.el-message.sakura-toast.el-message-fade-enter-from,
+.el-message.sakura-toast.el-message-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+@media (max-width: 960px) {
+  :root[data-surface='admin'] {
+    --toast-left: 216px;
+  }
+}
+@media (max-width: 600px) {
+  :root {
+    --toast-left: 16px;
+  }
+  :root[data-surface='admin'] {
+    --toast-left: 120px;
+  }
+  .el-message.sakura-toast {
+    padding: 12px;
+  }
+}

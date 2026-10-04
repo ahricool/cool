@@ -2,13 +2,14 @@
 const { t } = useCoolI18n();
 import { computed, ref } from 'vue';
 import { resolveCustomImage } from '~/utils/custom-image';
-import { ElMessage } from 'element-plus';
+import { toast } from '~/utils/toast';
 import { api, upload, errorText } from '../api';
 import type { Media, Pagination } from '@cool/content';
 const props = defineProps<{
   modelValue: string | null | undefined;
   disabled?: boolean;
   defaultValue?: string | null;
+  avatar?: boolean;
 }>();
 const emit = defineEmits<{
   'update:modelValue': [value: string | null];
@@ -22,6 +23,7 @@ const selectedImage = computed(() =>
 const previewImage = computed(() =>
   resolveCustomImage(props.modelValue, props.defaultValue),
 );
+const store = useSiteStore();
 const busy = ref(false);
 const fileInput = ref<HTMLInputElement>();
 const dialog = ref(false);
@@ -38,7 +40,7 @@ async function fileChanged(event: Event) {
     const media = await upload(file);
     emit('update:modelValue', media.url);
   } catch (e) {
-    ElMessage.error(t(errorText(e)));
+    toast.error(t(errorText(e)));
   } finally {
     busy.value = false;
     emit('busy-change', false);
@@ -54,13 +56,21 @@ async function browse() {
     items.value = data.items;
     total.value = data.total;
   } catch (e) {
-    ElMessage.error(t(errorText(e)));
+    toast.error(t(errorText(e)));
   }
 }
 </script>
 <template>
-  <div class="asset-picker">
+  <div class="asset-picker" :class="{ 'asset-picker--avatar': avatar }">
     <img v-if="previewImage" :src="previewImage!" :alt="t('所选图片')" />
+    <PatternAvatar
+      v-else-if="avatar"
+      :shape="store.site.appearance.avatar"
+      seed="avatar-picker"
+      :width="120"
+      :height="120"
+      :alt="t('默认头像')"
+    />
     <div class="asset-actions">
       <el-button
         class="upload-label"
@@ -118,3 +128,26 @@ async function browse() {
       @current-change="browse"
   /></el-dialog>
 </template>
+
+<style scoped>
+.asset-picker > img {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+.asset-picker.asset-picker--avatar > img {
+  width: min(120px, 100%);
+  height: auto;
+  aspect-ratio: 1;
+  max-height: none;
+  object-fit: contain;
+  background: var(--sakura-surface);
+}
+.asset-picker--avatar > .pattern-avatar {
+  margin-bottom: 8px;
+}
+</style>

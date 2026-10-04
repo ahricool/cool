@@ -24,6 +24,7 @@ export default defineNuxtConfig({
     '~/assets/admin/workspace.css',
     '~/assets/admin/editor.css',
     '~/assets/admin/login.css',
+    '~/assets/feedback.css',
   ],
   app: {
     head: {

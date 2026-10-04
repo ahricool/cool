@@ -14,10 +14,10 @@ const { menuOpen, openMenu } = navigation;
       class="brand-desktop"
       :to="routePath('/')"
       :aria-label="store.site.title"
-      ><SakuraWordmark
+      ><SakuraFlower spinning class="brand-flower" /><SakuraWordmark
     /></NuxtLink>
     <span v-else class="brand-desktop" role="img" :aria-label="store.site.title"
-      ><SakuraWordmark
+      ><SakuraFlower spinning class="brand-flower" /><SakuraWordmark
     /></span>
     <button
       class="brand-mobile"
@@ -28,7 +28,7 @@ const { menuOpen, openMenu } = navigation;
       :aria-expanded="menuOpen"
       @click="openMenu"
     >
-      <SakuraWordmark />
+      <SakuraFlower spinning class="brand-flower" /><SakuraWordmark />
     </button>
   </span>
 </template>
@@ -37,6 +37,11 @@ const { menuOpen, openMenu } = navigation;
 .brand-desktop {
   display: inline-flex;
   align-items: center;
+}
+.brand-flower {
+  width: calc(var(--wordmark-width, 60px) * 0.45);
+  height: calc(var(--wordmark-width, 60px) * 0.45);
+  margin-right: 10px;
 }
 .brand-mobile {
   display: none;
