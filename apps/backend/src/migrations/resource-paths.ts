@@ -45,28 +45,32 @@ async function changeReference(
   });
 }
 async function currentReference(tx: Prisma.TransactionClient, target: Target) {
+  const textReference = (row: { content: string; updatedAt: Date } | null) =>
+    row ? { value: row.content, updatedAt: row.updatedAt } : undefined;
   if (target.kind === 'posts')
-    return (
+    return textReference(
       await tx.postTranslation.findUnique({
         where: { postId_locale: { postId: target.id, locale: target.locale! } },
-      })
-    )?.content;
+      }),
+    );
   if (target.kind === 'pages')
-    return (
+    return textReference(
       await tx.pageTranslation.findUnique({
         where: { pageId_locale: { pageId: target.id, locale: target.locale! } },
-      })
-    )?.content;
+      }),
+    );
   if (target.kind === 'moments')
-    return (
+    return textReference(
       await tx.momentTranslation.findUnique({
         where: {
           momentId_locale: { momentId: target.id, locale: target.locale! },
         },
-      })
-    )?.content;
+      }),
+    );
   const row = await tx.siteSetting.findUnique({ where: { key: target.id } });
-  return row ? JSON.stringify(row.value) : undefined;
+  return row
+    ? { value: JSON.stringify(row.value), updatedAt: row.updatedAt }
+    : undefined;
 }
 function rewriteSettings(
   value: Prisma.JsonValue,
@@ -125,11 +129,16 @@ export async function migrateResourcePaths(db: Database, rollback = false) {
         });
         for (const reference of references) {
           const target = reference.target as unknown as Target;
-          if ((await currentReference(tx, target)) !== reference.afterValue) {
+          const current = await currentReference(tx, target);
+          if (current?.value !== reference.afterValue) {
             skippedReferences++;
             continue;
           }
-          await changeReference(tx, target, reference.beforeValue);
+          await changeReference(
+            tx,
+            { ...target, updatedAt: current.updatedAt.toISOString() },
+            reference.beforeValue,
+          );
         }
         for (const change of changes)
           await tx.$executeRaw(

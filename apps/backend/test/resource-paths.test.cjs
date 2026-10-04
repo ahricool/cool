@@ -201,6 +201,11 @@ test('path migration preserves identities, publication metadata and relations; a
         after.translations.find((entry) => entry.locale === row.locale),
         { ...row, content: rewriteResourceLinks(row.content, paths) },
       );
+    const laterDate = new Date('2026-01-02T03:04:05.456Z');
+    await db.postTranslation.update({
+      where: { postId_locale: { postId: post.id, locale: 'zh' } },
+      data: { title: 'A later title', updatedAt: laterDate },
+    });
     // Never erase content edited after migration during rollback.
     await db.momentTranslation.update({
       where: { momentId_locale: { momentId: moment.id, locale: 'zh' } },
@@ -216,7 +221,14 @@ test('path migration preserves identities, publication metadata and relations; a
         where: { id: post.id },
         include: { translations: true, categories: true, tags: true },
       }),
-      before,
+      {
+        ...before,
+        translations: before.translations.map((row) =>
+          row.locale === 'zh'
+            ? { ...row, title: 'A later title', updatedAt: laterDate }
+            : row,
+        ),
+      },
     );
     assert.equal(
       (await db.page.findUnique({ where: { id: page.id } })).slug,
