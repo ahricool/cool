@@ -22,16 +22,24 @@
 }
 .sakura-toast .el-message__content {
   margin: 0;
+  min-width: 0;
+  font: inherit;
   color: inherit;
   overflow-wrap: anywhere;
 }
 .sakura-toast .el-message__icon {
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
+  font: inherit;
+  width: 1.3em;
+  height: 1lh;
+  margin: 0;
+  color: var(--sakura-accent-strong);
+}
+.sakura-toast .el-message__icon svg {
   width: 1.3em;
   height: 1.3em;
-  margin-top: 0.15em;
-  margin-right: 0;
-  color: var(--sakura-accent-strong);
 }
 .sakura-toast--warning .el-message__icon,
 .sakura-toast--info .el-message__icon {
