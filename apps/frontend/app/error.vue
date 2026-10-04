@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t, locale, localePath, contentLang } = useCoolI18n();
+const { t, locale, routePath, contentLang } = useCoolI18n();
 import type { NuxtError } from '#app';
 defineProps<{ error: NuxtError }>();
 const route = useRoute();
@@ -21,7 +21,7 @@ useHead(() => ({
       <h1 id="error-title">{{ t('这个页面暂时不在这里。') }}</h1>
       <p>{{ t('也许只是转错了一个路口，回去继续你的故事吧。') }}</p>
       <button
-        @click="clearError({ redirect: isAdmin ? '/admin' : localePath('/') })"
+        @click="clearError({ redirect: isAdmin ? '/admin' : routePath('/') })"
       >
         {{ t(isAdmin ? '返回工作空间' : '返回首页') }}
       </button>

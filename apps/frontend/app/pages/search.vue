@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t, locale, localePath } = useCoolI18n();
+const { t, locale, routePath } = useCoolI18n();
 import type { Pagination, Post } from '@cool/content';
 const route = useRoute();
 const q = ref(String(route.query.q ?? ''));
@@ -26,7 +26,7 @@ function search() {
   searchFailure.value = q.value.trim() ? '' : '请输入搜索关键词。';
   if (searchFailure.value) return;
   void navigateTo({
-    path: localePath('/search'),
+    path: routePath('/search'),
     query: { q: q.value.trim() },
   });
 }

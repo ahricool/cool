@@ -10,7 +10,7 @@ module.exports = async function verifyBilingual(t, http, token) {
     return body === undefined ? req : req.send(body);
   };
   const read = (locale, resource) =>
-    http.get(`/api/v1/public/${locale}/${resource}`);
+    http.get(`/api/v1/public/${resource}`).set('Accept-Language', locale);
   const created = [];
   const create = async (kind, body) => {
     const item = (await admin('post', kind, body).expect(201)).body;
@@ -101,8 +101,8 @@ module.exports = async function verifyBilingual(t, http, token) {
             slug: prefix + '-bad-locale',
             translations,
           }).expect(400);
-        await read('fr', 'posts').expect(400);
-        await http.get('/api/v1/public/posts').expect(404);
+        await read('fr', 'posts').expect(200);
+        await http.get('/api/v1/public/posts').expect(200);
         await admin('put', `posts/${post.id}`, {
           translations: [{ title: 'Missing locale' }],
         }).expect(400);

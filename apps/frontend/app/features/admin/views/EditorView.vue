@@ -24,7 +24,7 @@ import type {
 } from '@cool/content';
 import { api, errorText } from '../api';
 import { takeEditorDraft, transferEditorDraft } from '../editor-drafts';
-import { pathForLocale, isLocale, type CoolLocale } from '~/i18n/locale';
+import { publicPath, isLocale, type CoolLocale } from '~/i18n/locale';
 import { displayTranslation } from '../content';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
@@ -528,7 +528,7 @@ onBeforeRouteUpdate(confirmNavigation);
             maxlength="160"
             placeholder="my-first-story"
           /><small class="muted"
-            >/{{ contentLocale }}/{{ kind }}/{{ form.slug || 'slug' }}</small
+            >/{{ kind }}/{{ form.slug || 'slug' }}</small
           ></el-form-item
         ><el-form-item :label="t('发布时间')"
           ><el-date-picker
@@ -579,7 +579,7 @@ onBeforeRouteUpdate(confirmNavigation);
                 :value="term.id" /></el-select></el-form-item></template
         ><a
           v-if="!isNew && form.status === 'PUBLISHED'"
-          :href="pathForLocale(`/${kind}/${form.slug}`, contentLocale)"
+          :href="publicPath(`/${kind}/${form.slug}`)"
           target="_blank"
           rel="noopener"
           >{{ t('查看公开页面 ↗') }}</a

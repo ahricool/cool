@@ -2,9 +2,9 @@
 defineProps<{ title: string; titleLang?: string; cover?: string | null }>();
 </script>
 <template>
-  <div class="page-header is-decorate">
-    <div class="pattern-center single-center no-select">
-      <div class="pattern-attachment-img">
+  <div class="page-header">
+    <div class="page-artwork">
+      <div class="page-cover">
         <img
           :src="cover || '/sakura/images/default/hd.webp'"
           alt=""
@@ -13,7 +13,7 @@ defineProps<{ title: string; titleLang?: string; cover?: string | null }>();
         />
       </div>
     </div>
-    <div class="pattern-title">
+    <div class="page-heading">
       <h1 :lang="titleLang">{{ title }}</h1>
       <slot />
     </div>

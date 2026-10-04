@@ -1,3 +1,4 @@
+import { ReaderLocale } from './request-locale';
 import {
   BadRequestException,
   Body,
@@ -20,13 +21,13 @@ import { AuthGuard } from './auth';
 import { CommentDto, ModerateCommentDto } from './content.dto';
 import { ListQuery } from './dto';
 import { visiblePosts } from './posts';
-import { ContentLocale, LocalePipe } from './localization';
+import { ContentLocale } from './localization';
 @ApiTags('Comments')
-@Controller('public/:locale/posts/:slug/comments')
+@Controller('public/posts/:slug/comments')
 export class PublicCommentsController {
   constructor(private readonly db: Database) {}
   @Get() async list(
-    @Param('locale', LocalePipe) locale: ContentLocale,
+    @ReaderLocale() locale: ContentLocale,
     @Param('slug') slug: string,
     @Query() q: ListQuery,
   ) {
@@ -52,7 +53,7 @@ export class PublicCommentsController {
   @Post()
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   async create(
-    @Param('locale', LocalePipe) locale: ContentLocale,
+    @ReaderLocale() locale: ContentLocale,
     @Param('slug') slug: string,
     @Body() d: CommentDto,
   ) {

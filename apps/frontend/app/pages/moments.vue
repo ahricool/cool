@@ -22,13 +22,9 @@ const { data, pending, error, refresh } = await useAsyncData(
       @retry="refresh()" />
     <div class="moments-container">
       <ul class="moments-inner">
-        <li
-          v-for="moment in data?.items"
-          :key="moment.id"
-          class="moments-item journal"
-        >
-          <span class="moment-container"
-            ><img
+        <li v-for="moment in data?.items" :key="moment.id" class="moments-item">
+          <div class="moment-container">
+            <img
               class="avatar"
               :src="
                 store.site.avatarUrl || '/sakura/images/default/avatar.webp'
@@ -48,8 +44,8 @@ const { data, pending, error, refresh } = await useAsyncData(
                   <time>{{ formatDate(moment.publishedAt) }}</time>
                 </div>
               </div>
-            </div></span
-          >
+            </div>
+          </div>
         </li>
       </ul>
     </div>

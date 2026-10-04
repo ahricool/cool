@@ -1,0 +1,213 @@
+.editor-main {
+  padding: 0;
+  overflow: hidden;
+}
+.title-input .el-input__wrapper {
+  box-shadow: none !important;
+  border-bottom: 1px solid #f0f1f3;
+  border-radius: 0;
+  padding: 20px 24px;
+}
+.title-input .el-input__inner {
+  font-size: 24px;
+  font-weight: 700;
+  height: 44px;
+}
+.editor-toolbar {
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f0f1f3;
+  gap: 10px;
+}
+.editor-toolbar > div {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.editor-panes {
+  display: grid;
+  min-height: 540px;
+}
+.editor-panes.split {
+  grid-template-columns: 1fr 1fr;
+}
+.editor-panes textarea {
+  width: 100%;
+  min-height: 540px;
+  border: 0;
+  resize: vertical;
+  padding: 24px;
+  color: #535862;
+  line-height: 1.9;
+  font-family: ui-monospace, 'Noto Sans SC', monospace;
+  font-size: 13px;
+  outline: none;
+}
+.markdown-preview {
+  padding: 24px;
+  border-left: 1px solid #eee;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  line-height: 1.9;
+  font-size: 14px;
+}
+.markdown-preview img {
+  max-width: 100%;
+}
+.markdown-preview pre {
+  padding: 15px;
+  border-radius: 8px;
+  overflow: auto;
+}
+.markdown-preview table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.markdown-preview td,
+.markdown-preview th {
+  border: 1px solid #eee;
+  padding: 6px;
+}
+.editor-status {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #eee;
+  padding: 10px 20px;
+}
+.editor-settings .el-date-editor {
+  width: 100%;
+}
+.editor-settings .el-form-item {
+  margin-bottom: 22px;
+}
+.upload-label {
+  cursor: pointer;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 5px 9px;
+  border-radius: 6px;
+}
+.upload-label input {
+  display: none;
+}
+.upload-label.primary {
+  padding: 9px 18px;
+}
+.media-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+.media-picker-grid button {
+  padding: 0;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--sakura-surface);
+  cursor: pointer;
+}
+.media-picker-grid img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+}
+.media-picker-grid span {
+  display: block;
+  font-size: 10px;
+  padding: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 1100px) {
+  .workspace {
+    padding: 28px 24px;
+  }
+  .topbar {
+    padding: 0 24px;
+  }
+  .edit-layout {
+    grid-template-columns: 1fr;
+  }
+  .editor-settings {
+    max-width: none;
+  }
+  .stat-grid {
+    gap: 12px;
+  }
+  .welcome-flower {
+    margin-right: 0;
+  }
+  .editor-panes.split {
+    grid-template-columns: 1fr;
+  }
+  .markdown-preview {
+    border-left: 0;
+    border-top: 1px solid #eee;
+  }
+}
+.editor-toolbar {
+  background: #fff9fc;
+  border-color: #eee1ea;
+}
+.editor-status {
+  color: #816c80;
+  font-size: 11px;
+}
+.title-input .el-input__inner {
+  color: #67445f;
+}
+.upload-label {
+  color: #a33f6a;
+  background: #fff0f6;
+}
+.upload-label.primary {
+  background: var(--el-color-primary);
+  color: var(--sakura-surface);
+}
+.markdown-preview pre {
+  background: #faf3f8;
+}
+.media-picker-grid button:hover,
+.media-picker-grid button:focus-visible {
+  border-color: var(--sakura-accent);
+}
+.editor-panes textarea:focus-visible {
+  outline-offset: -3px;
+}
+.content-language-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+.content-language-tabs button {
+  min-height: 38px;
+  padding: 7px 16px;
+  border: 1px solid var(--border, #e8dfe5);
+  border-radius: 8px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+.content-language-tabs button[aria-pressed='true'] {
+  color: #a84069;
+  background: #fff0f5;
+  border-color: #eac0d0;
+}
+.content-language-tabs button:focus-visible {
+  outline: 2px solid #d87a9d;
+  outline-offset: 3px;
+}
+.content-language-tabs small {
+  color: #827b84;
+}
+.translation-status + .translation-status {
+  margin-top: 5px;
+}

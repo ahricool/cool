@@ -1,6 +1,8 @@
 /** Public interface copy only. Authored content is localized by the API. */
 export const publicMessages: Record<string, string> = {
   首页: 'Home',
+  主导航: 'Main navigation',
+  阅读工具: 'Reading controls',
   归档: 'Archives',
   分类: 'Categories',
   标签: 'Tags',
@@ -48,7 +50,6 @@ export const publicMessages: Record<string, string> = {
   '阅读 {title}': 'Read {title}',
   '阅读全文 →': 'Read more →',
   首页背景: 'Homepage background',
-  浏览文章: 'Browse posts',
   发现故事: 'Discover stories',
   '查看 {title}': 'View {title}',
   查看图片: 'View photo',

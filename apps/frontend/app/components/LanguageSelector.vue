@@ -60,7 +60,9 @@ const { locale, setLocale } = useCoolI18n();
   font: inherit;
   cursor: pointer;
 }
-.language-links button:hover {
+.language-links button:hover,
+.language-links button[aria-pressed='true'] {
+  color: var(--sakura-accent-strong);
   text-decoration: underline;
   text-underline-offset: 3px;
 }

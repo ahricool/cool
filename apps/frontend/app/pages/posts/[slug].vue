@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t, locale, formatDate, localePath, contentLang } = useCoolI18n();
+const { t, locale, formatDate, routePath, contentLang } = useCoolI18n();
 import { renderMarkdown, type Post } from '@cool/content';
 const route = useRoute();
 const store = useSiteStore();
@@ -79,7 +79,7 @@ useHead(() => ({
         :lang="contentLang(data.contentLocale)"
       >
         <div
-          class="entry-content fancybox-content"
+          class="entry-content"
           :lang="contentLang(data.contentLocale)"
           v-html="rendered.html"
         ></div>
@@ -93,7 +93,7 @@ useHead(() => ({
                 v-for="tag in data.tags"
                 :key="tag.tag.id"
                 :lang="contentLang(tag.tag.contentLocale)"
-                :to="localePath(`/tags/${encodeURIComponent(tag.tag.slug)}`)"
+                :to="routePath(`/tags/${encodeURIComponent(tag.tag.slug)}`)"
                 >#{{ tag.tag.name }}</NuxtLink
               >
             </div>

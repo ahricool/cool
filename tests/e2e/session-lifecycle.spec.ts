@@ -182,6 +182,9 @@ test('first-password screen confirms input and remains in the same Nuxt app acro
   await expect(
     page.getByRole('heading', { name: '开启你的创作空间' }),
   ).toBeVisible();
+  const adminBackground = await page
+    .locator('body')
+    .evaluate((element) => getComputedStyle(element).backgroundColor);
   await page.screenshot({
     path: info.outputPath('first-password.png'),
     fullPage: true,
@@ -204,7 +207,7 @@ test('first-password screen confirms input and remains in the same Nuxt app acro
   await expect(page.locator('html')).toHaveAttribute('data-surface', 'admin');
   await expect(page.locator('body')).toHaveCSS(
     'background-color',
-    'rgb(252, 248, 251)',
+    adminBackground,
   );
   await page
     .getByLabel('设置密码', { exact: true })

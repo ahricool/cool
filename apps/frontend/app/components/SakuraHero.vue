@@ -1,18 +1,11 @@
 <script setup lang="ts">
-const { t, localePath, contentLang } = useCoolI18n();
+const { t, routePath, contentLang } = useCoolI18n();
 import { socialIcon } from '~/utils/social-icon';
 const store = useSiteStore();
-function scrollDown() {
-  document.getElementById('content')?.scrollIntoView({
-    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      ? 'auto'
-      : 'smooth',
-  });
-}
 </script>
 <template>
-  <div class="headertop">
-    <figure id="centerbg" class="centerbg">
+  <div class="home-hero">
+    <figure id="hero-artwork" class="hero-artwork">
       <picture
         ><img
           class="cover-bg"
@@ -22,12 +15,12 @@ function scrollDown() {
           height="1080"
           fetchpriority="high"
       /></picture>
-      <div class="focusinfo">
-        <div
-          v-if="store.homepage.focusMode === 'avatar'"
-          class="header-tou no-select"
-        >
-          <NuxtLink :to="localePath('/')"
+      <div class="hero-content">
+        <div class="hero-brand" role="img" :aria-label="store.site.title">
+          <SakuraWordmark />
+        </div>
+        <div v-if="store.homepage.focusMode === 'avatar'" class="hero-avatar">
+          <NuxtLink :to="routePath('/')"
             ><img
               :src="
                 store.site.avatarUrl || '/sakura/images/default/avatar.webp'
@@ -37,24 +30,15 @@ function scrollDown() {
               height="120"
           /></NuxtLink>
         </div>
-        <h1
-          v-else
-          class="center-text glitch"
-          :data-text="store.homepage.greeting"
-          :lang="contentLang(store.homepage.contentLocale)"
-        >
-          {{ store.homepage.greeting }}
-        </h1>
-        <div class="header-info no-select">
+        <div class="hero-description">
           <p class="flex-child-center">
-            <span aria-hidden="true">❝</span
-            ><span
+            <span
               class="desc"
               :lang="contentLang(store.homepage.contentLocale)"
               >{{ store.homepage.description }}</span
-            ><span aria-hidden="true">❞</span>
+            >
           </p>
-          <div v-if="store.social.length" class="top-social">
+          <div v-if="store.social.length" class="hero-social">
             <ul>
               <li v-for="link in store.social" :key="link.url">
                 <a
@@ -86,12 +70,5 @@ function scrollDown() {
         style="background: url('/sakura/images/wave/wave2.png') repeat-x"
       ></div>
     </div>
-    <button
-      class="headertop-down"
-      :aria-label="t('浏览文章')"
-      @click="scrollDown"
-    >
-      <SakuraIcon name="alt-arrow-down-linear" />
-    </button>
   </div>
 </template>

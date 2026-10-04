@@ -7,17 +7,12 @@ defineProps<{
 }>();
 </script>
 <template>
-  <div class="column">
-    <header class="header">
-      <slot name="header"
-        ><PageHeader
-          :title="title || ''"
-          :cover="cover"
-          :title-lang="titleLang"
-      /></slot>
-    </header>
-  </div>
-  <div id="content" class="main-inner site-content" :class="contentClass">
+  <header class="page-banner">
+    <slot name="header"
+      ><PageHeader :title="title || ''" :cover="cover" :title-lang="titleLang"
+    /></slot>
+  </header>
+  <div id="content" class="page-content" :class="contentClass">
     <slot />
   </div>
 </template>

@@ -23,7 +23,7 @@ function insideKeyframes(rule: Rule): boolean {
 }
 
 function scopeSelector(selector: string, surface: Surface): string {
-  // :where adds no specificity, preserving upstream component and theme overrides.
+  // :where adds no specificity, keeping component rules independent of the surface boundary.
   const rootScope = selectorParser().astSync(
     `:where(html[data-surface='${surface}'])`,
   ).first.first;
@@ -71,19 +71,6 @@ export default function surfaceStyles(): Plugin {
   return {
     postcssPlugin: 'sakura-surface-styles',
     Once(root, { result }) {
-      // Correct three upstream variable typos at build time; retain the source asset.
-      root.walkDecls((declaration) => {
-        const file = declaration.source?.input.file ?? result.opts.from ?? '';
-        if (
-          file.replaceAll('\\', '/').endsWith('/assets/blog/sakura.css') &&
-          (declaration.prop === 'color' || declaration.prop === 'border')
-        ) {
-          declaration.value = declaration.value.replace(
-            /(?:--)?var\(theme-color\)/g,
-            'var(--theme-color)',
-          );
-        }
-      });
       root.walkRules((rule) => {
         const surface = surfaceFor(
           rule.source?.input.file ?? result.opts.from ?? '',

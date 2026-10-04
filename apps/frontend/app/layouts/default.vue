@@ -15,18 +15,21 @@ const navigationIcons = {
   '/moments': EditPen,
   '/photos': Camera,
 };
-const { t, localePath, contentLang } = useCoolI18n();
+const { t, routePath, contentLang } = useCoolI18n();
 import { socialIcon } from '~/utils/social-icon';
 const route = useRoute();
 const store = useSiteStore();
-const menuOpen = ref(false);
-const menuTrigger = ref<HTMLButtonElement>();
-const sidebar = ref<HTMLElement>();
-const mobileQuery = ref('');
-const mobileSearchFailure = ref('');
-let previousOverflow = '';
-const scrolled = ref(false);
-const dark = ref(false);
+const isHome = computed(() => route.path === '/');
+const {
+  menuOpen,
+  menuTrigger,
+  sidebar,
+  dark,
+  scrollProgress,
+  mobileQuery,
+  mobileSearchFailure,
+  sidebarKeydown,
+} = useReadingShell();
 const menu = [
   ['/', '首页'],
   ['/archives', '归档'],
@@ -37,55 +40,7 @@ const menu = [
 ];
 onMounted(() => {
   void store.load();
-  const scroll = () => {
-    scrolled.value = window.scrollY > 40;
-  };
-  scroll();
-  window.addEventListener('scroll', scroll, { passive: true });
-  const resize = () => {
-    if (window.innerWidth > 768) menuOpen.value = false;
-  };
-  window.addEventListener('resize', resize);
-  onUnmounted(() => {
-    window.removeEventListener('scroll', scroll);
-    window.removeEventListener('resize', resize);
-    if (menuOpen.value) document.body.style.overflow = previousOverflow;
-  });
 });
-watch(menuOpen, async (open) => {
-  if (open) {
-    previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    await nextTick();
-    sidebar.value
-      ?.querySelector<HTMLElement>('button, a[href], input, select')
-      ?.focus();
-  } else {
-    document.body.style.overflow = previousOverflow;
-    await nextTick();
-    menuTrigger.value?.focus();
-  }
-});
-function sidebarKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
-    menuOpen.value = false;
-    return;
-  }
-  if (event.key !== 'Tab') return;
-  const items = sidebar.value?.querySelectorAll<HTMLElement>(
-    'button, a[href], input, select',
-  );
-  if (!items?.length) return;
-  const first = items[0];
-  const last = items[items.length - 1];
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last?.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first?.focus();
-  }
-}
 function mobileSearch() {
   mobileSearchFailure.value = mobileQuery.value.trim()
     ? ''
@@ -93,17 +48,11 @@ function mobileSearch() {
   if (!mobileSearchFailure.value) {
     menuOpen.value = false;
     void navigateTo({
-      path: localePath('/search'),
+      path: routePath('/search'),
       query: { q: mobileQuery.value.trim() },
     });
   }
 }
-watch(
-  () => route.fullPath,
-  () => {
-    menuOpen.value = false;
-  },
-);
 useHead(() => ({
   title: store.site.title,
   htmlAttrs: { class: dark.value ? 'dark' : '' },
@@ -115,66 +64,52 @@ useHead(() => ({
     id="main-container"
     class="container"
     :class="{
-      'is-homepage':
-        route.path === localePath('/') || route.path === `${localePath('/')}/`,
+      'is-homepage': isHome,
       'sidebar-open': menuOpen,
     }"
     :inert="menuOpen"
   >
-    <header class="site-header" :class="{ yya: scrolled }">
+    <header
+      class="site-header"
+      :class="{
+        'home-header': isHome,
+        'header-readable': scrollProgress > 0.12,
+        'header-solid': scrollProgress >= 1 / 3,
+      }"
+      :style="{ '--header-progress': isHome ? scrollProgress : 1 }"
+    >
       <div class="header-inner">
-        <div class="header-before">
-          <div class="site-branding">
-            <h1 class="site-title">
-              <button
-                ref="menuTrigger"
-                class="mobile-brand"
-                type="button"
-                :lang="contentLang(store.site.contentLocale)"
-                :aria-label="t('打开导航')"
-                aria-controls="mobile-sidebar"
-                :aria-expanded="menuOpen"
-                @click="menuOpen = !menuOpen"
-              >
-                {{ store.site.title }}
-              </button>
-              <NuxtLink
-                class="desktop-brand"
-                :to="localePath('/')"
-                :lang="contentLang(store.site.contentLocale)"
-                >{{ store.site.title }}</NuxtLink
-              >
-            </h1>
-          </div>
-        </div>
-        <div class="header-content">
-          <div class="lower-container">
-            <div class="lower">
-              <nav class="navbar">
-                <ul class="menu-root">
-                  <li v-for="item in menu" :key="item[0]" class="menu-item">
-                    <NuxtLink :to="localePath(item[0]!)">{{
-                      t(item[1]!)
-                    }}</NuxtLink>
-                  </li>
-                </ul>
-              </nav>
-            </div>
-          </div>
-        </div>
-        <div class="header-after">
-          <NuxtLink
-            :to="localePath('/search')"
-            class="header-action"
-            :aria-label="t('搜索')"
-            ><SakuraIcon name="magnifer-linear" /></NuxtLink
-          ><button
-            class="header-action"
-            :aria-label="t(dark ? '切换浅色' : '切换深色')"
-            @click="dark = !dark"
+        <NuxtLink
+          class="header-brand"
+          :inert="isHome && scrollProgress < 0.1"
+          :aria-hidden="isHome && scrollProgress < 0.1"
+          :to="routePath('/')"
+          :lang="contentLang(store.site.contentLocale)"
+          :aria-label="store.site.title"
+          ><SakuraWordmark
+        /></NuxtLink>
+        <nav class="header-content" :aria-label="t('主导航')">
+          <ul class="menu-root">
+            <li v-for="item in menu" :key="item[0]" class="menu-item">
+              <NuxtLink :to="routePath(item[0]!)">{{ t(item[1]!) }}</NuxtLink>
+            </li>
+          </ul>
+        </nav>
+        <div class="header-actions">
+          <button
+            ref="menuTrigger"
+            class="mobile-menu reading-control"
+            type="button"
+            :aria-label="t('打开导航')"
+            aria-controls="mobile-sidebar"
+            :aria-expanded="menuOpen"
+            @click="menuOpen = !menuOpen"
           >
-            <SakuraIcon :name="dark ? 'sun-2-linear' : 'moon-linear'" />
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
           </button>
+          <ReadingControls />
         </div>
       </div>
     </header>
@@ -193,7 +128,6 @@ useHead(() => ({
     :aria-label="t('关闭导航')"
     @click="menuOpen = false"
   ></button>
-  <!-- Keep the closed drawer hidden before the surface-scoped theme activates. -->
   <section
     v-show="menuOpen"
     id="mobile-sidebar"
@@ -262,7 +196,7 @@ useHead(() => ({
         <nav class="navbar" :aria-label="t('移动端导航')">
           <ul class="menu-root">
             <li v-for="item in menu" :key="item[0]" class="menu-item">
-              <NuxtLink :to="localePath(item[0]!)" @click="menuOpen = false">
+              <NuxtLink :to="routePath(item[0]!)" @click="menuOpen = false">
                 <component
                   :is="navigationIcons[item[0] as keyof typeof navigationIcons]"
                   class="sidebar-nav-icon"
@@ -276,72 +210,10 @@ useHead(() => ({
       </div>
     </div>
   </section>
-  <footer class="site-footer" :inert="menuOpen">
-    <div class="site-info">
-      <div class="footer-logo">
-        <SakuraFlower class="footer-flower" />
-      </div>
-      <p class="footer-wish" lang="zh-CN">
-        <em>愿你的天空永远星光灿烂，<br />愿你的舞台永远明光幻彩。</em>
-      </p>
-      <LanguageSelector variant="text" />
-    </div>
-  </footer>
+  <FloatingThemeToggle
+    :dark="dark"
+    :inert="menuOpen"
+    @toggle-theme="dark = !dark"
+  />
+  <SiteFooter :inert="menuOpen" />
 </template>
-
-<style scoped>
-.mobile-brand {
-  display: none;
-}
-@media (max-width: 768px) {
-  .site-branding .site-title .desktop-brand {
-    display: none;
-  }
-  .mobile-brand {
-    display: block;
-    max-width: 160px;
-    min-height: 44px;
-    padding: 0;
-    border: 0;
-    background: none;
-    box-shadow: none;
-    color: var(--sakura-heading);
-    font: inherit;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-  .mobile-brand:focus-visible {
-    outline: 1px solid currentColor;
-    outline-offset: 3px;
-  }
-  .site-header .header-inner .header-before {
-    justify-content: flex-start;
-    padding-left: 20px;
-  }
-  .site-header .header-inner .header-after {
-    padding-right: 20px;
-  }
-}
-
-.footer-wish {
-  margin: 12px 0;
-}
-.footer-wish em {
-  font-style: italic;
-}
-
-/* English labels need a little more room beside the brand on tablet widths. */
-@media (min-width: 769px) and (max-width: 1100px) {
-  :global(html[lang='en']) .site-header .navbar .menu-root > .menu-item {
-    padding-inline: 6px;
-  }
-  :global(html[lang='en']) .site-header .navbar .menu-root > .menu-item > a {
-    font-size: 13px;
-  }
-}
-</style>

@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 export type CoolLocale = 'zh' | 'en';
-export const LOCALE_STORAGE_KEY = 'cool.locale';
+export const LOCALE_COOKIE = 'cool_locale';
 export function isLocale(value: unknown): value is CoolLocale {
   return value === 'zh' || value === 'en';
 }
@@ -18,43 +18,28 @@ export function resolveLocale(
 ): CoolLocale {
   return isLocale(saved) ? saved : detectLocale(languages);
 }
-export function effectiveLocale(
-  routeLocale: unknown,
-  preference: CoolLocale,
-): CoolLocale {
-  return isLocale(routeLocale) ? routeLocale : preference;
-}
 export function initialLocale(): CoolLocale {
   if (typeof window === 'undefined') return 'en';
-  let saved: unknown;
-  try {
-    saved = localStorage.getItem(LOCALE_STORAGE_KEY);
-  } catch {
-    /* Private browsers can deny storage; switching remains available. */
-  }
-  return resolveLocale(
-    saved,
+  const cookie = document.cookie
+    .split('; ')
+    .find((item) => item.startsWith(`${LOCALE_COOKIE}=`))
+    ?.split('=')[1];
+  const locale = resolveLocale(
+    cookie,
     navigator.languages?.length ? navigator.languages : [navigator.language],
   );
+  persistLocale(locale);
+  return locale;
+}
+export function persistLocale(locale: CoolLocale) {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${LOCALE_COOKIE}=${locale}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
 }
 export const preferredLocale = ref<CoolLocale>(initialLocale());
-// Explicit public URLs affect the current surface, not the saved preference.
-export const currentLocale = ref<CoolLocale>(preferredLocale.value);
 export const contentLang = (locale: unknown) =>
   locale === 'zh' ? 'zh-CN' : 'en';
-export function pathForLocale(path: string, locale: CoolLocale) {
-  const clean = `/${path.replace(/^\/+/, '')}`.replace(
-    /^\/(zh|en)(?=\/|$)/,
-    '',
-  );
-  return `/${locale}${clean === '/' ? '' : clean}`;
-}
-/** Idempotent so retries keep the locale captured by the original request. */
-export function localizePublicRequest(path: string, locale: CoolLocale) {
-  return path.replace(
-    /^\/public(?!\/(?:zh|en)(?:\/|$))(?=\/|$)/,
-    `/public/${locale}`,
-  );
+export function publicPath(path: string) {
+  return `/${path.replace(/^\/+/, '')}`;
 }
 
 export const SITE_TIME_ZONE = 'Asia/Shanghai';

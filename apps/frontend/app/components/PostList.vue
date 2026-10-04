@@ -1,17 +1,12 @@
 <script setup lang="ts">
-const { t, formatDate, localePath, contentLang } = useCoolI18n();
+const { t, formatDate, routePath, contentLang } = useCoolI18n();
 import type { Post } from '@cool/content';
 defineProps<{ posts: Post[] }>();
 </script>
 <template>
-  <article
-    v-for="(post, index) in posts"
-    :key="post.id"
-    class="post post-list-thumb"
-    :class="{ 'post-list-thumb-right': index % 2 === 1 }"
-  >
-    <div class="post-content-wrap">
-      <div class="post-date flex-child-center">
+  <article v-for="post in posts" :key="post.id" class="post story-card">
+    <div class="story-body">
+      <div class="story-byline flex-child-center">
         <SakuraIcon name="clock-circle-linear" /><span>{{
           post.author.displayName
         }}</span
@@ -19,7 +14,7 @@ defineProps<{ posts: Post[] }>();
           formatDate(post.publishedAt)
         }}</time>
       </div>
-      <NuxtLink :to="localePath(`/posts/${post.slug}`)" class="post-title"
+      <NuxtLink :to="routePath(`/posts/${post.slug}`)" class="story-title"
         ><h2 :lang="contentLang(post.contentLocale)">
           {{ post.title }}
         </h2></NuxtLink
@@ -33,7 +28,7 @@ defineProps<{ posts: Post[] }>();
         ><span v-if="post.categories[0]" class="flex-child-center"
           ><NuxtLink
             :to="
-              localePath(
+              routePath(
                 `/categories/${encodeURIComponent(post.categories[0].category.slug)}`,
               )
             "
@@ -42,11 +37,11 @@ defineProps<{ posts: Post[] }>();
           ></span
         >
       </div>
-      <div class="float-content">
+      <div class="story-summary">
         <p :lang="contentLang(post.contentLocale)">{{ post.excerpt }}</p>
-        <div class="post-bottom">
+        <div class="story-action">
           <NuxtLink
-            :to="localePath(`/posts/${post.slug}`)"
+            :to="routePath(`/posts/${post.slug}`)"
             class="button-normal flex-child-center"
             :aria-label="t('阅读 {title}', { title: post.title })"
             >{{ t('阅读全文 →') }}</NuxtLink
@@ -54,8 +49,8 @@ defineProps<{ posts: Post[] }>();
         </div>
       </div>
     </div>
-    <div class="post-thumb">
-      <NuxtLink :to="localePath(`/posts/${post.slug}`)"
+    <div class="story-cover">
+      <NuxtLink :to="routePath(`/posts/${post.slug}`)"
         ><img
           :src="post.coverUrl || '/sakura/images/default/temp.webp'"
           :alt="post.title"

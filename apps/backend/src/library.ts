@@ -1,3 +1,4 @@
+import { ReaderLocale } from './request-locale';
 import {
   BadRequestException,
   Body,
@@ -398,11 +399,11 @@ export class LibraryController {
   }
 }
 @ApiTags('Public library')
-@Controller('public/:locale')
+@Controller('public')
 export class PublicLibraryController {
   constructor(private readonly db: Database) {}
   @Get('pages/:slug') async page(
-    @Param('locale', LocalePipe) locale: ContentLocale,
+    @ReaderLocale() locale: ContentLocale,
     @Param('slug') slug: string,
   ) {
     const now = new Date();
@@ -429,7 +430,7 @@ export class PublicLibraryController {
     return localize(item, locale);
   }
   @Get('moments') async moments(
-    @Param('locale', LocalePipe) locale: ContentLocale,
+    @ReaderLocale() locale: ContentLocale,
     @Query() q: ListQuery,
   ) {
     const now = new Date();
@@ -466,7 +467,7 @@ export class PublicLibraryController {
     );
   }
   @Get('photos') async photos(
-    @Param('locale', LocalePipe) locale: ContentLocale,
+    @ReaderLocale() locale: ContentLocale,
     @Query() q: ListQuery,
   ) {
     const where = { published: true, translations: { some: {} } };
