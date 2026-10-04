@@ -137,6 +137,10 @@
   gap: 20px;
   align-items: center;
 }
+.share-feedback {
+  font-size: 13px;
+  color: var(--sakura-muted);
+}
 .post-tags {
   flex-wrap: wrap;
   color: var(--sakura-accent-strong);

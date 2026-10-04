@@ -82,9 +82,6 @@ useHead(() => ({
           v-html="rendered.html"
         ></div>
         <footer class="post-footer" :lang="contentLang(locale)">
-          <div>
-            <p class="flex-child-center">{{ t('全文完') }} ❀</p>
-          </div>
           <div class="post-footer-meta">
             <div class="post-tags flex-child-center">
               <NuxtLink
@@ -95,9 +92,12 @@ useHead(() => ({
                 >#{{ tag.tag.name }}</NuxtLink
               >
             </div>
-            <button @click="share">
-              {{ t(copied ? '链接已复制' : '分享 · 复制链接') }}
-            </button>
+            <div class="post-share flex-child-center">
+              <span v-if="copied" class="share-feedback" role="status">{{
+                t('链接已复制')
+              }}</span>
+              <button @click="share">{{ t('分享') }}</button>
+            </div>
           </div>
         </footer>
       </article>

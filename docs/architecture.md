@@ -99,3 +99,7 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 公共页与 Admin 外层使用 `SakuraPattern` SVG 平铺背景。组件支持 `shape`（heart/star/dot，默认 heart）、`size`、`spacing`、`colors`、`opacity`、`seed`；默认 seed 保持颜色布局稳定；每次只显示所选的一种形状。默认图案尺寸 15px、水平间距 72px，使用淡红、粉、橙、黄、绿、青、蓝、紫八色。SVG pattern 使用错行网格和跨边界副本，元素数量固定，不随页面长度增长。正文面板保留实色表面，公共深色背景独立调整透明度。页脚继续显示原始 `/sakura/images/footer/sakura.svg`。
 
 外观配置共用现有 settings：默认头像 heart，文章缺省封面 dot，页面背景 dot（可选 none）。自定义图片优先，旧默认头像/封面路径按缺省图案处理；保留首页照片。生成器一次只用一种图形，15px 图案、72px 横向间距、八色固定种子随机分布。公开和后台评论界面已移除，后端接口、数据库及现有评论保留。页脚樱花复用 currentColor/固定浅粉 flower token（#ff6699，opacity 0.8，明暗一致），通过 mask 保留原 SVG 路径，12s 顺时针旋转并尊重 reduced motion。
+
+头像直接用 PatternSurface 裁切共享 SakuraPattern；没有固定 viewBox、图形缩放或独立单图标渲染。48/72/80/120px 头像与封面/页面背景使用相同 15px 图案及 72px 横向间距，只改变容器尺寸与圆形裁切。文章底部保留标签和分享，不再显示“全文完”。
+
+页面背景配色的 seed 只在每次 SPA 打开/刷新时创建，当前页面运行周期内保持稳定，不跨刷新持久化。头像与封面保留稳定身份 seed；显式传入 seed 仍可复现。
