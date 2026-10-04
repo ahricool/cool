@@ -3,8 +3,6 @@ defineProps<{
   name:
     | 'search'
     | 'home'
-    | 'archive'
-    | 'categories'
     | 'tag'
     | 'moments'
     | 'photos'
@@ -29,15 +27,6 @@ defineProps<{
     <template v-else-if="name === 'home'">
       <path d="m3 10 9-7 9 7v10H3Z" />
       <path d="M9 20v-7h6v7" />
-    </template>
-    <template v-else-if="name === 'archive'">
-      <path d="M3 4h18v5H3ZM5 9v11h14V9M9 13h6" />
-    </template>
-    <template v-else-if="name === 'categories'">
-      <rect x="3" y="3" width="7" height="7" rx="1.5" />
-      <rect x="14" y="3" width="7" height="7" rx="1.5" />
-      <rect x="3" y="14" width="7" height="7" rx="1.5" />
-      <rect x="14" y="14" width="7" height="7" rx="1.5" />
     </template>
     <template v-else-if="name === 'tag'">
       <path d="M3 3h8l10 10-8 8L3 11Z" />

@@ -50,11 +50,6 @@ export class ListQuery {
   @ValidateIf((_o, v) => v !== undefined)
   @IsString()
   @Length(1, 160)
-  category?: string;
-  @ApiPropertyOptional()
-  @ValidateIf((_o, v) => v !== undefined)
-  @IsString()
-  @Length(1, 160)
   tag?: string;
 }
 export class LocaleDto {
@@ -95,11 +90,6 @@ export class UpdatePostTranslationDto extends PartialType(
   locale!: ContentLocale;
 }
 export class CreatePostDto {
-  @ApiProperty()
-  @IsString()
-  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-  @MaxLength(160)
-  slug!: string;
   @ApiPropertyOptional({ nullable: true })
   @ValidateIf((_o, v) => v !== undefined && v !== null)
   @IsAssetPath()
@@ -113,13 +103,6 @@ export class CreatePostDto {
   @ValidateNested({ each: true })
   @Type(() => PostTranslationDto)
   translations!: PostTranslationDto[];
-  @ApiPropertyOptional({ type: [String] })
-  @ValidateIf((_o, v) => v !== undefined)
-  @IsArray()
-  @ArrayMaxSize(30)
-  @ArrayUnique()
-  @IsUUID('all', { each: true })
-  categoryIds?: string[];
   @ApiPropertyOptional({ type: [String] })
   @ValidateIf((_o, v) => v !== undefined)
   @IsArray()

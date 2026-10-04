@@ -31,11 +31,10 @@ module.exports = async function verifyBilingual(t, http, token) {
       'missing, draft, archived and scheduled translations fall back only to a published language',
       async () => {
         const post = await create('posts', {
-          slug: prefix,
           translations: [zh(prefix)],
         });
         for (const locale of ['zh', 'en']) {
-          const detail = (await read(locale, `posts/${prefix}`).expect(200))
+          const detail = (await read(locale, `posts/${post.slug}`).expect(200))
             .body;
           assert.equal(detail.id, post.id);
           assert.equal(detail.contentLocale, 'zh');
@@ -54,7 +53,7 @@ module.exports = async function verifyBilingual(t, http, token) {
           ],
         }).expect(200);
         assert.equal(
-          (await read('en', `posts/${prefix}`)).body.contentLocale,
+          (await read('en', `posts/${post.slug}`)).body.contentLocale,
           'zh',
         );
         assert.equal(
@@ -71,27 +70,23 @@ module.exports = async function verifyBilingual(t, http, token) {
           ],
         }).expect(200);
         assert.equal(
-          (await read('en', `posts/${prefix}`)).body.contentLocale,
+          (await read('en', `posts/${post.slug}`)).body.contentLocale,
           'zh',
         );
         await admin('put', `posts/${post.id}`, {
           translations: [{ locale: 'en', status: 'ARCHIVED' }],
         }).expect(200);
         assert.equal(
-          (await read('en', `posts/${prefix}`)).body.contentLocale,
+          (await read('en', `posts/${post.slug}`)).body.contentLocale,
           'zh',
         );
         await admin('put', `posts/${post.id}`, {
           translations: [{ locale: 'zh', status: 'DRAFT' }],
         }).expect(200);
         for (const locale of ['zh', 'en']) {
-          await read(locale, `posts/${prefix}`).expect(404);
+          await read(locale, `posts/${post.slug}`).expect(404);
           await read(locale, `posts/${prefix}/comments`).expect(404);
           assert.equal((await read(locale, `posts?q=${prefix}`)).body.total, 0);
-          assert.equal(
-            (await read(locale, `archives?q=${prefix}`)).body.total,
-            0,
-          );
         }
         for (const translations of [
           [null],
@@ -100,7 +95,6 @@ module.exports = async function verifyBilingual(t, http, token) {
           null,
         ])
           await admin('post', 'posts', {
-            slug: prefix + '-bad-locale',
             translations,
           }).expect(400);
         await read('fr', 'posts').expect(200);
@@ -112,28 +106,17 @@ module.exports = async function verifyBilingual(t, http, token) {
           translations: [{ locale: 'en', status: null }],
         }).expect(400);
         await admin('post', 'posts', {
-          slug: prefix + '-invalid',
           translations: [zh('One'), zh('Two')],
         }).expect(400);
       },
     );
     await t.test(
-      'search, taxonomy filters, archives, pagination and counts use the selected translation once per logical post',
+      'search, tag filters, pagination and counts use the selected translation once per logical post',
       async () => {
-        const category = await create('categories', {
-          slug: prefix,
-          translations: [
-            { locale: 'zh', name: '分类' },
-            { locale: 'en', name: 'Category' },
-          ],
-        });
         const tag = await create('tags', {
-          slug: prefix,
           translations: [{ locale: 'zh', name: '标签' }],
         });
         const first = await create('posts', {
-          slug: prefix + '-first',
-          categoryIds: [category.id],
           tagIds: [tag.id],
           translations: [
             zh(prefix + ' zhOnlyNeedle', {
@@ -149,8 +132,6 @@ module.exports = async function verifyBilingual(t, http, token) {
           ],
         });
         const second = await create('posts', {
-          slug: prefix + '-second',
-          categoryIds: [category.id],
           tagIds: [tag.id],
           translations: [
             zh(prefix + ' FallbackNeedle', {
@@ -159,21 +140,14 @@ module.exports = async function verifyBilingual(t, http, token) {
           ],
         });
         for (const locale of ['zh', 'en']) {
-          const page1 = (
-            await read(
-              locale,
-              `posts?category=${prefix}&tag=${prefix}&pageSize=1`,
-            )
-          ).body;
+          const page1 = (await read(locale, `posts?tag=${tag.slug}&pageSize=1`))
+            .body;
           const page2 = (
-            await read(
-              locale,
-              `posts?category=${prefix}&tag=${prefix}&pageSize=1&page=2`,
-            )
+            await read(locale, `posts?tag=${tag.slug}&pageSize=1&page=2`)
           ).body;
-          for (const taxonomy of ['categories', 'tags']) {
+          for (const taxonomy of ['tags']) {
             const scoped = (
-              await read(locale, `${taxonomy}/${prefix}/posts?pageSize=1`)
+              await read(locale, `${taxonomy}/${tag.slug}/posts?pageSize=1`)
             ).body;
             assert.equal(scoped.total, 2);
             assert.equal(scoped.items[0].id, page1.items[0].id);
@@ -181,7 +155,7 @@ module.exports = async function verifyBilingual(t, http, token) {
               (
                 await read(
                   locale,
-                  `${taxonomy}/${prefix}/posts?q=FallbackNeedle`,
+                  `${taxonomy}/${tag.slug}/posts?q=FallbackNeedle`,
                 )
               ).body.total,
               1,
@@ -196,13 +170,8 @@ module.exports = async function verifyBilingual(t, http, token) {
           );
           assert.equal(page1.items[0].content, undefined);
           assert.equal(
-            (await read(locale, `archives?category=${prefix}&pageSize=1`)).body
-              .total,
-            2,
-          );
-          assert.equal(
-            (await read(locale, `posts?category=${prefix}&page=3&pageSize=1`))
-              .body.items.length,
+            (await read(locale, `posts?tag=${tag.slug}&page=3&pageSize=1`)).body
+              .items.length,
             0,
           );
         }
@@ -214,11 +183,6 @@ module.exports = async function verifyBilingual(t, http, token) {
         assert.equal(
           (await read('en', 'search?q=FallbackNeedle')).body.total,
           1,
-        );
-        const categories = (await read('en', 'categories')).body;
-        assert.equal(
-          categories.find((row) => row.id === category.id).name,
-          'Category',
         );
         assert.equal(
           (await read('en', 'tags')).body.find((row) => row.id === tag.id)
@@ -244,10 +208,7 @@ module.exports = async function verifyBilingual(t, http, token) {
         );
         await admin('delete', `posts/${first.id}/translations/zh`).expect(200);
         await read('en', `posts/${first.slug}`).expect(404);
-        assert.equal(
-          (await read('en', `posts?category=${prefix}`)).body.total,
-          1,
-        );
+        assert.equal((await read('en', `posts?tag=${tag.slug}`)).body.total, 1);
         assert.equal(
           (await admin('get', `posts/${first.id}`)).body.translations.length,
           1,
@@ -258,7 +219,6 @@ module.exports = async function verifyBilingual(t, http, token) {
       'page translations update and delete independently without exposing draft Markdown',
       async () => {
         const page = await create('pages', {
-          slug: prefix,
           translations: [
             {
               locale: 'en',
@@ -269,7 +229,7 @@ module.exports = async function verifyBilingual(t, http, token) {
           ],
         });
         assert.equal(
-          (await read('zh', `pages/${prefix}`)).body.contentLocale,
+          (await read('zh', `pages/${page.slug}`)).body.contentLocale,
           'en',
         );
         await admin('put', `pages/${page.id}`, {
@@ -283,30 +243,30 @@ module.exports = async function verifyBilingual(t, http, token) {
           ],
         }).expect(200);
         assert.equal(
-          (await read('zh', `pages/${prefix}`)).body.content,
+          (await read('zh', `pages/${page.slug}`)).body.content,
           '# Visible English',
         );
         await admin('put', `pages/${page.id}`, {
           translations: [{ locale: 'zh', status: 'PUBLISHED' }],
         }).expect(200);
         assert.equal(
-          (await read('zh', `pages/${prefix}`)).body.contentLocale,
+          (await read('zh', `pages/${page.slug}`)).body.contentLocale,
           'zh',
         );
         assert.equal(
-          (await read('en', `pages/${prefix}`)).body.contentLocale,
+          (await read('en', `pages/${page.slug}`)).body.contentLocale,
           'en',
         );
         await admin('delete', `pages/${page.id}/translations/en`).expect(200);
         assert.equal(
-          (await read('en', `pages/${prefix}`)).body.contentLocale,
+          (await read('en', `pages/${page.slug}`)).body.contentLocale,
           'zh',
         );
         await admin('put', `pages/${page.id}`, {
           translations: [{ locale: 'en', status: 'PUBLISHED' }],
         }).expect(400);
         await admin('delete', `pages/${page.id}/translations/zh`).expect(200);
-        await read('zh', `pages/${prefix}`).expect(404);
+        await read('zh', `pages/${page.slug}`).expect(404);
       },
     );
     await t.test(
@@ -322,7 +282,7 @@ module.exports = async function verifyBilingual(t, http, token) {
             },
           ],
         });
-        let result = (await read('en', 'moments')).body;
+        let result = (await read('en', 'timeline')).body;
         assert.equal(
           result.items.find((row) => row.id === moment.id).contentLocale,
           'zh',
@@ -331,7 +291,7 @@ module.exports = async function verifyBilingual(t, http, token) {
         await admin('put', `moments/${moment.id}`, {
           translations: [{ locale: 'en', status: 'PUBLISHED' }],
         }).expect(200);
-        result = (await read('en', 'moments')).body;
+        result = (await read('en', 'timeline')).body;
         assert.equal(
           result.items.filter((row) => row.id === moment.id).length,
           1,
@@ -353,9 +313,7 @@ module.exports = async function verifyBilingual(t, http, token) {
           ],
         });
         assert.equal(
-          (await read('en', 'photos')).body.items.find(
-            (row) => row.id === photo.id,
-          ).title,
+          (await admin('get', `photos/${photo.id}`)).body.translations[0].title,
           '中文照片',
         );
         await admin('put', `photos/${photo.id}`, {
@@ -369,16 +327,136 @@ module.exports = async function verifyBilingual(t, http, token) {
           ],
         }).expect(200);
         assert.equal(
-          (await read('en', 'photos')).body.items.find(
-            (row) => row.id === photo.id,
-          ).url,
+          (await admin('get', `photos/${photo.id}`)).body.url,
           photo.url,
         );
         assert.equal(
-          (await read('zh', 'photos')).body.items.find(
-            (row) => row.id === photo.id,
+          (await admin('get', `photos/${photo.id}`)).body.translations.find(
+            (row) => row.locale === 'zh',
           ).title,
           '中文照片',
+        );
+      },
+    );
+    await t.test(
+      'timeline cursor preserves mixed publication order, fallback and full updates; About publishes languages independently',
+      async () => {
+        const date = new Date(Date.now() - 1000).toISOString();
+        const expected = [];
+        for (let i = 0; i < 12; i++) {
+          const kind = i % 2 ? 'moments' : 'posts';
+          const item = await create(kind, {
+            translations: [
+              {
+                locale: 'zh',
+                ...(kind === 'posts' ? { title: prefix + i } : {}),
+                content:
+                  'First paragraph.\n\nSecond paragraph.\n\nThird paragraph.',
+                status: 'PUBLISHED',
+                publishedAt: date,
+              },
+              {
+                locale: 'en',
+                ...(kind === 'posts' ? { title: 'Private title' } : {}),
+                content: 'Private future text',
+                status: 'PUBLISHED',
+                publishedAt: '2099-01-01T00:00:00Z',
+              },
+            ],
+          });
+          expected.push({
+            id: item.id,
+            kind: kind === 'posts' ? 'post' : 'moment',
+          });
+        }
+        const actual = [];
+        let cursor = null;
+        let firstCursor;
+        do {
+          const response = await read(
+            'en',
+            'timeline' +
+              (cursor ? '?cursor=' + encodeURIComponent(cursor) : ''),
+          ).expect(200);
+          actual.push(...response.body.items);
+          cursor = response.body.nextCursor;
+          firstCursor ??= cursor;
+        } while (cursor);
+        const ids = new Set(expected.map((item) => item.id));
+        const selected = actual.filter((item) => ids.has(item.id));
+        expected.sort(
+          (a, b) =>
+            b.kind.localeCompare(a.kind, 'en') ||
+            b.id.localeCompare(a.id, 'en'),
+        );
+        assert.deepEqual(
+          selected.map(({ id, kind }) => ({ id, kind })),
+          expected,
+        );
+        assert.equal(
+          new Set(actual.map((item) => item.kind + ':' + item.id)).size,
+          actual.length,
+        );
+        for (const item of selected) {
+          assert.equal(item.contentLocale, 'zh');
+          assert.equal(item.publishedAt, date);
+          if (item.kind === 'post') {
+            assert.equal(item.content, undefined);
+            assert.equal(item.excerpt.split('\n\n').length, 3);
+          } else
+            assert.equal(
+              item.content,
+              'First paragraph.\n\nSecond paragraph.\n\nThird paragraph.',
+            );
+        }
+        await read(
+          'zh',
+          'timeline?cursor=' + encodeURIComponent(firstCursor),
+        ).expect(400);
+        await read('en', 'timeline?cursor=invalid').expect(400);
+        for (const endpoint of ['archives', 'categories', 'moments', 'photos'])
+          await read('zh', endpoint).expect(404);
+        await admin('get', 'categories').expect(404);
+        const about = (
+          await admin('put', 'about', {
+            translations: [
+              zh('About', { content: '# 关于我' }),
+              {
+                locale: 'en',
+                title: 'About me',
+                content: '# Private about',
+                status: 'DRAFT',
+              },
+            ],
+          }).expect(200)
+        ).body;
+        created.push(['pages', about.id]);
+        assert.match(about.slug, /^[A-Za-z0-9]{8}$/);
+        assert.equal(
+          (await read('en', 'about').expect(200)).body.content,
+          '# 关于我',
+        );
+        await admin('put', 'about', {
+          translations: [
+            {
+              locale: 'en',
+              title: 'About me',
+              content: '# About me',
+              status: 'PUBLISHED',
+            },
+          ],
+        }).expect(200);
+        assert.equal(
+          (await read('en', 'about').expect(200)).body.content,
+          '# About me',
+        );
+        assert.equal(
+          (await read('zh', 'about').expect(200)).body.content,
+          '# 关于我',
+        );
+        assert.equal(
+          (await admin('get', 'about').expect(200)).body.id,
+          about.id,
         );
       },
     );

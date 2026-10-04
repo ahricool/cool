@@ -19,14 +19,14 @@ test('reader choice persists without changing URLs across navigation, history an
       ?.value,
   ).toBe('zh');
   await page
-    .locator('.header-content')
-    .getByRole('link', { name: '归档', exact: true })
+    .locator('.header-actions')
+    .getByRole('link', { name: '关于我', exact: true })
     .click();
-  await expect(page).toHaveURL(site + '/archives');
+  await expect(page).toHaveURL(site + '/about');
   await page.goBack();
   await expect(page).toHaveURL(site + '/');
   await page.goForward();
-  await expect(page).toHaveURL(site + '/archives');
+  await expect(page).toHaveURL(site + '/about');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
   await page.goto(site + '/tags');

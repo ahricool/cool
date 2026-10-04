@@ -1,13 +1,5 @@
-/** Owns the reading shell's drawer, focus and scroll lifecycle. */
+/** Keeps the reading header in sync with the active page banner. */
 export function useReadingShell() {
-  const menuOpen = ref(false);
-  const menuTrigger = ref<HTMLButtonElement>();
-  const sidebar = ref<HTMLElement>();
-  function openMenu(event: Event) {
-    menuTrigger.value = event.currentTarget as HTMLButtonElement;
-    menuOpen.value = true;
-  }
-  const sidebarKeydown = useDrawerFocus(menuOpen, sidebar, menuTrigger);
   const dark = useCoolTheme();
   const banner = shallowRef<HTMLElement>();
   const illustration = shallowRef<Readonly<Ref<boolean>>>();
@@ -50,7 +42,6 @@ export function useReadingShell() {
   }
   onMounted(() => {
     const resize = () => {
-      if (window.innerWidth > 768) menuOpen.value = false;
       updateScroll();
     };
     bannerObserver = new ResizeObserver(updateScroll);
@@ -64,22 +55,11 @@ export function useReadingShell() {
       bannerObserver?.disconnect();
     });
   });
-  const route = useRoute();
-  watch(
-    () => route.fullPath,
-    () => {
-      menuOpen.value = false;
-    },
-  );
   return {
-    menuOpen,
-    openMenu,
-    sidebar,
     dark,
     scrollProgress,
     hasBanner,
     hasIllustration,
     registerBanner,
-    sidebarKeydown,
   };
 }

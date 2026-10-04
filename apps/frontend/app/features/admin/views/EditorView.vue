@@ -17,12 +17,7 @@ import {
 } from 'vue-router';
 import { ElMessageBox } from 'element-plus';
 import { toast } from '~/utils/toast';
-import type {
-  AdminPost,
-  AdminPage,
-  AdminTaxonomy,
-  Status,
-} from '@cool/content';
+import type { AdminPost, AdminPage, AdminTag, Status } from '@cool/content';
 import { api, errorText } from '../api';
 import { takeEditorDraft, transferEditorDraft } from '../editor-drafts';
 import { publicPath, isLocale, type CoolLocale } from '~/i18n/locale';
@@ -31,13 +26,16 @@ import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
 import MarkdownEditor from '../components/MarkdownEditor.vue';
 import AssetPicker from '../components/AssetPicker.vue';
-const props = withDefaults(defineProps<{ kind?: 'posts' | 'pages' }>(), {
-  kind: 'posts',
-});
+const props = withDefaults(
+  defineProps<{ kind?: 'posts' | 'pages'; about?: boolean }>(),
+  {
+    kind: 'posts',
+  },
+);
 const { t, locale, contentLang } = useCoolI18n();
 const route = useRoute();
 const router = useRouter();
-const id = String(route.params.id);
+const id = props.about ? 'about' : String(route.params.id);
 const isNew = id === 'new';
 let remembered: string | null = null;
 try {
@@ -63,13 +61,11 @@ const emptyTranslation = () => ({
 });
 const form = reactive({
   title: '',
-  slug: '',
   excerpt: '',
   content: '',
   coverUrl: null as string | null,
   status: 'DRAFT' as Status,
   publishedAt: null as string | null,
-  categoryIds: [] as string[],
   tagIds: [] as string[],
 });
 const baseline = ref('');
@@ -80,8 +76,7 @@ const uploads = reactive({ content: false, cover: false });
 const uploading = computed(() => uploads.content || uploads.cover);
 const error = ref('');
 const draft = ref<string | null>(null);
-const categories = ref<AdminTaxonomy[]>([]);
-const tags = ref<AdminTaxonomy[]>([]);
+const tags = ref<AdminTag[]>([]);
 let savedRoute = '';
 let active = true;
 const dirty = computed(
@@ -92,13 +87,12 @@ async function load() {
   loaded.value = false;
   error.value = '';
   try {
-    if (props.kind === 'posts') {
-      [categories.value, tags.value] = await Promise.all([
-        api<AdminTaxonomy[]>('/admin/categories'),
-        api<AdminTaxonomy[]>('/admin/tags'),
-      ]);
-    }
-    if (!isNew)
+    if (props.kind === 'posts')
+      tags.value = await api<AdminTag[]>('/admin/tags');
+    if (props.about)
+      document.value =
+        (await api<AdminPage | null>('/admin/about')) ?? undefined;
+    else if (!isNew)
       document.value = await api<AdminPost | AdminPage>(
         `/admin/${props.kind}/${id}`,
       );
@@ -128,24 +122,25 @@ function applyLanguage() {
     (item) => item.locale === contentLocale.value,
   );
   Object.assign(form, emptyTranslation(), {
-    title: translation?.title ?? '',
+    title:
+      translation?.title ??
+      (props.about
+        ? contentLocale.value === 'zh'
+          ? '关于我'
+          : 'About me'
+        : ''),
     content: translation?.content ?? '',
     excerpt: translation && 'excerpt' in translation ? translation.excerpt : '',
     status: translation?.status ?? 'DRAFT',
     publishedAt: translation?.publishedAt ?? null,
-    slug: d?.slug ?? '',
     coverUrl: d?.coverUrl ?? null,
-    categoryIds:
-      d && 'categories' in d ? d.categories.map((c) => c.category.id) : [],
     tagIds: d && 'tags' in d ? d.tags.map((item) => item.tag.id) : [],
   });
   baseline.value = JSON.stringify(form);
 }
 function sharedFields(value: typeof form = form) {
   return {
-    slug: value.slug,
     coverUrl: value.coverUrl,
-    categoryIds: [...value.categoryIds],
     tagIds: [...value.tagIds],
   };
 }
@@ -156,16 +151,12 @@ function readSharedDraft() {
     const value = JSON.parse(stored) as ReturnType<typeof sharedFields>;
     if (
       !value ||
-      typeof value.slug !== 'string' ||
       !(value.coverUrl === null || typeof value.coverUrl === 'string') ||
-      !Array.isArray(value.categoryIds) ||
       !Array.isArray(value.tagIds)
     )
       throw new Error('Invalid draft');
     return {
-      slug: value.slug,
       coverUrl: value.coverUrl,
-      categoryIds: value.categoryIds.filter((id) => typeof id === 'string'),
       tagIds: value.tagIds.filter((id) => typeof id === 'string'),
     };
   } catch {
@@ -309,8 +300,8 @@ watch(
 );
 async function save(status: Status) {
   if (busy.value || uploading.value || !loaded.value || draft.value) return;
-  if (!form.title.trim() || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug)) {
-    toast.warning(t('请填写标题和有效的 链接名称（小写字母、数字、连字符）'));
+  if (!form.title.trim()) {
+    toast.warning(t('请填写标题'));
     return;
   }
   busy.value = true;
@@ -328,16 +319,18 @@ async function save(status: Status) {
       ...(props.kind === 'posts' ? { excerpt: submitted.excerpt } : {}),
     };
     const body = {
-      slug: submitted.slug,
       coverUrl: submitted.coverUrl,
       translations: [translated],
-      ...(props.kind === 'posts'
-        ? { categoryIds: submitted.categoryIds, tagIds: submitted.tagIds }
-        : {}),
+      ...(props.kind === 'posts' ? { tagIds: submitted.tagIds } : {}),
     };
     const saved = await api<AdminPost | AdminPage>(
-      `/admin/${props.kind}${isNew ? '' : '/' + id}`,
-      { method: isNew ? 'POST' : 'PUT', body: JSON.stringify(body) },
+      props.about
+        ? '/admin/about'
+        : `/admin/${props.kind}${isNew ? '' : '/' + id}`,
+      {
+        method: isNew && !props.about ? 'POST' : 'PUT',
+        body: JSON.stringify(body),
+      },
     );
     if (!active) return;
     document.value = saved;
@@ -358,7 +351,7 @@ async function save(status: Status) {
       sessionStorage.removeItem(sharedKey.value);
     }
     toast.success(status === 'PUBLISHED' ? t('已保存发布状态') : t('已保存'));
-    if (isNew) {
+    if (isNew && !props.about) {
       // Associate drafts in the other language with the newly created identity.
       for (const language of ['zh', 'en'] as const) {
         if (language === contentLocale.value) continue;
@@ -440,11 +433,13 @@ onBeforeRouteUpdate(confirmNavigation);
 <template>
   <ViewHeader
     :title="
-      isNew
-        ? kind === 'posts'
-          ? t('写一篇新文章')
-          : t('新建独立页面')
-        : t('继续编辑')
+      about
+        ? t('关于我')
+        : isNew
+          ? kind === 'posts'
+            ? t('写一篇新文章')
+            : t('新建独立页面')
+          : t('继续编辑')
     "
     :description="dirty ? t('有未保存的修改 · 草稿已保留') : undefined"
     ><el-button
@@ -499,6 +494,7 @@ onBeforeRouteUpdate(confirmNavigation);
   <div v-if="loaded" class="edit-layout">
     <section class="panel editor-main">
       <el-input
+        v-if="!about"
         v-model="form.title"
         :readonly="!!draft"
         :lang="contentLang(contentLocale)"
@@ -517,14 +513,6 @@ onBeforeRouteUpdate(confirmNavigation);
     <aside class="editor-settings panel">
       <h2>{{ t('发布设置') }}</h2>
       <el-form label-position="top"
-        ><el-form-item :label="t('链接名称')"
-          ><el-input
-            v-model="form.slug"
-            maxlength="160"
-            placeholder="my-first-story"
-          /><small class="muted"
-            >/{{ kind }}/{{ form.slug || 'slug' }}</small
-          ></el-form-item
         ><el-form-item :label="t('发布时间')"
           ><el-date-picker
             v-model="form.publishedAt"
@@ -537,31 +525,12 @@ onBeforeRouteUpdate(confirmNavigation);
         <p class="muted">
           {{ t('设置未来时间后，访客会在该时间开始看到内容。') }}
         </p>
-        <el-form-item v-if="kind === 'posts'" :label="t('摘要')"
-          ><el-input
-            v-model="form.excerpt"
-            :readonly="!!draft"
-            :lang="contentLang(contentLocale)"
-            type="textarea"
-            :rows="4"
-            maxlength="500"
-            show-word-limit /></el-form-item
-        ><el-form-item :label="t('封面')"
+        <el-form-item v-if="!about" :label="t('封面')"
           ><AssetPicker
             v-model="form.coverUrl"
             :disabled="busy"
             @busy-change="uploads.cover = $event" /></el-form-item
         ><template v-if="kind === 'posts'"
-          ><el-form-item :label="t('分类')"
-            ><el-select
-              v-model="form.categoryIds"
-              multiple
-              :placeholder="t('选择分类')"
-              ><el-option
-                v-for="term in categories"
-                :key="term.id"
-                :label="displayTranslation(term)?.name ?? term.slug"
-                :value="term.id" /></el-select></el-form-item
           ><el-form-item :label="t('标签')"
             ><el-select
               v-model="form.tagIds"
@@ -573,8 +542,8 @@ onBeforeRouteUpdate(confirmNavigation);
                 :label="displayTranslation(term)?.name ?? term.slug"
                 :value="term.id" /></el-select></el-form-item></template
         ><a
-          v-if="!isNew && form.status === 'PUBLISHED'"
-          :href="publicPath(`/${kind}/${form.slug}`)"
+          v-if="document && form.status === 'PUBLISHED'"
+          :href="publicPath(about ? '/about' : `/${kind}/${document!.slug}`)"
           target="_blank"
           rel="noopener"
           >{{ t('查看公开页面 ↗') }}</a

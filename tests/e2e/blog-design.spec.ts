@@ -98,6 +98,14 @@ const posts = [
   },
 ];
 async function fixture(page: Page) {
+  await page.route('**/api/v1/public/timeline**', (route) =>
+    route.fulfill({
+      json: {
+        items: posts.map((post) => ({ ...post, kind: 'post' })),
+        nextCursor: null,
+      },
+    }),
+  );
   await page.route('**/api/v1/public/tags', (route) =>
     route.fulfill({
       json: [

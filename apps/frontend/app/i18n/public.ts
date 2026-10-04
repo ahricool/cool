@@ -1,5 +1,10 @@
 /** Public interface copy only. Authored content is localized by the API. */
 export const publicMessages: Record<string, string> = {
+  关于我: 'About me',
+  加载更多: 'Load more',
+  已读到最后: 'You’re all caught up',
+  时间线: 'Timeline',
+
   首页: 'Home',
   主导航: 'Main navigation',
   阅读工具: 'Reading controls',

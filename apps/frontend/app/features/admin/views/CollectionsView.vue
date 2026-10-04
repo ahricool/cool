@@ -31,20 +31,17 @@ function beforeClose(done: () => void) {
   if (!busy.value && !uploading.value) done();
 }
 const editId = ref('');
-const labels = { moments: '瞬间', photos: '图库' };
+const labels = { moments: '短动态', photos: '相册' };
 const empty = () => ({
   content: '',
   status: 'DRAFT' as Status,
   publishedAt: null as string | null,
   title: '',
   description: '',
-  url: '',
   album: '',
-  published: false,
 });
 const form = reactive({
   url: '',
-  published: false,
 });
 const translated = reactive({ zh: empty(), en: empty() });
 const translation = computed(() => translated[contentLocale.value]);
@@ -62,7 +59,7 @@ async function load() {
 }
 function edit(item?: Item) {
   if (busy.value || uploading.value) return;
-  Object.assign(form, { url: '', published: false }, item ?? {});
+  form.url = item && 'url' in item ? item.url : '';
   for (const language of ['zh', 'en'] as const)
     Object.assign(
       translated[language],
@@ -124,9 +121,7 @@ async function save() {
     }
     const body = {
       translations,
-      ...(props.kind === 'moments'
-        ? {}
-        : { url: form.url, published: form.published }),
+      ...(props.kind === 'moments' ? {} : { url: form.url }),
     };
     await api(`/admin/${props.kind}${editId.value ? '/' + editId.value : ''}`, {
       method: editId.value ? 'PUT' : 'POST',
@@ -152,10 +147,8 @@ function title(item: Item) {
   );
   return value?.content?.slice(0, 100) ?? value?.title ?? '';
 }
-function published(item: Item) {
-  return 'published' in item
-    ? item.published
-    : item.translations.some((value) => value.status === 'PUBLISHED');
+function published(item: AdminMoment) {
+  return item.translations.some((value) => value.status === 'PUBLISHED');
 }
 async function remove(item: Item) {
   try {
@@ -187,10 +180,10 @@ onMounted(load);
         ><template #default="{ row }">{{
           title(row as Item)
         }}</template></el-table-column
-      ><el-table-column :label="t('状态')" width="110"
+      ><el-table-column v-if="kind === 'moments'" :label="t('状态')" width="110"
         ><template #default="{ row }"
-          ><el-tag :type="published(row as Item) ? 'success' : 'info'">{{
-            published(row as Item) ? t('已公开') : t('未公开')
+          ><el-tag :type="published(row as AdminMoment) ? 'success' : 'info'">{{
+            published(row as AdminMoment) ? t('已公开') : t('未公开')
           }}</el-tag></template
         ></el-table-column
       ><el-table-column
@@ -285,9 +278,7 @@ onMounted(load);
             v-model="translation.description"
             :lang="contentLang(contentLocale)"
             type="textarea"
-            maxlength="500" /></el-form-item
-        ><el-form-item :label="t('公开展示')"
-          ><el-switch v-model="form.published" /></el-form-item></template
+            maxlength="500" /></el-form-item></template
       ><el-button
         type="primary"
         native-type="submit"

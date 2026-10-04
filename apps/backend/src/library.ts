@@ -1,3 +1,4 @@
+import { createWithResourcePath } from './resource-paths';
 import { ReaderLocale } from './request-locale';
 import {
   BadRequestException,
@@ -34,7 +35,6 @@ import {
   publishedTranslation,
   visibleContent,
 } from './localization';
-import { Prisma } from './generated/prisma/client';
 const paging = (q: ListQuery) => ({
   skip: (q.page - 1) * q.pageSize,
   take: q.pageSize,
@@ -45,47 +45,6 @@ const paging = (q: ListQuery) => ({
 @Controller('admin')
 export class LibraryController {
   constructor(private readonly db: Database) {}
-  @Get('categories') categories() {
-    return this.db.category.findMany({
-      include: { translations: true },
-      orderBy: { slug: 'asc' },
-    });
-  }
-  @Post('categories') createCategory(@Body() d: TaxonomyDto) {
-    const { translations, ...data } = d;
-    return this.db.category.create({
-      data: { ...data, translations: { create: translations } },
-      include: { translations: true },
-    });
-  }
-  @Put('categories/:id') updateCategory(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() d: TaxonomyDto,
-  ) {
-    const { translations, ...data } = d;
-    return this.db.category.update({
-      where: { id },
-      data: {
-        ...data,
-        translations: {
-          upsert: translations.map((row) => ({
-            where: {
-              categoryId_locale: { categoryId: id, locale: row.locale },
-            },
-            create: row,
-            update: row,
-          })),
-        },
-      },
-      include: { translations: true },
-    });
-  }
-  @Delete('categories/:id') async deleteCategory(
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
-    await this.db.category.delete({ where: { id } });
-    return { deleted: true };
-  }
   @Get('tags') tags() {
     return this.db.tag.findMany({
       include: { translations: true },
@@ -94,10 +53,12 @@ export class LibraryController {
   }
   @Post('tags') createTag(@Body() d: TaxonomyDto) {
     const { translations, ...data } = d;
-    return this.db.tag.create({
-      data: { ...data, translations: { create: translations } },
-      include: { translations: true },
-    });
+    return createWithResourcePath((slug) =>
+      this.db.tag.create({
+        data: { ...data, slug, translations: { create: translations } },
+        include: { translations: true },
+      }),
+    );
   }
   @Put('tags/:id') updateTag(
     @Param('id', ParseUUIDPipe) id: string,
@@ -156,15 +117,21 @@ export class LibraryController {
   }
   @Post('pages') createPage(@Body() d: PageDto) {
     const { translations, ...data } = d;
-    return this.db.page.create({
-      data: {
-        ...data,
-        translations: {
-          create: translations.map((row) => ({ ...row, ...publication(row) })),
+    return createWithResourcePath((slug) =>
+      this.db.page.create({
+        data: {
+          ...data,
+          slug,
+          translations: {
+            create: translations.map((row) => ({
+              ...row,
+              ...publication(row),
+            })),
+          },
         },
-      },
-      include: { translations: true },
-    });
+        include: { translations: true },
+      }),
+    );
   }
   @Put('pages/:id') async updatePage(
     @Param('id', ParseUUIDPipe) id: string,
@@ -428,77 +395,5 @@ export class PublicLibraryController {
     });
     if (!item) throw new NotFoundException();
     return localize(item, locale);
-  }
-  @Get('moments') async moments(
-    @ReaderLocale() locale: ContentLocale,
-    @Query() q: ListQuery,
-  ) {
-    const now = new Date();
-    const from = Prisma.sql`FROM moments m JOIN LATERAL (SELECT published_at FROM moment_translations t WHERE t.moment_id=m.id AND t.status='PUBLISHED' AND t.published_at <= ${now} ORDER BY (t.locale::text=${locale}) DESC LIMIT 1) chosen ON TRUE`;
-    return this.db.$transaction(
-      async (tx) => {
-        const ids = await tx.$queryRaw<{ id: string }[]>(
-          Prisma.sql`SELECT m.id ${from} ORDER BY chosen.published_at DESC,m.id DESC LIMIT ${q.pageSize} OFFSET ${(q.page - 1) * q.pageSize}`,
-        );
-        const counts = await tx.$queryRaw<{ total: bigint }[]>(
-          Prisma.sql`SELECT COUNT(*) AS total ${from}`,
-        );
-        const items = await tx.moment.findMany({
-          where: { id: { in: ids.map((row) => row.id) } },
-          select: {
-            id: true,
-            createdAt: true,
-            updatedAt: true,
-            translations: {
-              where: publishedTranslation(now),
-              select: { locale: true, content: true, publishedAt: true },
-            },
-          },
-        });
-        const map = new Map(items.map((row) => [row.id, row]));
-        return {
-          items: ids.map(({ id }) => localize(map.get(id)!, locale)),
-          total: Number(counts[0]!.total),
-          page: q.page,
-          pageSize: q.pageSize,
-        };
-      },
-      { isolationLevel: 'RepeatableRead' },
-    );
-  }
-  @Get('photos') async photos(
-    @ReaderLocale() locale: ContentLocale,
-    @Query() q: ListQuery,
-  ) {
-    const where = { published: true, translations: { some: {} } };
-    return this.db.$transaction(
-      async (tx) => ({
-        items: (
-          await tx.photo.findMany({
-            where,
-            ...paging(q),
-            select: {
-              id: true,
-              url: true,
-              createdAt: true,
-              updatedAt: true,
-              translations: {
-                select: {
-                  locale: true,
-                  title: true,
-                  description: true,
-                  album: true,
-                },
-              },
-            },
-            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-          })
-        ).map((item) => localize(item, locale)),
-        total: await tx.photo.count({ where }),
-        page: q.page,
-        pageSize: q.pageSize,
-      }),
-      { isolationLevel: 'RepeatableRead' },
-    );
   }
 }

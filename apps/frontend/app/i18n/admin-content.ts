@@ -1,4 +1,6 @@
 export const adminContentMessages: Record<string, string> = {
+  短动态: 'Updates',
+
   请填写标题: 'Please enter a title.',
   请填写正文: 'Please enter the content.',
   请为已填写的语言补充标题: 'Add a title for each language you have started.',
