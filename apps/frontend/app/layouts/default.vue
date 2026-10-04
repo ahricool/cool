@@ -74,6 +74,7 @@ useHead(() => ({
       :class="{
         'home-header': isHome,
         'header-readable': scrollProgress > 0.12,
+        'header-solid': scrollProgress >= 1 / 3,
       }"
       :style="{ '--header-progress': isHome ? scrollProgress : 1 }"
     >
