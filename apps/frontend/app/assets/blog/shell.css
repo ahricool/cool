@@ -270,6 +270,9 @@
   .header-inner {
     padding: 6px 16px;
   }
+  .banner-image[src='/sakura/images/default/hd.webp'] {
+    object-position: 44% center;
+  }
   .banner-artwork {
     min-height: 300px;
   }
