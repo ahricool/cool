@@ -1,20 +1,12 @@
 <script setup lang="ts">
-import {
-  House,
-  Notebook,
-  Folder,
-  PriceTag,
-  EditPen,
-  Camera,
-} from '@element-plus/icons-vue';
 const navigationIcons = {
-  '/': House,
-  '/archives': Notebook,
-  '/categories': Folder,
-  '/tags': PriceTag,
-  '/moments': EditPen,
-  '/photos': Camera,
-};
+  '/': 'home',
+  '/archives': 'archive',
+  '/categories': 'categories',
+  '/tags': 'tag',
+  '/moments': 'moments',
+  '/photos': 'photos',
+} as const;
 const { t, routePath, contentLang } = useCoolI18n();
 import { readingShellKey } from '~/utils/reading-shell';
 const route = useRoute();
@@ -134,8 +126,10 @@ useHead(() => ({
           <ul class="menu-root">
             <li v-for="item in menu" :key="item[0]" class="menu-item">
               <NuxtLink :to="routePath(item[0]!)" @click="menuOpen = false">
-                <component
-                  :is="navigationIcons[item[0] as keyof typeof navigationIcons]"
+                <ReadingIcon
+                  :name="
+                    navigationIcons[item[0] as keyof typeof navigationIcons]
+                  "
                   class="sidebar-nav-icon"
                   aria-hidden="true"
                 />

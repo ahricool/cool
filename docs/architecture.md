@@ -121,3 +121,5 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 文章正文背景透明，普通文字使用轻微 text-shadow；代码、引用和表格不继承文字阴影，独立页面和 Admin 保留原背景。
 
 全站字体通过 site.appearance.font 保存，旧配置默认 default。梦幻泡泡糖果由授权原 TTF 完整转换 WOFF2（10055 字形、10051 Unicode 映射，12,204,828→4,620,016 字节，减少 62.15%）；原 TTF 不进入前端。字体使用 font-display:swap，不预加载或预取候选；站点配置就绪后才启用当前字体，避免先下载默认字体再下载自定义字体。外观页只预览选中项；代码保留系统等宽字体，SVG logo 不变。
+
+公共抽屉与顶部搜索共用 ReadingIcon 轻量 SVG：20px / 24 viewBox、2.4px currentColor 圆角描边，无额外图标依赖；首页房屋、归档盒、分类网格、标签牌、瞬间短消息、图库照片。图标 aria-hidden 且不可聚焦，菜单文字承担名称，既有 active/hover/键盘焦点反馈保留。

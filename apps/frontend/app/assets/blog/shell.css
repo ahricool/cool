@@ -290,6 +290,7 @@
 .sidebar-nav-icon {
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
 }
 @media (max-width: 1000px) {
   .header-inner {
@@ -382,7 +383,8 @@
     color 0.18s ease,
     opacity 0.18s ease;
 }
-.reading-control svg {
+.reading-control svg,
+.sidebar-nav-icon {
   width: 20px;
   height: 20px;
   fill: none;
