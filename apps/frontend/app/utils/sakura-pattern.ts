@@ -14,6 +14,7 @@ export interface PatternOptions {
   shape?: PatternShape;
   colors?: readonly string[];
   spacing?: number;
+  /** Base size; hearts/stars use 1.5×, dots 1×, bounded to half the spacing. */
   size?: number;
   seed?: string | number;
 }
@@ -21,8 +22,11 @@ export interface PatternOptions {
 /** One small repeat tile; half-step rows place neighboring motifs on 45° diagonals. */
 export function createPatternTile(options: PatternOptions = {}) {
   const spacing = Math.max(24, Math.min(240, options.spacing ?? 72));
-  const size = Math.max(2, Math.min(spacing / 2, options.size ?? 15));
   const shape = options.shape ?? 'heart';
+  const size = Math.max(
+    2,
+    Math.min(spacing / 2, (options.size ?? 15) * (shape === 'dot' ? 1 : 1.5)),
+  );
   const colors = options.colors?.length ? options.colors : patternColors;
   let state = 2166136261;
   for (const character of String(options.seed ?? 'dream-sakura')) {

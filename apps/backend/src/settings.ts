@@ -7,6 +7,9 @@ import {
 } from '@nestjs/swagger';
 import {
   IsDefined,
+  IsInt,
+  Min,
+  Max,
   ArrayMaxSize,
   ArrayMinSize,
   ArrayUnique,
@@ -32,6 +35,12 @@ class SiteTranslationDto extends LocaleDto {
   @ApiProperty() @IsString() @MaxLength(500) authorBio!: string;
 }
 class AppearanceDto {
+  @ApiPropertyOptional({ minimum: 85, maximum: 115, default: 100 })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsInt()
+  @Min(85)
+  @Max(115)
+  fontSize?: number;
   @ApiPropertyOptional({ enum: ['default', 'bubble-candy'] })
   @ValidateIf((_o, value) => value !== undefined)
   @IsIn(['default', 'bubble-candy'])
@@ -105,6 +114,7 @@ export const defaultSettings = {
     avatarUrl: null,
     appearance: {
       font: 'default' as const,
+      fontSize: 100,
       avatar: 'heart' as const,
       cover: 'dot' as const,
       background: 'dot' as const,

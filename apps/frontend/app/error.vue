@@ -3,14 +3,14 @@ const { t, locale, routePath, contentLang } = useCoolI18n();
 import type { NuxtError } from '#app';
 defineProps<{ error: NuxtError }>();
 const route = useRoute();
-const readingDark = useState('reading-dark', () => false);
+const dark = useCoolTheme();
 const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
 useHead(() => ({
   title: `${t('暂时迷路了')} · 梦桜`,
   htmlAttrs: {
     lang: contentLang(locale.value),
     'data-surface': isAdmin.value ? 'admin' : 'blog',
-    class: !isAdmin.value && readingDark.value ? 'dark' : '',
+    class: dark.value ? 'dark' : '',
   },
   bodyAttrs: { class: isAdmin.value ? 'admin-ui' : 'sakura-ui' },
 }));
@@ -63,12 +63,12 @@ useHead(() => ({
 }
 .eyebrow {
   color: var(--sakura-muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--sakura-font-scale));
   letter-spacing: 2px;
 }
 h1 {
   color: var(--sakura-heading);
-  font-size: clamp(22px, 4vw, 30px);
+  font-size: calc(clamp(22px, 4vw, 30px) * var(--sakura-font-scale));
 }
 button {
   margin-top: 16px;

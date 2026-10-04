@@ -205,7 +205,8 @@ test('first-password screen confirms input and remains in the same Nuxt app acro
   await page.getByRole('button', { name: '切换深色' }).click();
   await page.goBack();
   await expect(page.locator('html')).toHaveAttribute('data-surface', 'admin');
-  await expect(page.locator('body')).toHaveCSS(
+  await expect(page.locator('html')).toHaveClass(/dark/);
+  await expect(page.locator('body')).not.toHaveCSS(
     'background-color',
     adminBackground,
   );

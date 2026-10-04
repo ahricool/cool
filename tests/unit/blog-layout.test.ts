@@ -40,9 +40,10 @@ test('decorative pattern remains stable and repeats seamlessly across its grid b
   for (const shape of ['heart', 'star', 'dot'] as const) {
     const selected = createPatternTile({ shape });
     assert.equal(selected.shape, shape);
+    assert.equal(selected.size, shape === 'dot' ? 15 : 22.5);
     assert.ok(selected.marks.every((mark) => mark.shape === shape));
   }
-  assert.equal(tile.size, 10 * 1.5);
+  assert.equal(tile.size, 15 * 1.5);
   const centers = (size: number) =>
     createPatternTile({ size }).marks.map(({ x, y }) => ({ x, y }));
   assert.deepEqual(centers(15), centers(10));

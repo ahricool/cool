@@ -135,7 +135,7 @@ test('Admin formatting preserves prose and upload buttons work from keyboard', a
   const menu = page.getByRole('button', { name: '打开导航' });
   await menu.click();
   await expect(
-    navigation.getByRole('button', { name: '关闭菜单' }),
+    navigation.getByRole('link', { name: '梦桜', exact: true }),
   ).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(

@@ -60,3 +60,26 @@
     transition: none;
   }
 }
+
+.el-button--danger:not(.is-plain):not(.is-text):not(.is-link) {
+  --el-button-text-color: var(--sakura-button-foreground);
+  --el-button-hover-text-color: var(--sakura-button-foreground);
+  --el-button-active-text-color: var(--sakura-button-foreground);
+  --el-button-disabled-text-color: var(--sakura-button-foreground);
+  --el-button-bg-color: var(--sakura-danger-solid);
+  --el-button-border-color: var(--sakura-danger-solid);
+  --el-button-hover-bg-color: color-mix(
+    in srgb,
+    var(--sakura-danger-solid) 90%,
+    white
+  );
+  --el-button-hover-border-color: var(--el-button-hover-bg-color);
+  --el-button-active-bg-color: color-mix(
+    in srgb,
+    var(--sakura-danger-solid) 90%,
+    black
+  );
+  --el-button-active-border-color: var(--el-button-active-bg-color);
+  --el-button-disabled-bg-color: var(--sakura-button-disabled);
+  --el-button-disabled-border-color: var(--sakura-button-disabled);
+}

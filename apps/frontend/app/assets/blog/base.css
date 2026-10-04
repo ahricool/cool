@@ -13,7 +13,7 @@ body {
   margin: 0;
   color: var(--sakura-text);
   background: var(--sakura-page);
-  font: 16px/1.75 var(--sakura-font);
+  font: calc(16px * var(--sakura-font-scale)) / 1.75 var(--sakura-font);
   overflow-wrap: anywhere;
 }
 a {
@@ -76,13 +76,11 @@ h3 {
   text-align: center;
   color: var(--sakura-muted);
 }
-.api-state::before {
-  content: '';
+.api-state-flower {
   display: block;
   width: 36px;
   height: 36px;
   margin: 0 auto 16px;
-  background: url('/sakura/images/footer/sakura.svg') center / contain no-repeat;
 }
 .site-error {
   padding: 24px;

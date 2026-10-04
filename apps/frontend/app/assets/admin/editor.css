@@ -4,12 +4,12 @@
 }
 .title-input .el-input__wrapper {
   box-shadow: none !important;
-  border-bottom: 1px solid #f0f1f3;
+  border-bottom: 1px solid var(--sakura-border);
   border-radius: 0;
   padding: 20px 24px;
 }
 .title-input .el-input__inner {
-  font-size: 24px;
+  font-size: calc(24px * var(--sakura-font-scale));
   font-weight: 700;
   height: 44px;
 }
@@ -18,7 +18,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #f0f1f3;
+  border-bottom: 1px solid var(--sakura-border);
   gap: 10px;
 }
 .editor-toolbar > div {
@@ -39,19 +39,20 @@
   border: 0;
   resize: vertical;
   padding: 24px;
-  color: #535862;
+  color: var(--sakura-text);
+  background: var(--sakura-surface);
   line-height: 1.9;
   font-family: ui-monospace, 'PingFang SC', monospace;
-  font-size: 13px;
+  font-size: calc(13px * var(--sakura-font-scale));
   outline: none;
 }
 .markdown-preview {
   padding: 24px;
-  border-left: 1px solid #eee;
+  border-left: 1px solid var(--sakura-border);
   overflow: auto;
   overflow-wrap: anywhere;
   line-height: 1.9;
-  font-size: 14px;
+  font-size: calc(14px * var(--sakura-font-scale));
 }
 .markdown-preview img {
   max-width: 100%;
@@ -67,13 +68,13 @@
 }
 .markdown-preview td,
 .markdown-preview th {
-  border: 1px solid #eee;
+  border: 1px solid var(--sakura-border);
   padding: 6px;
 }
 .editor-status {
   display: flex;
   justify-content: space-between;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--sakura-border);
   padding: 10px 20px;
 }
 .editor-settings .el-date-editor {
@@ -84,7 +85,7 @@
 }
 .upload-label {
   cursor: pointer;
-  font-size: 12px;
+  font-size: calc(12px * var(--sakura-font-scale));
   display: inline-flex;
   align-items: center;
   min-height: 34px;
@@ -101,7 +102,7 @@
 }
 .media-picker-grid button {
   padding: 0;
-  border: 1px solid #eee;
+  border: 1px solid var(--sakura-border);
   border-radius: 8px;
   overflow: hidden;
   background: var(--sakura-surface);
@@ -114,19 +115,13 @@
 }
 .media-picker-grid span {
   display: block;
-  font-size: 10px;
+  font-size: calc(10px * var(--sakura-font-scale));
   padding: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 @media (max-width: 1100px) {
-  .workspace {
-    padding: 28px 24px;
-  }
-  .topbar {
-    padding: 0 24px;
-  }
   .edit-layout {
     grid-template-columns: 1fr;
   }
@@ -141,26 +136,26 @@
   }
   .markdown-preview {
     border-left: 0;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--sakura-border);
   }
 }
 .editor-toolbar {
-  background: #fff9fc;
-  border-color: #eee1ea;
+  background: var(--sakura-soft);
+  border-color: var(--sakura-border);
 }
 .editor-status {
-  color: #816c80;
-  font-size: 11px;
+  color: var(--sakura-muted);
+  font-size: calc(11px * var(--sakura-font-scale));
 }
 .title-input .el-input__inner {
-  color: #67445f;
+  color: var(--sakura-heading);
 }
 .upload-label {
-  color: #a33f6a;
-  background: #fff0f6;
+  color: var(--sakura-accent-strong);
+  background: var(--sakura-soft);
 }
 .markdown-preview pre {
-  background: #faf3f8;
+  background: var(--sakura-soft);
 }
 .media-picker-grid button:hover,
 .media-picker-grid button:focus-visible {
@@ -179,7 +174,7 @@
 .content-language-tabs button {
   min-height: 38px;
   padding: 7px 16px;
-  border: 1px solid var(--border, #e8dfe5);
+  border: 1px solid var(--sakura-border);
   border-radius: 8px;
   color: inherit;
   background: transparent;
@@ -187,17 +182,22 @@
   font: inherit;
 }
 .content-language-tabs button[aria-pressed='true'] {
-  color: #a84069;
-  background: #fff0f5;
-  border-color: #eac0d0;
+  color: var(--sakura-accent-strong);
+  background: var(--sakura-soft);
+  border-color: var(--sakura-accent-light-5);
 }
 .content-language-tabs button:focus-visible {
-  outline: 2px solid #d87a9d;
+  outline: 2px solid var(--sakura-accent-strong);
   outline-offset: 3px;
 }
 .content-language-tabs small {
-  color: #827b84;
+  color: var(--sakura-muted);
 }
 .translation-status + .translation-status {
   margin-top: 5px;
+}
+
+.editor-panes textarea:focus-visible {
+  outline: 2px solid var(--sakura-button-primary);
+  outline-offset: -2px;
 }

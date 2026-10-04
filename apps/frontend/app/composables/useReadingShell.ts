@@ -7,8 +7,8 @@ export function useReadingShell() {
     menuTrigger.value = event.currentTarget as HTMLButtonElement;
     menuOpen.value = true;
   }
-  let previousOverflow = '';
-  const dark = useState('reading-dark', () => false);
+  const sidebarKeydown = useDrawerFocus(menuOpen, sidebar, menuTrigger);
+  const dark = useCoolTheme();
   const banner = shallowRef<HTMLElement>();
   const illustration = shallowRef<Readonly<Ref<boolean>>>();
   const hasIllustration = computed(() => illustration.value?.value ?? false);
@@ -62,43 +62,8 @@ export function useReadingShell() {
       window.removeEventListener('resize', resize);
       window.removeEventListener('scroll', updateScroll);
       bannerObserver?.disconnect();
-      if (menuOpen.value) document.body.style.overflow = previousOverflow;
     });
   });
-  watch(menuOpen, async (open) => {
-    if (open) {
-      previousOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      await nextTick();
-      sidebar.value
-        ?.querySelector<HTMLElement>('button, a[href], input, select')
-        ?.focus();
-    } else {
-      document.body.style.overflow = previousOverflow;
-      await nextTick();
-      menuTrigger.value?.focus();
-    }
-  });
-  function sidebarKeydown(event: KeyboardEvent) {
-    if (event.key === 'Escape') {
-      menuOpen.value = false;
-      return;
-    }
-    if (event.key !== 'Tab') return;
-    const items = sidebar.value?.querySelectorAll<HTMLElement>(
-      'button, a[href], input, select',
-    );
-    if (!items?.length) return;
-    const first = items[0];
-    const last = items[items.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last?.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first?.focus();
-    }
-  }
   const route = useRoute();
   watch(
     () => route.fullPath,

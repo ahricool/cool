@@ -17,7 +17,7 @@ const { data, pending, error, refresh } = await useAsyncData(
   <PageFrame content-class="index"
     ><template #header><SakuraHero /></template>
     <div v-if="store.homepage.notice" class="notice">
-      <span class="sakura-flower" aria-hidden="true"></span>
+      <SakuraFlower />
       <div
         class="notice-content"
         :lang="contentLang(store.homepage.contentLocale)"
@@ -28,7 +28,7 @@ const { data, pending, error, refresh } = await useAsyncData(
     <div id="primary" class="content-area">
       <div id="main" class="site-main">
         <h2 class="main-title flex-child-center">
-          <span class="sakura-flower" aria-hidden="true"></span>
+          <SakuraFlower />
           {{ t('发现故事') }}
         </h2>
         <ApiState

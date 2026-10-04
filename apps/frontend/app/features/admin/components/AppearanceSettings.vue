@@ -25,6 +25,23 @@ const fields = [
         t('梦幻泡泡糖果')
       }}</el-radio-button>
     </el-radio-group>
+    <div class="font-size-setting">
+      <label id="appearance-font-size-label">{{ t('字号') }}</label>
+      <el-slider
+        v-model="model.fontSize"
+        :min="85"
+        :max="115"
+        :step="5"
+        :aria-label="t('字号')"
+      />
+      <span>{{ model.fontSize }}%</span>
+      <el-button
+        v-if="model.fontSize !== 100"
+        text
+        @click="model.fontSize = 100"
+        >{{ t('恢复默认') }}</el-button
+      >
+    </div>
     <p
       :style="{
         fontFamily:
@@ -82,6 +99,16 @@ const fields = [
   </div>
 </template>
 <style scoped>
+.font-size-setting {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+.font-size-setting .el-slider {
+  width: min(220px, 45vw);
+}
 .appearance-settings {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
