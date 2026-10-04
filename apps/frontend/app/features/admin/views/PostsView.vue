@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessageBox } from 'element-plus';
+import { toast } from '~/utils/toast';
 import { api, errorText } from '../api';
 import type { AdminPost, AdminPage, Pagination } from '@cool/content';
 import { displayTranslation } from '../content';
@@ -49,10 +50,10 @@ async function remove(item: AdminPost | AdminPage) {
   }
   try {
     await api(`/admin/${props.kind}/${item.id}`, { method: 'DELETE' });
-    ElMessage.success(t('已删除'));
+    toast.success(t('已删除'));
     await load();
   } catch (e) {
-    ElMessage.error(t(errorText(e)));
+    toast.error(t(errorText(e)));
   }
 }
 onMounted(load);

@@ -10,18 +10,18 @@
   line-height: 1.5;
   letter-spacing: -2px;
   font-weight: 400;
-  color: #64533d;
+  color: var(--sakura-text-regular);
 }
 .login-story > p:not(.eyebrow) {
   line-height: 2.2;
-  color: #a69b88;
+  color: var(--sakura-muted);
   font-size: calc(14px * var(--sakura-font-scale));
 }
 .login-footnote {
   position: absolute;
   bottom: 45px;
   font-size: calc(10px * var(--sakura-font-scale));
-  color: #b2a793;
+  color: var(--sakura-muted);
 }
 .login-form {
   max-width: calc(100% - 48px);
@@ -54,7 +54,7 @@
   }
 
   .stat-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
   }
   .stat-card {
     padding: 18px;
@@ -79,7 +79,7 @@
     flex-direction: column;
   }
   .media-picker-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
   }
   .view-header p {
     font-size: calc(12px * var(--sakura-font-scale));
@@ -147,12 +147,12 @@
   }
   .login-form {
     background: var(--sakura-surface);
-    border: 1px solid var(--sakura-border);
+    border: 0;
     border-radius: 20px;
     padding: 32px 24px;
     width: 400px;
     max-width: calc(100% - 32px);
-    box-shadow: 0 8px 32px #70455b10;
+    box-shadow: var(--sakura-shadow);
   }
 
   .editor-status {

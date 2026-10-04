@@ -14,7 +14,7 @@ export interface PatternOptions {
   shape?: PatternShape;
   colors?: readonly string[];
   spacing?: number;
-  /** Base size; hearts/stars use 1.5×, dots 1×, bounded to half the spacing. */
+  /** Base size; hearts/stars use 1.3×, dots 1×, bounded to half the spacing. */
   size?: number;
   seed?: string | number;
 }
@@ -25,7 +25,7 @@ export function createPatternTile(options: PatternOptions = {}) {
   const shape = options.shape ?? 'heart';
   const size = Math.max(
     2,
-    Math.min(spacing / 2, (options.size ?? 15) * (shape === 'dot' ? 1 : 1.5)),
+    Math.min(spacing / 2, (options.size ?? 15) * (shape === 'dot' ? 1 : 1.3)),
   );
   const colors = options.colors?.length ? options.colors : patternColors;
   let state = 2166136261;

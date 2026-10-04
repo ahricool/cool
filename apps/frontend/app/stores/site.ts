@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import {
   defaultSite,
   defaultHomepage,
+  normalizeFontSize,
   type Site,
   type Homepage,
 } from '@cool/content';
@@ -34,7 +35,11 @@ export const useSiteStore = defineStore('site', () => {
         if (id !== requestId || requestedLocale !== locale.value) return;
         site.value = {
           ...s,
-          appearance: { ...defaultSite.appearance, ...s.appearance },
+          appearance: {
+            ...defaultSite.appearance,
+            ...s.appearance,
+            fontSize: normalizeFontSize(s.appearance?.fontSize),
+          },
         };
         homepage.value = c.homepage;
         loadedLocale = requestedLocale;

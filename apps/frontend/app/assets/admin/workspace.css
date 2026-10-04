@@ -27,7 +27,12 @@ textarea {
   gap: 20px;
   margin-bottom: 30px;
 }
+.view-header > div {
+  min-width: 0;
+  max-width: 100%;
+}
 .view-header h1 {
+  overflow-wrap: anywhere;
   font-size: calc(28px * var(--sakura-font-scale));
   font-weight: 700;
   margin: 0 0 10px;
@@ -54,7 +59,7 @@ textarea {
 }
 .panel {
   background: var(--sakura-surface);
-  border: 1px solid var(--sakura-border);
+  border: 0;
   border-radius: 18px;
   padding: 24px;
   margin-bottom: 24px;
@@ -65,6 +70,8 @@ textarea {
 }
 .panel-heading {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
   justify-content: space-between;
 }
@@ -81,7 +88,7 @@ textarea {
 }
 .stat-card {
   background: var(--sakura-surface);
-  border: 1px solid var(--sakura-border);
+  border: 0;
   border-radius: 18px;
   padding: 22px;
 }
@@ -104,7 +111,7 @@ textarea {
   justify-content: space-between;
   align-items: center;
   padding: 18px 0;
-  border-bottom: 1px solid var(--sakura-border);
+  border-bottom: 0;
 }
 .recent-row:last-child {
   border: 0;
@@ -162,13 +169,6 @@ textarea {
 .asset-picker {
   width: 100%;
 }
-.asset-picker > img {
-  width: 100%;
-  max-height: 200px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 8px;
-}
 .asset-actions {
   display: flex;
   align-items: center;
@@ -181,7 +181,7 @@ textarea {
 }
 .media-card {
   background: var(--sakura-surface);
-  border: 1px solid var(--sakura-border);
+  border: 0;
   border-radius: 18px;
   overflow: hidden;
 }
@@ -213,7 +213,7 @@ textarea {
 }
 .moderation-card {
   padding: 20px 0;
-  border-bottom: 1px solid var(--sakura-border);
+  border-bottom: 0;
 }
 .moderation-card header {
   display: flex;
@@ -253,9 +253,6 @@ textarea {
   max-width: 650px;
   padding-top: 15px;
 }
-.settings-panel .asset-picker > img {
-  max-width: 420px;
-}
 .profile-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -270,7 +267,6 @@ body {
 .panel,
 .stat-card,
 .media-card {
-  border-color: var(--sakura-border);
   box-shadow: var(--sakura-shadow);
 }
 .panel h2 {
@@ -287,7 +283,7 @@ body {
   position: relative;
   overflow: hidden;
   transition:
-    border-color 0.2s,
+    box-shadow 0.2s,
     transform 0.2s;
 }
 .stat-flower {
@@ -300,7 +296,7 @@ body {
 }
 
 .stat-card:hover {
-  border-color: var(--sakura-accent-light-5);
+  box-shadow: var(--sakura-button-hover-shadow);
   transform: translateY(-2px);
 }
 .stat-card > span:not(.sakura-flower),
@@ -315,7 +311,7 @@ body {
   min-height: 36px;
 }
 .el-button--primary {
-  box-shadow: 0 3px 9px #b342721c;
+  box-shadow: var(--sakura-button-shadow);
 }
 .el-table th.el-table__cell {
   background: var(--sakura-soft);
@@ -323,12 +319,12 @@ body {
 }
 .el-dialog,
 .el-message-box {
-  border: 1px solid var(--sakura-border);
+  border: 0;
   border-radius: 16px;
 }
 .el-dialog__header,
 .el-message-box__header {
-  border-bottom: 1px solid var(--sakura-border);
+  border-bottom: 0;
   margin-bottom: 16px;
 }
 .el-empty {

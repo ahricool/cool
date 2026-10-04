@@ -1,30 +1,15 @@
 <script setup lang="ts">
 import { useCoolI18n } from '~/composables/useCoolI18n';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, clearSession, errorText, session } from '~/features/admin/api';
-import { ElMessage } from 'element-plus';
+import { toast } from '~/utils/toast';
+import AdminAccountMenu from '~/features/admin/components/AdminAccountMenu.vue';
 import { publicUrl } from '~/features/admin/publicUrl';
 const { t } = useCoolI18n();
 const route = useRoute();
 const dark = useCoolTheme();
 const router = useRouter();
-const open = ref(false);
-const mobile = ref(false);
-const sidebar = ref<HTMLElement>();
-const menuTrigger = ref<HTMLButtonElement>();
-const menuKeydown = useDrawerFocus(open, sidebar, menuTrigger);
-function resize() {
-  mobile.value = window.innerWidth <= 960;
-  if (!mobile.value) open.value = false;
-}
-onMounted(() => {
-  resize();
-  window.addEventListener('resize', resize);
-});
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', resize);
-});
 const blogUrl = computed(() => publicUrl());
 const nav = [
   { path: '/admin', label: '概览', icon: 'home' },
@@ -36,12 +21,6 @@ const nav = [
   { path: '/admin/moments', label: '瞬间', icon: 'moments' },
   { path: '/admin/photos', label: '图库', icon: 'photos' },
 ] as const;
-watch(
-  () => route.path,
-  () => {
-    open.value = false;
-  },
-);
 watch(
   () => session.owner,
   (owner) => {
@@ -61,7 +40,7 @@ async function logout() {
     clearSession();
     await router.replace('/admin/login');
   } catch (error) {
-    ElMessage.error(t(errorText(error)));
+    toast.error(t(errorText(error)));
   } finally {
     loggingOut.value = false;
   }
@@ -75,22 +54,11 @@ useHead(() => ({
   <div v-else class="admin-shell">
     <aside
       id="admin-navigation"
-      ref="sidebar"
-      class="sidebar navigation-surface navigation-surface--side"
-      :class="{ open }"
-      :inert="mobile && !open"
-      :role="mobile ? 'dialog' : undefined"
-      :aria-modal="mobile && open ? true : undefined"
+      class="sidebar"
       :aria-label="t('工作空间导航')"
-      @keydown="menuKeydown"
     >
-      <RouterLink
-        to="/admin"
-        class="brand"
-        aria-label="梦桜"
-        @click="open = false"
-      >
-        <SakuraFlower class="brand-mark" />
+      <RouterLink to="/admin" class="brand" aria-label="梦桜">
+        <SakuraFlower spinning class="brand-mark" />
         <SakuraWordmark />
       </RouterLink>
       <nav>
@@ -98,7 +66,6 @@ useHead(() => ({
           v-for="item in nav"
           :key="item.path"
           :to="item.path"
-          @click="open = false"
           :class="{
             active:
               item.path === '/admin'
@@ -110,52 +77,22 @@ useHead(() => ({
           }}</RouterLink
         >
       </nav>
-      <div class="sidebar-bottom">
-        <RouterLink to="/admin/settings" @click="open = false"
-          ><ReadingIcon name="settings" class="navigation-icon--shadow" />{{
-            t('网站配置')
-          }}</RouterLink
-        ><RouterLink to="/admin/profile" @click="open = false"
-          ><ReadingIcon name="user" class="navigation-icon--shadow" />{{
-            t('我的账户')
-          }}</RouterLink
-        ><button :disabled="loggingOut" @click="logout">
-          <ReadingIcon name="logout" class="navigation-icon--shadow" />{{
-            t('退出登录')
-          }}
-        </button>
-      </div>
     </aside>
-    <button
-      v-if="open"
-      class="sidebar-mask"
-      tabindex="-1"
-      :aria-label="t('关闭导航')"
-      @click="open = false"
-    ></button>
-    <div class="admin-body" :inert="mobile && open">
+    <div class="admin-body">
       <header class="topbar navigation-surface navigation-surface--top">
-        <button
-          ref="menuTrigger"
-          class="menu-toggle"
-          :aria-label="t('打开导航')"
-          aria-controls="admin-navigation"
-          :aria-expanded="open"
-          @click="open = !open"
-        >
-          <SakuraWordmark />
-        </button>
         <div class="topbar-right">
+          <AdminAccountMenu
+            :owner="session.owner"
+            :logging-out="loggingOut"
+            @logout="logout"
+          />
           <a :href="blogUrl" target="_blank" rel="noopener">{{
             t('访问博客 ↗')
-          }}</a
-          ><ThemeToggle :dark="dark" @toggle-theme="dark = !dark" /><span
-            class="owner-avatar"
-            >{{ session.owner?.displayName.slice(0, 1) || 'C' }}</span
-          >
+          }}</a>
         </div>
       </header>
       <main class="workspace"><slot /></main>
+      <ThemeToggle floating :dark="dark" @toggle-theme="dark = !dark" />
     </div>
   </div>
 </template>

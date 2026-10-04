@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useCoolI18n } from '~/composables/useCoolI18n';
 import { onMounted, reactive, ref } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessageBox } from 'element-plus';
+import { toast } from '~/utils/toast';
 import { api, clearSession, errorText, session } from '../api';
 import ViewHeader from '../components/ViewHeader.vue';
 import AssetPicker from '../components/AssetPicker.vue';
@@ -42,7 +43,7 @@ async function save() {
         avatarUrl: profile.avatarUrl,
       }),
     });
-    ElMessage.success(t('账户信息已更新'));
+    toast.success(t('账户信息已更新'));
   } catch (e) {
     error.value = errorText(e);
   } finally {
@@ -66,7 +67,7 @@ async function changePassword() {
       method: 'PUT',
       body: JSON.stringify(password),
     });
-    ElMessage.success(t('密码已更新，请重新登录'));
+    toast.success(t('密码已更新，请重新登录'));
     clearSession();
   } catch (e) {
     error.value = errorText(e);
@@ -90,7 +91,7 @@ async function revokeAll() {
     }
     await api('/admin/auth/revoke-all', { method: 'POST' });
     clearSession();
-    ElMessage.success(t('已退出所有设备'));
+    toast.success(t('已退出所有设备'));
   } catch (e) {
     error.value = errorText(e);
   } finally {
@@ -120,7 +121,7 @@ async function revokeAll() {
             type="email"
             readonly /></el-form-item
         ><el-form-item :label="t('文章作者头像')"
-          ><AssetPicker v-model="profile.avatarUrl" /></el-form-item
+          ><AssetPicker avatar v-model="profile.avatarUrl" /></el-form-item
         ><el-button type="primary" native-type="submit" :loading="busy">{{
           t('保存账户信息')
         }}</el-button></el-form

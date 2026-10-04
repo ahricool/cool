@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, reactive } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessageBox } from 'element-plus';
+import { toast } from '~/utils/toast';
 import { api, errorText } from '../api';
 import type {
   AdminMoment,
@@ -81,12 +82,12 @@ async function save() {
       !!(value.description.trim() || value.album.trim());
     if (incomplete) {
       contentLocale.value = language;
-      ElMessage.warning(t('请为已填写的语言补充标题'));
+      toast.warning(t('请为已填写的语言补充标题'));
       return;
     }
   }
   if (props.kind !== 'moments' && !form.url.trim()) {
-    ElMessage.warning(t('请填写图片地址'));
+    toast.warning(t('请填写图片地址'));
     return;
   }
   busy.value = true;
@@ -118,7 +119,7 @@ async function save() {
         : [];
     });
     if (!translations.length) {
-      ElMessage.warning(t('请至少填写一种语言的内容'));
+      toast.warning(t('请至少填写一种语言的内容'));
       return;
     }
     const body = {
@@ -134,7 +135,7 @@ async function save() {
     dialog.value = false;
     await load();
   } catch (e) {
-    ElMessage.error(t(errorText(e)));
+    toast.error(t(errorText(e)));
   } finally {
     busy.value = false;
   }
@@ -169,7 +170,7 @@ async function remove(item: Item) {
     await api(`/admin/${props.kind}/${item.id}`, { method: 'DELETE' });
     await load();
   } catch (e) {
-    ElMessage.error(t(errorText(e)));
+    toast.error(t(errorText(e)));
   }
 }
 onMounted(load);

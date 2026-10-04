@@ -52,7 +52,8 @@ useHead(() => ({
   padding: clamp(24px, 5vw, 56px);
   box-sizing: border-box;
   text-align: center;
-  border: 1px solid var(--sakura-border);
+  border: 0;
+  box-shadow: var(--sakura-shadow);
   border-radius: 24px;
   background: var(--sakura-surface);
   box-shadow: var(--sakura-shadow);

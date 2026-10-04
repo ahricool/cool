@@ -110,7 +110,7 @@ useHead(() => ({
     <div class="sidebar-inner">
       <div class="mobile-sidebar">
         <div class="sidebar-brand">
-          <SakuraFlower class="sidebar-brand-mark" />
+          <SakuraFlower spinning class="sidebar-brand-mark" />
           <div>
             <span
               class="sidebar-brand-title"

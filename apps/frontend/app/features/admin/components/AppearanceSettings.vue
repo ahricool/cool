@@ -26,13 +26,13 @@ const fields = [
       }}</el-radio-button>
     </el-radio-group>
     <div class="font-size-setting">
-      <label id="appearance-font-size-label">{{ t('字号') }}</label>
+      <label id="appearance-font-size-label">{{ t('字体大小') }}</label>
       <el-slider
         v-model="model.fontSize"
-        :min="85"
-        :max="115"
+        :min="80"
+        :max="150"
         :step="5"
-        :aria-label="t('字号')"
+        :aria-label="t('字体大小')"
       />
       <span>{{ model.fontSize }}%</span>
       <el-button
@@ -122,7 +122,8 @@ const fields = [
   margin-top: 20px;
   height: 144px;
   background: var(--sakura-surface);
-  border: 1px solid var(--sakura-border);
+  border: 0;
+  box-shadow: var(--sakura-tag-shadow);
   border-radius: 12px;
   overflow: hidden;
 }

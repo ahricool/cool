@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const { t, contentLang, locale } = useCoolI18n();
 import { computed, nextTick, ref } from 'vue';
-import { ElMessage } from 'element-plus';
+import { toast } from '~/utils/toast';
 import { renderMarkdown } from '@cool/content';
 import { upload, errorText } from '../api';
 import { translate } from '~/i18n/messages';
@@ -54,7 +54,7 @@ async function image(event: Event) {
     const media = await upload(file);
     insert(`\n![${authoredText('图片描述')}](${media.url})\n`);
   } catch (e) {
-    ElMessage.error(t(errorText(e)));
+    toast.error(t(errorText(e)));
   } finally {
     busy.value = false;
     emit('busy-change', false);

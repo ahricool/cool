@@ -131,18 +131,15 @@ test('Admin formatting preserves prose and upload buttons work from keyboard', a
   // Leave no server-side or recovered browser draft behind.
   await content.fill('');
   await page.setViewportSize({ width: 390, height: 844 });
-  const navigation = page.getByRole('dialog', { name: '工作空间导航' });
-  const menu = page.getByRole('button', { name: '打开导航' });
-  await menu.click();
+  const navigation = page.getByRole('complementary', { name: '工作空间导航' });
+  await expect(navigation).toBeVisible();
+  await expect(page.getByRole('button', { name: '打开导航' })).toHaveCount(0);
+  const brand = navigation.getByRole('link', { name: '梦桜', exact: true });
+  await brand.focus();
+  await page.keyboard.press('Tab');
   await expect(
-    navigation.getByRole('link', { name: '梦桜', exact: true }),
+    navigation.getByRole('link', { name: '概览', exact: true }),
   ).toBeFocused();
-  await page.keyboard.press('Shift+Tab');
-  await expect(
-    navigation.getByRole('button', { name: '退出登录' }),
-  ).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(menu).toBeFocused();
   await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
   await page.screenshot({
     path: info.outputPath('sakura-admin-mobile.png'),
