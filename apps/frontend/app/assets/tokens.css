@@ -10,6 +10,11 @@
   --sakura-accent-light-7: #efcedc;
   --sakura-accent-light-8: #f6e2eb;
   --sakura-danger: #c23d5a;
+  --sakura-button-primary: #c7366b;
+  --sakura-button-hover: #b62d60;
+  --sakura-button-active: #a22454;
+  --sakura-button-disabled: #df9cb5;
+  --sakura-button-foreground: #fff;
   --sakura-text: #303236;
   --sakura-text-regular: #505258;
   --sakura-muted: #686b72;
@@ -23,6 +28,16 @@
   --sakura-page: #f8f8fa;
   --sakura-header-background: #fffafdef;
   --sakura-shadow: 0 8px 32px #593b5808;
+}
+
+:root[data-surface='blog'] {
+  --sakura-page: #fff;
+  --reading-header-height: 64px;
+}
+@media (max-width: 768px) {
+  :root[data-surface='blog'] {
+    --reading-header-height: 56px;
+  }
 }
 
 /* Blog's reading preference must never change the admin workspace palette. */

@@ -29,7 +29,7 @@ npm workspaces：`apps/backend`、`apps/frontend`、`packages/content`。`apps/f
 - slug 唯一，可编辑；当前不提供旧 slug 重定向。SEO 阶段再增加重定向记录。
 - 列表不返回正文；作者公开字段仅 id/displayName/avatarUrl。密码哈希与邮箱不出现在公开文章中。
 - viewCount 保留字段，暂不采集阅读量；commentCount 随审核事务维护，只计通过审核的评论。
-- `site`、`homepage`、`social` 是公开配置命名空间，使用嵌套 DTO 校验；禁止在配置中存秘密。它们不构成后端主题实体。
+- `site`、`homepage` 是公开配置命名空间，使用嵌套 DTO 校验；禁止在配置中存秘密。它们不构成后端主题实体。
 - media 是存储对象；photos 是有标题、描述、相册与公开开关的图库条目。
 
 ## 双语路由与内容选择

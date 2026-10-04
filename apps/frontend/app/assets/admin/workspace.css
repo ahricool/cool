@@ -305,14 +305,6 @@ textarea {
 .settings-panel .asset-picker > img {
   max-width: 420px;
 }
-.social-row {
-  display: flex;
-  gap: 12px;
-  margin: 18px 0;
-}
-.social-row .el-input:first-child {
-  max-width: 140px;
-}
 .profile-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -479,11 +471,4 @@ textarea:focus-visible {
   bottom: 14px;
   opacity: 0.35;
   background: url('/sakura/images/footer/sakura.svg') center / contain no-repeat;
-}
-
-/* Pink filled actions use charcoal labels for readable contrast. */
-.el-button--primary:not(.is-plain):not(.is-text):not(.is-link) {
-  --el-button-text-color: #292b30;
-  --el-button-hover-text-color: #292b30;
-  --el-button-active-text-color: #292b30;
 }

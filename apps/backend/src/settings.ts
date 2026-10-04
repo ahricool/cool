@@ -14,7 +14,6 @@ import {
   IsBoolean,
   IsIn,
   IsString,
-  IsUrl,
   Length,
   Matches,
   MaxLength,
@@ -26,23 +25,6 @@ import { Database } from './database';
 import { AuthGuard } from './auth';
 import { IsAssetPath } from './validators';
 import { LocaleDto } from './dto';
-class SocialTranslationDto extends LocaleDto {
-  @ApiProperty() @IsString() @Length(1, 50) @Matches(/\S/) label!: string;
-}
-class SocialDto {
-  @ApiProperty()
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
-  @MaxLength(2048)
-  url!: string;
-  @ApiProperty({ type: [SocialTranslationDto] })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(2)
-  @ArrayUnique((item: LocaleDto) => item?.locale)
-  @ValidateNested({ each: true })
-  @Type(() => SocialTranslationDto)
-  translations!: SocialTranslationDto[];
-}
 class SiteTranslationDto extends LocaleDto {
   @ApiProperty() @IsString() @Length(1, 80) @Matches(/\S/) title!: string;
   @ApiProperty() @IsString() @MaxLength(300) description!: string;
@@ -94,12 +76,6 @@ class SettingsDto {
   @ValidateNested()
   @Type(() => HomepageDto)
   homepage!: HomepageDto;
-  @ApiProperty({ type: [SocialDto] })
-  @IsArray()
-  @ArrayMaxSize(10)
-  @ValidateNested({ each: true })
-  @Type(() => SocialDto)
-  social!: SocialDto[];
 }
 export const defaultSettings = {
   site: {
@@ -141,18 +117,16 @@ export const defaultSettings = {
       },
     ],
   },
-  social: [] as SocialDto[],
 };
 export async function readSettings(db: Database) {
   const rows = await db.siteSetting.findMany({
-    where: { key: { in: ['site', 'homepage', 'social'] } },
+    where: { key: { in: ['site', 'homepage'] } },
   });
   const saved = Object.fromEntries(rows.map((row) => [row.key, row.value]));
   return {
     site: (saved.site ?? defaultSettings.site) as unknown as SiteDto,
     homepage: (saved.homepage ??
       defaultSettings.homepage) as unknown as HomepageDto,
-    social: (saved.social ?? defaultSettings.social) as unknown as SocialDto[],
   };
 }
 @ApiTags('Settings')

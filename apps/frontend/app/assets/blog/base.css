@@ -1,6 +1,6 @@
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 100px;
+  scroll-padding-top: calc(var(--reading-header-height) + 16px);
   color-scheme: light;
 }
 html.dark {
@@ -97,7 +97,7 @@ h3 {
     .pagination,
     .site-error
   )
-  button {
+  button:not(.primary-action) {
   padding: 10px 20px;
   border: 1px solid var(--sakura-border);
   border-radius: 12px;
@@ -105,7 +105,7 @@ h3 {
   color: var(--sakura-accent-strong);
 }
 :is(.api-state, .comment-form, .cool-search, .post-footer, .pagination)
-  button:hover {
+  button:not(.primary-action):hover {
   border-color: var(--sakura-accent-light-5);
 }
 .pagination {

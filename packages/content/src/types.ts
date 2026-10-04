@@ -190,27 +190,13 @@ export interface AdminHomepage {
   wave: boolean;
   translations: HomepageTranslation[];
 }
-export interface Social extends LocalizedContent {
-  label: string;
-  url: string;
-}
-export interface SocialTranslation {
-  locale: ContentLocale;
-  label: string;
-}
-export interface AdminSocial {
-  url: string;
-  translations: SocialTranslation[];
-}
 export interface Settings {
   site: Site;
   homepage: Homepage;
-  social: Social[];
 }
 export interface AdminSettings {
   site: AdminSite;
   homepage: AdminHomepage;
-  social: AdminSocial[];
 }
 export const defaultSite: Site = {
   title: '梦桜',

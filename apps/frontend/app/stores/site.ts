@@ -4,14 +4,12 @@ import {
   defaultHomepage,
   type Site,
   type Homepage,
-  type Social,
 } from '@cool/content';
 export const useSiteStore = defineStore('site', () => {
   const { locale } = useCoolI18n();
   const api = useApi();
   const site = ref<Site>({ ...defaultSite });
   const homepage = ref<Homepage>({ ...defaultHomepage });
-  const social = ref<Social[]>([]);
   const loaded = ref(false);
   const failed = ref(false);
   let loadedLocale = '';
@@ -30,13 +28,12 @@ export const useSiteStore = defineStore('site', () => {
       try {
         const [s, c] = await Promise.all([
           api<Site>('/public/site'),
-          api<{ homepage: Homepage; social: Social[] }>('/public/config'),
+          api<{ homepage: Homepage }>('/public/config'),
         ]);
         // A slower response from a previous language must not replace the current one.
         if (id !== requestId || requestedLocale !== locale.value) return;
         site.value = s;
         homepage.value = c.homepage;
-        social.value = c.social;
         loadedLocale = requestedLocale;
         loaded.value = true;
         failed.value = false;
@@ -53,5 +50,5 @@ export const useSiteStore = defineStore('site', () => {
     loaded.value = false;
     void load();
   });
-  return { site, homepage, social, loaded, failed, load };
+  return { site, homepage, loaded, failed, load };
 });

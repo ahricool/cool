@@ -94,9 +94,6 @@
 .upload-label input {
   display: none;
 }
-.upload-label.primary {
-  padding: 9px 18px;
-}
 .media-picker-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -164,10 +161,6 @@
 .upload-label {
   color: #a33f6a;
   background: #fff0f6;
-}
-.upload-label.primary {
-  background: var(--el-color-primary);
-  color: var(--sakura-surface);
 }
 .markdown-preview pre {
   background: #faf3f8;

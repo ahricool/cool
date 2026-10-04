@@ -1,74 +1,36 @@
 <script setup lang="ts">
 const { t, routePath, contentLang } = useCoolI18n();
-import { socialIcon } from '~/utils/social-icon';
 const store = useSiteStore();
 </script>
 <template>
-  <div class="home-hero">
-    <figure id="hero-artwork" class="hero-artwork">
-      <picture
-        ><img
-          class="cover-bg"
-          :src="store.homepage.coverUrl"
-          :alt="t('首页背景')"
-          width="1920"
-          height="1080"
-          fetchpriority="high"
-      /></picture>
-      <div class="hero-content">
-        <div class="hero-brand" role="img" :aria-label="store.site.title">
-          <SakuraWordmark />
-        </div>
-        <div v-if="store.homepage.focusMode === 'avatar'" class="hero-avatar">
-          <NuxtLink :to="routePath('/')"
-            ><img
-              :src="
-                store.site.avatarUrl || '/sakura/images/default/avatar.webp'
-              "
-              :alt="store.site.authorName"
-              width="120"
-              height="120"
-          /></NuxtLink>
-        </div>
-        <div class="hero-description">
-          <p class="flex-child-center">
-            <span
-              class="desc"
-              :lang="contentLang(store.homepage.contentLocale)"
-              >{{ store.homepage.description }}</span
-            >
-          </p>
-          <div v-if="store.social.length" class="hero-social">
-            <ul>
-              <li v-for="link in store.social" :key="link.url">
-                <a
-                  :href="link.url"
-                  :aria-label="link.label"
-                  :title="link.label"
-                  :lang="contentLang(link.contentLocale)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  ><img
-                    :src="socialIcon(link.url)"
-                    alt=""
-                    width="28"
-                    height="28"
-                /></a>
-              </li>
-            </ul>
-          </div>
-        </div>
+  <ReadingBanner
+    variant="home"
+    :cover="store.homepage.coverUrl"
+    :image-alt="t('首页背景')"
+    :wave="store.homepage.wave"
+  >
+    <div class="hero-content">
+      <div class="hero-brand">
+        <ReadingBrand placement="hero" />
       </div>
-    </figure>
-    <div v-if="store.homepage.wave" class="home-wave">
-      <div
-        class="wave-1"
-        style="background: url('/sakura/images/wave/wave1.png') repeat-x"
-      ></div>
-      <div
-        class="wave-2"
-        style="background: url('/sakura/images/wave/wave2.png') repeat-x"
-      ></div>
+      <div v-if="store.homepage.focusMode === 'avatar'" class="hero-avatar">
+        <NuxtLink :to="routePath('/')"
+          ><img
+            :src="store.site.avatarUrl || '/sakura/images/default/avatar.webp'"
+            :alt="store.site.authorName"
+            width="120"
+            height="120"
+        /></NuxtLink>
+      </div>
+      <div class="hero-description">
+        <p class="flex-child-center">
+          <span
+            class="desc"
+            :lang="contentLang(store.homepage.contentLocale)"
+            >{{ store.homepage.description }}</span
+          >
+        </p>
+      </div>
     </div>
-  </div>
+  </ReadingBanner>
 </template>

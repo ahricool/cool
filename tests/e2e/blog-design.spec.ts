@@ -138,7 +138,6 @@ async function fixture(page: Page) {
           notice: '欢迎来到我的小小世界。愿每一次相遇，都能留下一点温柔。',
           wave: true,
         },
-        social: [{ label: 'GitHub', url: 'https://github.com/example' }],
       },
     }),
   );
@@ -190,9 +189,7 @@ test('populated reading pages remain usable on desktop and mobile in both palett
   ]) {
     await page.setViewportSize({ width: width!, height: height! });
     await page.goto(blog);
-    await expect(
-      page.getByRole('img', { name: '梦桜', exact: true }),
-    ).toBeVisible();
+    await expect(page.locator('.hero-brand')).toBeVisible();
     await expect(page.getByText('Hello, 梦桜', { exact: true })).toHaveCount(0);
     await page
       .locator('.site-footer')

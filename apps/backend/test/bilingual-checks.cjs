@@ -381,7 +381,7 @@ module.exports = async function verifyBilingual(t, http, token) {
       },
     );
     await t.test(
-      'site, homepage and social text use bilingual fallback without duplicating shared assets or leaking private settings',
+      'site and homepage text use bilingual fallback without duplicating shared assets or leaking private settings',
       async () => {
         const original = (await admin('get', 'settings')).body;
         const settings = {
@@ -411,12 +411,6 @@ module.exports = async function verifyBilingual(t, http, token) {
               },
             ],
           },
-          social: [
-            {
-              url: 'https://example.com',
-              translations: [{ locale: 'zh', label: '链接' }],
-            },
-          ],
         };
         try {
           await admin('put', 'settings', settings).expect(200);
@@ -428,7 +422,7 @@ module.exports = async function verifyBilingual(t, http, token) {
           const config = (await read('zh', 'config')).body;
           assert.equal(config.homepage.greeting, 'Hello');
           assert.equal(config.homepage.contentLocale, 'en');
-          assert.equal(config.social[0].contentLocale, 'zh');
+          assert.equal(Object.hasOwn(config, 'social'), false);
           await admin('put', 'settings', {
             ...settings,
             site: { ...settings.site, translations: [] },

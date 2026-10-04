@@ -3,27 +3,60 @@ export function useReadingShell() {
   const menuOpen = ref(false);
   const menuTrigger = ref<HTMLButtonElement>();
   const sidebar = ref<HTMLElement>();
+  function openMenu(event: Event) {
+    menuTrigger.value = event.currentTarget as HTMLButtonElement;
+    menuOpen.value = true;
+  }
   const mobileQuery = ref('');
   const mobileSearchFailure = ref('');
   let previousOverflow = '';
-  const dark = ref(false);
-  const scrollProgress = ref(0);
+  const dark = useState('reading-dark', () => false);
+  const banner = shallowRef<HTMLElement>();
+  const hasBanner = computed(() => !!banner.value);
+  const scrollProgress = ref(1);
+  let bannerObserver: ResizeObserver | undefined;
+  function updateScroll() {
+    if (!import.meta.client) return;
+    const element = banner.value;
+    if (!element) {
+      scrollProgress.value = 1;
+      return;
+    }
+    const headerHeight =
+      document.querySelector('.site-header')?.clientHeight ?? 64;
+    const distance = Math.max(120, element.offsetHeight - headerHeight);
+    const top = window.scrollY + element.getBoundingClientRect().top;
+    scrollProgress.value = Math.min(
+      1,
+      Math.max(0, (window.scrollY - top) / distance),
+    );
+  }
+  function registerBanner(element: HTMLElement) {
+    bannerObserver?.disconnect();
+    banner.value = element;
+    bannerObserver?.observe(element);
+    updateScroll();
+    return () => {
+      if (banner.value !== element) return;
+      bannerObserver?.unobserve(element);
+      banner.value = undefined;
+      updateScroll();
+    };
+  }
   onMounted(() => {
     const resize = () => {
       if (window.innerWidth > 768) menuOpen.value = false;
       updateScroll();
     };
-    const updateScroll = () => {
-      const hero = document.getElementById('hero-artwork');
-      const distance = Math.max(160, (hero?.offsetHeight ?? 320) - 80);
-      scrollProgress.value = Math.min(1, window.scrollY / distance);
-    };
+    bannerObserver = new ResizeObserver(updateScroll);
+    if (banner.value) bannerObserver.observe(banner.value);
     updateScroll();
     window.addEventListener('scroll', updateScroll, { passive: true });
     window.addEventListener('resize', resize);
     onUnmounted(() => {
       window.removeEventListener('resize', resize);
       window.removeEventListener('scroll', updateScroll);
+      bannerObserver?.disconnect();
       if (menuOpen.value) document.body.style.overflow = previousOverflow;
     });
   });
@@ -70,10 +103,12 @@ export function useReadingShell() {
   );
   return {
     menuOpen,
-    menuTrigger,
+    openMenu,
     sidebar,
     dark,
     scrollProgress,
+    hasBanner,
+    registerBanner,
     mobileQuery,
     mobileSearchFailure,
     sidebarKeydown,

@@ -179,10 +179,12 @@ test('all blog routes load on desktop and mobile without external resources', as
   await expect(page.locator('#page')).toHaveCSS('opacity', '1');
   await expect
     .poll(() =>
-      page.locator('#hero-artwork .cover-bg').evaluate((element) => {
-        const image = element as HTMLImageElement;
-        return image.complete && image.naturalWidth > 0;
-      }),
+      page
+        .locator('.reading-banner--home .banner-image')
+        .evaluate((element) => {
+          const image = element as HTMLImageElement;
+          return image.complete && image.naturalWidth > 0;
+        }),
     )
     .toBe(true);
   const notice = page.locator('.notice');

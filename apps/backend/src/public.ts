@@ -52,7 +52,6 @@ export class PublicController {
     const settings = await readSettings(this.db);
     return {
       homepage: localize(settings.homepage, locale),
-      social: settings.social.map((item) => localize(item, locale)),
     };
   }
   @Get('categories') async categories(@ReaderLocale() locale: ContentLocale) {

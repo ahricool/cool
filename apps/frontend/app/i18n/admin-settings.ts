@@ -12,16 +12,12 @@ export const adminSettingsMessages: Record<string, string> = {
     'Add a site title for each language you have started. At least one language is required.',
   '请为已填写的内容语言设置首屏文字，至少填写一种语言。':
     'Add a hero greeting for each language you have started. At least one language is required.',
-  '每个社交链接至少需要一种语言的名称。':
-    'Each social link needs a name in at least one language.',
 
   内容语言: 'Content language',
   '分别编写中英文内容，切换界面语言不会更改这里的内容。保存时会保留两种语言。':
     'Write each language separately. Switching the interface language does not change your content. Saving keeps both versions.',
   共用设置: 'Shared settings',
   '以下设置对两种语言都生效。': 'These settings apply to both languages.',
-  '链接名称按语言分别填写，网址在两种语言中共用。':
-    'Write a link name for each language. The URL is shared by both versions.',
   未命名文章: 'Untitled post',
 
   两次输入的密码不一致: 'The passwords do not match',
@@ -73,14 +69,8 @@ export const adminSettingsMessages: Record<string, string> = {
   一句话介绍: 'Short introduction',
   首页公告: 'Homepage notice',
   波浪动画: 'Wave animation',
-  社交链接: 'Social links',
-  '链接在首页首屏显示，最多 10 项。':
-    'Show up to 10 social links in your homepage hero.',
   名称: 'Name',
-  '链接 {index} 名称': 'Link {index} name',
-  '链接 {index} 网址': 'Link {index} URL',
   移除: 'Remove',
-  '＋ 添加链接': '+ Add link',
   账户信息已更新: 'Account information updated',
   '密码已更新，请重新登录': 'Password updated. Please sign in again.',
   '所有设备（包括当前设备）都需要重新登录。':

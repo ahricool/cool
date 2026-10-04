@@ -17,12 +17,25 @@ export default defineNuxtConfig({
     '~/assets/blog/shell.css',
     '~/assets/blog/content.css',
     'element-plus/dist/index.css',
+    '~/assets/actions.css',
     '~/assets/admin/shell.css',
     '~/assets/admin/workspace.css',
     '~/assets/admin/editor.css',
     '~/assets/admin/login.css',
   ],
-  app: { head: { htmlAttrs: { lang: 'en' } } },
+  app: {
+    head: {
+      htmlAttrs: { lang: 'en' },
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        {
+          rel: 'apple-touch-icon',
+          sizes: '180x180',
+          href: '/apple-touch-icon.png',
+        },
+      ],
+    },
+  },
   runtimeConfig: { public: { apiBase: '/api/v1' } },
   vite: { css: { postcss: { plugins: [surfaceStyles()] } } },
   nitro: {

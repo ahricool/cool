@@ -108,7 +108,9 @@ async function submit() {
         }}<input v-model="website" tabindex="-1" autocomplete="off"
       /></label>
       <p class="form-hint">{{ t('评论审核后显示，请友善交流。') }}</p>
-      <button :disabled="busy">{{ t(busy ? '提交中…' : '提交评论') }}</button>
+      <button class="primary-action" type="submit" :disabled="busy">
+        {{ t(busy ? '提交中…' : '提交评论') }}
+      </button>
       <p v-if="message" role="status">{{ t(message) }}</p>
       <p v-if="failure" id="comment-form-error" role="alert">
         {{ t(failure) }}

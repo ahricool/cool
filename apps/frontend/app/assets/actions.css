@@ -1,0 +1,62 @@
+/* Solid actions share white labels and a deeper pink than the brand artwork. */
+.primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid var(--sakura-button-primary);
+  border-radius: 10px;
+  background: var(--sakura-button-primary);
+  color: var(--sakura-button-foreground);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+.primary-action:hover:not(:disabled) {
+  background: var(--sakura-button-hover);
+  border-color: var(--sakura-button-hover);
+}
+.primary-action:active:not(:disabled) {
+  background: var(--sakura-button-active);
+  border-color: var(--sakura-button-active);
+}
+.primary-action:disabled {
+  background: var(--sakura-button-disabled);
+  border-color: var(--sakura-button-disabled);
+  color: var(--sakura-button-foreground);
+  opacity: 1;
+  cursor: not-allowed;
+}
+.primary-action:focus-visible,
+.el-button--primary:focus-visible {
+  outline: 2px solid var(--sakura-button-primary);
+  outline-offset: 3px;
+}
+.el-button--primary:not(.is-plain):not(.is-text):not(.is-link) {
+  --el-button-text-color: var(--sakura-button-foreground);
+  --el-button-hover-text-color: var(--sakura-button-foreground);
+  --el-button-active-text-color: var(--sakura-button-foreground);
+  --el-button-disabled-text-color: var(--sakura-button-foreground);
+  --el-button-bg-color: var(--sakura-button-primary);
+  --el-button-border-color: var(--sakura-button-primary);
+  --el-button-hover-bg-color: var(--sakura-button-hover);
+  --el-button-hover-border-color: var(--sakura-button-hover);
+  --el-button-active-bg-color: var(--sakura-button-active);
+  --el-button-active-border-color: var(--sakura-button-active);
+  --el-button-disabled-bg-color: var(--sakura-button-disabled);
+  --el-button-disabled-border-color: var(--sakura-button-disabled);
+}
+.el-radio-button__original-radio:checked + .el-radio-button__inner {
+  --el-radio-button-checked-bg-color: var(--sakura-button-primary);
+  --el-radio-button-checked-border-color: var(--sakura-button-primary);
+  --el-radio-button-checked-text-color: var(--sakura-button-foreground);
+}
+@media (prefers-reduced-motion: reduce) {
+  .primary-action {
+    transition: none;
+  }
+}

@@ -28,7 +28,6 @@ const blankHomepageTranslation = (locale: CoolLocale) => ({
   description: '',
   notice: '',
 });
-const blankSocialTranslation = (locale: CoolLocale) => ({ locale, label: '' });
 const form = reactive<AdminSettings>({
   site: {
     authorName: defaultSite.authorName,
@@ -42,7 +41,6 @@ const form = reactive<AdminSettings>({
     wave: defaultHomepage.wave,
     translations: locales.map(blankHomepageTranslation),
   },
-  social: [],
 });
 // Both drafts live in the form. Changing the interface language never changes
 // the selected content language or writes into an authored field.
@@ -53,11 +51,6 @@ const homepageTranslation = computed(() =>
   form.homepage.translations.find(
     (entry) => entry.locale === contentLocale.value,
   )!,
-);
-const socialTranslations = computed(() =>
-  form.social.map((link) =>
-    link.translations.find((entry) => entry.locale === contentLocale.value)!,
-  ),
 );
 const error = ref('');
 const busy = ref(false);
@@ -81,13 +74,6 @@ async function load() {
         ...data.homepage.translations.find((entry) => entry.locale === locale),
       })),
     };
-    form.social = data.social.map((link) => ({
-      ...link,
-      translations: locales.map((locale) => ({
-        ...blankSocialTranslation(locale),
-        ...link.translations.find((entry) => entry.locale === locale),
-      })),
-    }));
     if (!loaded.value) {
       contentLocale.value = data.site.translations.some(
         (entry) => entry.locale === 'en' && entry.title.trim(),
@@ -126,10 +112,6 @@ async function save() {
             entry.notice.trim(),
         ),
       },
-      social: form.social.map((link) => ({
-        ...link,
-        translations: link.translations.filter((entry) => entry.label.trim()),
-      })),
     };
     const invalidSite = payload.site.translations.find(
       (entry) => !entry.title.trim(),
@@ -149,11 +131,6 @@ async function save() {
       error.value = '请为已填写的内容语言设置首屏文字，至少填写一种语言。';
       return;
     }
-    if (payload.social.some((link) => !link.translations.length)) {
-      tab.value = 'social';
-      error.value = '每个社交链接至少需要一种语言的名称。';
-      return;
-    }
     await api('/admin/settings', {
       method: 'PUT',
       body: JSON.stringify(payload),
@@ -164,12 +141,6 @@ async function save() {
   } finally {
     busy.value = false;
   }
-}
-function addSocialLink() {
-  form.social.push({
-    url: '',
-    translations: locales.map(blankSocialTranslation),
-  });
 }
 onMounted(load);
 </script>
@@ -285,37 +256,6 @@ onMounted(load);
             ><el-switch v-model="form.homepage.wave"
           /></el-form-item>
         </el-form>
-      </el-tab-pane>
-      <el-tab-pane :label="t('社交链接')" name="social">
-        <p class="muted">{{ t('链接在首页首屏显示，最多 10 项。') }}</p>
-        <p class="muted">
-          {{ t('链接名称按语言分别填写，网址在两种语言中共用。') }}
-        </p>
-        <div
-          v-for="(link, index) in form.social"
-          :key="index"
-          class="social-row"
-        >
-          <el-input
-            :lang="contentLocale === 'zh' ? 'zh-CN' : 'en'"
-            v-model="socialTranslations[index]!.label"
-            :placeholder="t('名称')"
-            :aria-label="t('链接 {index} 名称', { index: index + 1 })"
-          />
-          <el-input
-            v-model="link.url"
-            placeholder="https://"
-            :aria-label="t('链接 {index} 网址', { index: index + 1 })"
-          />
-          <el-button text type="danger" @click="form.social.splice(index, 1)">{{
-            t('移除')
-          }}</el-button>
-        </div>
-        <el-button
-          :disabled="form.social.length >= 10"
-          @click="addSocialLink"
-          >{{ t('＋ 添加链接') }}</el-button
-        >
       </el-tab-pane>
     </el-tabs>
   </section>

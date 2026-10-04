@@ -45,7 +45,7 @@ function search() {
           maxlength="100"
           :placeholder="t('输入关键词…')"
           required
-        /><button>{{ t('搜索') }}</button>
+        /><button class="primary-action" type="submit">{{ t('搜索') }}</button>
       </div>
       <p v-if="searchFailure" id="search-query-error" role="alert">
         {{ t(searchFailure) }}

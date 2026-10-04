@@ -777,7 +777,7 @@ test('Owner login and full post publication lifecycle', async (t) => {
       await http
         .put('/api/v1/admin/settings')
         .auth(token, { type: 'bearer' })
-        .send({ site: null, homepage: config.homepage, social: [] })
+        .send({ site: null, homepage: config.homepage })
         .expect(400);
       config.site.commentsEnabled = true;
       await http
