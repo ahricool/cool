@@ -11,6 +11,7 @@ useHead(() => ({
   htmlAttrs: {
     lang: contentLang(locale.value),
     'data-surface': isAdmin.value ? 'admin' : 'blog',
+    'data-font': store.loaded ? store.site.appearance.font : undefined,
   },
   bodyAttrs: { class: isAdmin.value ? 'admin-ui' : 'sakura-ui' },
 }));

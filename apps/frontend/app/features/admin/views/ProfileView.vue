@@ -99,10 +99,12 @@ async function revokeAll() {
 }
 </script>
 <template>
-  <ViewHeader
-    :title="t('我的账户')"
-    :description="t('本站只有你一位管理员，访客无需注册。')"
-  /><el-alert v-if="error" :title="t(error)" type="error" :closable="false" />
+  <ViewHeader :title="t('我的账户')" /><el-alert
+    v-if="error"
+    :title="t(error)"
+    type="error"
+    :closable="false"
+  />
   <div v-if="loaded" class="profile-grid">
     <section class="panel">
       <h2>{{ t('账户信息') }}</h2>
@@ -113,10 +115,10 @@ async function revokeAll() {
             required
             maxlength="100" /></el-form-item
         ><el-form-item :label="t('登录邮箱')"
-          ><el-input v-model="profile.email" type="email" readonly /><small
-            class="muted"
-            >{{ t('唯一站长邮箱固定，不开放注册。') }}</small
-          ></el-form-item
+          ><el-input
+            v-model="profile.email"
+            type="email"
+            readonly /></el-form-item
         ><el-form-item :label="t('文章作者头像')"
           ><AssetPicker v-model="profile.avatarUrl" /></el-form-item
         ><el-button type="primary" native-type="submit" :loading="busy">{{
@@ -126,14 +128,11 @@ async function revokeAll() {
     </section>
     <section class="panel">
       <h2>{{ t('登录与安全') }}</h2>
-      <p class="muted">
-        {{ t('登录状态最长保留 15 天。退出登录会立即撤销当前会话。') }}
-      </p>
       <el-button :loading="busy" @click="revokeAll">{{
         t('退出所有设备')
       }}</el-button>
       <h3>{{ t('修改密码') }}</h3>
-      <p class="muted">{{ t('修改后所有已登录会话立即失效。') }}</p>
+      <p class="muted">{{ t('修改密码后，需要在所有设备上重新登录。') }}</p>
       <el-form label-position="top" novalidate @submit.prevent="changePassword"
         ><el-form-item :label="t('当前密码')"
           ><el-input

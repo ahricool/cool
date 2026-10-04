@@ -37,20 +37,10 @@ onMounted(load);
     :title="
       t('{name}，你好。', { name: session.owner?.displayName ?? t('站长') })
     "
-    :description="t('属于你的创作空间，今天也有值得记录的事。')"
     ><RouterLink to="/admin/posts/new"
       ><el-button type="primary">{{ t('＋ 写文章') }}</el-button></RouterLink
     ></ViewHeader
   ><ErrorNotice :error="error" @retry="load" />
-  <section class="welcome-card">
-    <div>
-      <p class="eyebrow">{{ t('为灵感留一席之地') }}</p>
-      <h2>{{ t('从一个念头，') }}<br />{{ t('到一篇好文章。') }}</h2>
-      <p>{{ t('让文字留住此刻，让分享连接彼此。') }}</p>
-      <RouterLink to="/admin/posts/new">{{ t('开始创作 →') }}</RouterLink>
-    </div>
-    <SakuraFlower class="welcome-flower" />
-  </section>
   <div class="stat-grid">
     <RouterLink
       v-for="stat in [

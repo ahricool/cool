@@ -74,7 +74,7 @@ onMounted(load);
 <template>
   <ViewHeader
     :title="t('媒体库')"
-    :description="t('收藏文字之外的风景。上传图片会转换为 WebP，最大 8MB。')"
+    :description="t('图片不超过8MB，动图将显示为静态图片。')"
     ><el-button type="primary" :disabled="busy" @click="fileInput?.click()">{{
       busy ? t('上传中…') : t('＋ 上传图片')
     }}</el-button

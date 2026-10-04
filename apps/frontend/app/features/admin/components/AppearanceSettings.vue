@@ -14,8 +14,30 @@ const fields = [
 ] as const;
 </script>
 <template>
+  <section class="appearance-setting">
+    <h3 id="appearance-font-label">{{ t('全站字体') }}</h3>
+    <el-radio-group
+      v-model="model.font"
+      aria-labelledby="appearance-font-label"
+    >
+      <el-radio-button value="default">{{ t('默认字体') }}</el-radio-button>
+      <el-radio-button value="bubble-candy">{{
+        t('梦幻泡泡糖果')
+      }}</el-radio-button>
+    </el-radio-group>
+    <p
+      :style="{
+        fontFamily:
+          model.font === 'bubble-candy'
+            ? 'Bubble Candy, var(--sakura-default-font)'
+            : 'var(--sakura-default-font)',
+      }"
+    >
+      {{ t('春天的故事，慢慢写。') }} Sakura 2026
+    </p>
+  </section>
   <p class="muted">
-    {{ t('自定义图片优先；这些图案只用于未设置图片的内容。') }}
+    {{ t('未设置图片时使用以下图案。') }}
   </p>
   <div class="appearance-settings">
     <section

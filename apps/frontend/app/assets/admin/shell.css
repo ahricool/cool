@@ -24,13 +24,6 @@
 .brand-mark {
   line-height: 1;
 }
-.brand small {
-  display: block;
-  color: #9b9f9c;
-  font-weight: 400;
-  margin-top: 5px;
-  letter-spacing: 0.5px;
-}
 .sidebar nav {
   display: flex;
   flex-direction: column;
@@ -131,12 +124,8 @@
   color: #c7658f;
   text-shadow: 0 3px 12px #e9b9ce70;
 }
-.brand small,
 .nav-caption {
   color: #786478;
-}
-.brand small {
-  font-size: 11px;
 }
 .sidebar nav > a,
 .sidebar-bottom > a,

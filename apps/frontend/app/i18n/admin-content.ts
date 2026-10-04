@@ -3,24 +3,23 @@ export const adminContentMessages: Record<string, string> = {
   请填写正文: 'Please enter the content.',
   请为已填写的语言补充标题: 'Add a title for each language you have started.',
   请填写图片地址: 'Please provide an image URL.',
-  '请填写有效的 URL 标识': 'Enter a valid URL slug.',
-  'URL 标识已存在，请使用其他标识':
-    'This URL slug already exists. Choose another.',
+  '请填写有效的 链接名称': 'Enter a valid Link name.',
+  '链接名称已存在，请使用其他标识':
+    'This Link name already exists. Choose another.',
   '关联内容不存在，请刷新后重试':
     'Related content no longer exists. Refresh and try again.',
   请选择图片文件: 'Please choose an image file.',
   '图片超过 8MB 大小限制': 'This image exceeds the 8 MB limit.',
-  '请上传有效的 JPEG、PNG、WebP 或 GIF 图片（不超过四千万像素）':
-    'Upload a valid JPEG, PNG, WebP or GIF image (up to 40 megapixels).',
+  '这张图片无法使用，请换一张。': 'This image cannot be used. Choose another.',
   '图片仍被内容或设置引用，无法删除':
     'This image is still used by content or settings and cannot be deleted.',
   不支持的内容语言: 'Unsupported content language',
   '请求过于频繁，请稍后重试': 'Too many requests. Please try again later.',
 
-  'JPEG / PNG / WebP / GIF，最大 8MB；统一转为 WebP，GIF 保留首帧。':
-    'JPEG / PNG / WebP / GIF, up to 8 MB. Converted to WebP; GIFs use the first frame.',
-  'Markdown 内容': 'Markdown content',
-  'URL 标识': 'URL slug',
+  '图片不超过8MB，动图将显示为静态图片。':
+    'Images up to 8 MB. Animated images will appear as still images.',
+  正文: 'Content',
+  链接名称: 'Link name',
   '{count} 字符': '{count} characters',
   上传中: 'Uploading',
   '上传中…': 'Uploading…',
@@ -29,8 +28,7 @@ export const adminContentMessages: Record<string, string> = {
   丢弃草稿: 'Discard draft',
   中文: 'ZH',
   从媒体库选择: 'Choose from media',
-  '从这里开始写作…\n支持 Markdown、代码高亮和图片上传。':
-    'Start writing here…\nMarkdown, syntax highlighting and image uploads are supported.',
+  '从这里开始写作…': 'Start writing here…',
   保存: 'Save',
   保存草稿: 'Save draft',
   公开展示: 'Show publicly',
@@ -54,12 +52,11 @@ export const adminContentMessages: Record<string, string> = {
   '删除这张图片？仍被内容引用的图片不能删除。':
     'Delete this image? Images still used by content cannot be deleted.',
   加粗文字: 'Bold text',
-  '原文保存 · 安全预览': 'Original source saved · Safe preview',
   发布: 'Publish',
   发布时自动填入: 'Set automatically when published',
   发布时间: 'Publish date',
   发布设置: 'Publishing',
-  发现此页面的浏览器草稿: 'A browser draft is available for this language',
+  发现未保存的草稿: 'An unsaved draft is available',
   取消: 'Cancel',
   名称: 'Name',
   图片: 'Image',
@@ -81,12 +78,10 @@ export const adminContentMessages: Record<string, string> = {
   已通过: 'Approved',
   归档: 'Archive',
   '当前语言有未保存修改，草稿已保留。切换语言？':
-    'This language has unsaved changes. A browser draft has been kept. Switch language?',
+    'This language has unsaved changes. A draft has been kept. Switch language?',
   待审核: 'Pending review',
   恢复草稿: 'Restore draft',
   所选图片: 'Selected image',
-  '把喜欢的画面，放进你的相册。':
-    'Collect your favorite views in your gallery.',
   描述: 'Description',
   插入代码块: 'Insert code block',
   插入加粗: 'Insert bold text',
@@ -99,8 +94,6 @@ export const adminContentMessages: Record<string, string> = {
   撤回: 'Unapprove',
   撤回为草稿: 'Revert to draft',
   操作: 'Actions',
-  '收藏文字之外的风景。上传图片会转换为 WebP，最大 8MB。':
-    'Collect moments beyond words. Images are converted to WebP, up to 8 MB each.',
   文章: 'Posts',
   新建: 'Create',
   新建独立页面: 'Create a page',
@@ -108,9 +101,9 @@ export const adminContentMessages: Record<string, string> = {
   无法访问剪贴板: 'Clipboard access is unavailable',
   '暂无内容，开始写下第一篇吧': 'No content yet. Write your first piece.',
   更新于: 'Updated',
-  '有未保存的修改 · 浏览器草稿已保留': 'Unsaved changes · Browser draft kept',
-  '有未保存的修改。浏览器草稿已保留，确定离开？':
-    'You have unsaved changes. A browser draft has been kept. Leave the editor?',
+  '有未保存的修改 · 草稿已保留': 'Unsaved changes · Draft kept',
+  '有未保存的修改。草稿已保留，确定离开？':
+    'You have unsaved changes. A draft has been kept. Leave the editor?',
   未公开: 'Private',
   '查看公开页面 ↗': 'View public page ↗',
   标为垃圾: 'Mark as spam',
@@ -119,30 +112,24 @@ export const adminContentMessages: Record<string, string> = {
   '正在保存或上传，请稍候再离开':
     'Saving or uploading. Please wait before leaving.',
   '此操作无法撤销，确定删除？': 'This cannot be undone. Delete this item?',
-  '每一篇文字，都是与你的读者的一次相遇。':
-    'Every piece of writing is a chance to connect with your readers.',
   每种语言独立保存和发布: 'Each language is saved and published separately',
   '永久删除「{title}」？此操作无法撤销。':
     'Permanently delete “{title}”? This cannot be undone.',
   状态: 'Status',
   独立页面: 'Pages',
   相册: 'Album',
-  '短短几句，留住生活的碎片。': 'A few words to hold onto everyday moments.',
   离开: 'Leave',
   离开编辑器: 'Leave editor',
   移除: 'Remove',
   给文章一个标题: 'Give your post a title',
-  '给每一份内容，找到合适的位置。':
-    'Find the right home for every piece of content.',
   继续编辑: 'Keep editing',
   编辑: 'Edit',
   网址: 'URL',
   草稿: 'Draft',
-  '让文字保持你的温度。': 'Keep your own voice in every word.',
   '设置未来时间后，访客会在该时间开始看到内容。':
     'Choose a future date to make this language public at that time.',
-  '请填写标题和有效的 URL 标识（小写字母、数字、连字符）':
-    'Enter a title and a valid URL slug (lowercase letters, numbers and hyphens).',
+  '请填写标题和有效的 链接名称（小写字母、数字、连字符）':
+    'Enter a title and a valid Link name (lowercase letters, numbers and hyphens).',
   请至少填写一种语言的内容: 'Enter content in at least one language.',
   还没有内容: 'No content yet',
   还没有创建任何条目: 'No items yet',

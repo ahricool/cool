@@ -310,7 +310,7 @@ async function save(status: Status) {
   if (busy.value || uploading.value || !loaded.value || draft.value) return;
   if (!form.title.trim() || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug)) {
     ElMessage.warning(
-      t('请填写标题和有效的 URL 标识（小写字母、数字、连字符）'),
+      t('请填写标题和有效的 链接名称（小写字母、数字、连字符）'),
     );
     return;
   }
@@ -428,7 +428,7 @@ async function confirmNavigation(to: RouteLocationNormalized) {
   if (!dirty.value) return true;
   try {
     await ElMessageBox.confirm(
-      t('有未保存的修改。浏览器草稿已保留，确定离开？'),
+      t('有未保存的修改。草稿已保留，确定离开？'),
       t('离开编辑器'),
       { confirmButtonText: t('离开'), cancelButtonText: t('继续编辑') },
     );
@@ -449,9 +449,7 @@ onBeforeRouteUpdate(confirmNavigation);
           : t('新建独立页面')
         : t('继续编辑')
     "
-    :description="
-      dirty ? t('有未保存的修改 · 浏览器草稿已保留') : t('让文字保持你的温度。')
-    "
+    :description="dirty ? t('有未保存的修改 · 草稿已保留') : undefined"
     ><el-button
       :disabled="!loaded || uploading || !!draft"
       :loading="busy"
@@ -478,7 +476,7 @@ onBeforeRouteUpdate(confirmNavigation);
     v-if="draft"
     type="warning"
     :closable="false"
-    :title="t('发现此页面的浏览器草稿')"
+    :title="t('发现未保存的草稿')"
     ><el-button text @click="restore">{{ t('恢复草稿') }}</el-button
     ><el-button text @click="discard">{{ t('丢弃草稿') }}</el-button></el-alert
   >
@@ -522,7 +520,7 @@ onBeforeRouteUpdate(confirmNavigation);
     <aside class="editor-settings panel">
       <h2>{{ t('发布设置') }}</h2>
       <el-form label-position="top"
-        ><el-form-item :label="t('URL 标识')"
+        ><el-form-item :label="t('链接名称')"
           ><el-input
             v-model="form.slug"
             maxlength="160"

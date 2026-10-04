@@ -84,7 +84,7 @@ async function browse() {
       >
     </div>
     <small class="muted">{{
-      t('JPEG / PNG / WebP / GIF，最大 8MB；统一转为 WebP，GIF 保留首帧。')
+      t('图片不超过8MB，动图将显示为静态图片。')
     }}</small>
   </div>
   <el-dialog v-model="dialog" :title="t('选择图片')" width="min(720px, 92vw)"

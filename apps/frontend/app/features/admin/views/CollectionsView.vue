@@ -175,13 +175,7 @@ async function remove(item: Item) {
 onMounted(load);
 </script>
 <template>
-  <ViewHeader
-    :title="t(labels[kind])"
-    :description="
-      kind === 'moments'
-        ? t('短短几句，留住生活的碎片。')
-        : t('把喜欢的画面，放进你的相册。')
-    "
+  <ViewHeader :title="t(labels[kind])"
     ><el-button type="primary" @click="edit()"
       >＋ {{ t('新建') }} {{ t(labels[kind]) }}</el-button
     ></ViewHeader

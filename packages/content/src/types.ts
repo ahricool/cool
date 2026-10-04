@@ -152,12 +152,15 @@ export interface Comment {
   };
 }
 export type PatternShape = 'heart' | 'star' | 'dot';
+export type SiteFont = 'default' | 'bubble-candy';
 export interface SiteAppearance {
+  font: SiteFont;
   avatar: PatternShape;
   cover: PatternShape;
   background: PatternShape | 'none';
 }
 export const defaultAppearance: SiteAppearance = {
+  font: 'default',
   avatar: 'heart',
   cover: 'dot',
   background: 'dot',

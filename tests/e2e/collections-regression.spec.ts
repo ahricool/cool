@@ -73,7 +73,7 @@ test('a pending moment image upload locks language, save, and dismissal and upda
     exact: true,
   });
   const content = dialog.getByRole('textbox', {
-    name: 'Markdown content',
+    name: 'Content',
     exact: true,
   });
   const englishText = 'The independent English moment must stay unchanged.';

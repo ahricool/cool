@@ -109,8 +109,8 @@ async function image(event: Event) {
         :readonly="readOnly"
         :lang="contentLocale ? contentLang(contentLocale) : undefined"
         :value="modelValue"
-        :aria-label="t('Markdown 内容')"
-        :placeholder="t('从这里开始写作…\n支持 Markdown、代码高亮和图片上传。')"
+        :aria-label="t('正文')"
+        :placeholder="t('从这里开始写作…')"
         spellcheck="false"
         @input="
           emit(
@@ -127,8 +127,7 @@ async function image(event: Event) {
       ></article>
     </div>
     <div class="editor-status">
-      Markdown · {{ t('{count} 字符', { count: modelValue.length })
-      }}<span>{{ t('原文保存 · 安全预览') }}</span>
+      {{ t('{count} 字符', { count: modelValue.length }) }}
     </div>
   </div>
 </template>

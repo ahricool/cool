@@ -48,9 +48,9 @@ test('owner writes, previews and publishes; readers browse; owner manages conten
   await page
     .getByRole('textbox', { name: '标题', exact: true })
     .fill('在时光里，收藏一片春天');
-  await page.getByLabel('URL 标识', { exact: true }).fill(slug);
+  await page.getByLabel('链接名称', { exact: true }).fill(slug);
   await page
-    .getByRole('textbox', { name: 'Markdown 内容' })
+    .getByRole('textbox', { name: '正文' })
     .fill(
       '# 春日手记\n\n把日常写成故事，让灵感在字里行间生长。\n\n## 一点代码\n\n```typescript\nconst season = "spring";\n```\n\n<script>window.__unsafe = true</script>',
     );

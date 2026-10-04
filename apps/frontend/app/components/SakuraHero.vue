@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t, routePath, contentLang } = useCoolI18n();
+const { t, contentLang } = useCoolI18n();
 const store = useSiteStore();
 </script>
 <template>
@@ -12,15 +12,6 @@ const store = useSiteStore();
     <div class="hero-content">
       <div class="hero-brand">
         <ReadingBrand placement="hero" />
-      </div>
-      <div v-if="store.homepage.focusMode === 'avatar'" class="hero-avatar">
-        <NuxtLink :to="routePath('/')"
-          ><AvatarImage
-            :src="store.site.avatarUrl"
-            :alt="store.site.authorName"
-            :width="120"
-            :height="120"
-        /></NuxtLink>
       </div>
       <div class="hero-description">
         <p class="flex-child-center">

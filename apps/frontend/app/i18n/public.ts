@@ -19,8 +19,6 @@ export const publicMessages: Record<string, string> = {
   切换深色: 'Switch to dark mode',
   网站配置加载失败: 'Unable to load site settings',
   重试: 'Try again',
-  搜索文章: 'Search posts',
-  '搜索文章…': 'Search posts…',
   '正在加载…': 'Loading…',
   '暂时无法加载内容。': 'Content could not be loaded right now.',
   重新加载: 'Reload',

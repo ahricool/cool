@@ -50,10 +50,10 @@ test('cookie session survives reload and all-device logout revokes browser and s
     .getByRole('textbox', { name: '标题', exact: true })
     .fill('跨标签页继续写作');
   await page
-    .getByLabel('URL 标识', { exact: true })
+    .getByLabel('链接名称', { exact: true })
     .fill(`session-${randomUUID()}`);
   await page
-    .getByRole('textbox', { name: 'Markdown 内容' })
+    .getByRole('textbox', { name: '正文' })
     .fill('切换登录也不能丢失的正文');
   const secondTab = await context.newPage();
   await secondTab.goto(admin + '/profile');
@@ -79,9 +79,9 @@ test('cookie session survives reload and all-device logout revokes browser and s
   await expect(page).toHaveURL((url) =>
     /^\/admin\/posts\/[a-f0-9-]+$/.test(url.pathname),
   );
-  await expect(
-    page.getByRole('textbox', { name: 'Markdown 内容' }),
-  ).toHaveValue('切换登录也不能丢失的正文');
+  await expect(page.getByRole('textbox', { name: '正文' })).toHaveValue(
+    '切换登录也不能丢失的正文',
+  );
   const postId = new URL(page.url()).pathname.split('/').at(-1);
   expect(
     (
@@ -180,7 +180,7 @@ test('first-password screen confirms input and remains in the same Nuxt app acro
   });
   await page.goto(admin + '/login?next=https://attacker.example/');
   await expect(
-    page.getByRole('heading', { name: '开启你的创作空间' }),
+    page.getByRole('heading', { name: '设置登录密码' }),
   ).toBeVisible();
   const adminBackground = await page
     .locator('body')

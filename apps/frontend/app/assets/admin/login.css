@@ -80,15 +80,7 @@
   .view-actions {
     flex-wrap: wrap;
   }
-  .welcome-card {
-    padding: 25px;
-  }
-  .welcome-card h2 {
-    font-size: 24px;
-  }
-  .welcome-flower {
-    font-size: 100px;
-  }
+
   .stat-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -200,14 +192,7 @@
     max-width: calc(100% - 32px);
     box-shadow: 0 8px 32px #70455b10;
   }
-  .welcome-card {
-    background:
-      linear-gradient(90deg, #fff1f8fa, #fff1f8d9 65%, #fff1f855),
-      url('/sakura/images/default/hd.webp') center / cover;
-  }
-  .welcome-flower {
-    display: none;
-  }
+
   .editor-status {
     font-size: 11px;
     flex-wrap: wrap;
