@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { t } = useCoolI18n();
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { resolveCustomImage } from '~/utils/custom-image';
 import { ElMessage } from 'element-plus';
 import { api, upload, errorText } from '../api';
@@ -8,11 +8,20 @@ import type { Media, Pagination } from '@cool/content';
 const props = defineProps<{
   modelValue: string | null | undefined;
   disabled?: boolean;
+  defaultValue?: string | null;
 }>();
 const emit = defineEmits<{
   'update:modelValue': [value: string | null];
   'busy-change': [value: boolean];
 }>();
+const selectedImage = computed(() =>
+  props.modelValue === props.defaultValue
+    ? null
+    : resolveCustomImage(props.modelValue),
+);
+const previewImage = computed(() =>
+  resolveCustomImage(props.modelValue, props.defaultValue),
+);
 const busy = ref(false);
 const fileInput = ref<HTMLInputElement>();
 const dialog = ref(false);
@@ -51,11 +60,7 @@ async function browse() {
 </script>
 <template>
   <div class="asset-picker">
-    <img
-      v-if="resolveCustomImage(modelValue)"
-      :src="resolveCustomImage(modelValue)!"
-      :alt="t('所选图片')"
-    />
+    <img v-if="previewImage" :src="previewImage!" :alt="t('所选图片')" />
     <div class="asset-actions">
       <el-button
         class="upload-label"
@@ -75,7 +80,7 @@ async function browse() {
         t('从媒体库选择')
       }}</el-button
       ><el-button
-        v-if="modelValue"
+        v-if="selectedImage"
         text
         type="danger"
         :disabled="busy || disabled"

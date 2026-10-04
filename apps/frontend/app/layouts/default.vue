@@ -34,7 +34,6 @@ const menu = [
 ];
 useHead(() => ({
   title: store.site.title,
-  htmlAttrs: { class: dark.value ? 'dark' : '' },
 }));
 </script>
 <template>
@@ -49,7 +48,7 @@ useHead(() => ({
     :inert="menuOpen"
   >
     <header
-      class="site-header"
+      class="site-header navigation-surface navigation-surface--top"
       :class="{
         'home-header': isHome,
         'over-banner': hasBanner && hasIllustration,
@@ -96,7 +95,7 @@ useHead(() => ({
     v-show="menuOpen"
     id="mobile-sidebar"
     ref="sidebar"
-    class="site-sidebar"
+    class="site-sidebar navigation-surface navigation-surface--side"
     :class="{
       open: menuOpen,
       'over-illustration': hasIllustration && scrollProgress < 1,
@@ -130,7 +129,7 @@ useHead(() => ({
                   :name="
                     navigationIcons[item[0] as keyof typeof navigationIcons]
                   "
-                  class="sidebar-nav-icon"
+                  class="sidebar-nav-icon navigation-icon--shadow"
                   aria-hidden="true"
                 />
                 <span>{{ t(item[1]!) }}</span>
@@ -141,7 +140,8 @@ useHead(() => ({
       </div>
     </div>
   </section>
-  <FloatingThemeToggle
+  <ThemeToggle
+    floating
     :dark="dark"
     :inert="menuOpen"
     @toggle-theme="dark = !dark"

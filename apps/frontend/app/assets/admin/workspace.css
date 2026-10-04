@@ -1,13 +1,8 @@
-:root {
-  --el-font-family: var(--sakura-font);
-  --el-font-size-base: 14px;
-  font-family: var(--el-font-family);
-  font-synthesis: style;
-}
 * {
   box-sizing: border-box;
 }
 body {
+  font-size: calc(14px * var(--sakura-font-scale));
   margin: 0;
 }
 a {
@@ -25,12 +20,6 @@ input,
 textarea {
   outline-offset: 4px;
 }
-.nav-caption {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: #a1a5ae;
-  padding: 0 16px 14px;
-}
 .view-header {
   display: flex;
   justify-content: space-between;
@@ -39,13 +28,13 @@ textarea {
   margin-bottom: 30px;
 }
 .view-header h1 {
-  font-size: 28px;
+  font-size: calc(28px * var(--sakura-font-scale));
   font-weight: 700;
   margin: 0 0 10px;
   letter-spacing: -0.6px;
 }
 .view-header p {
-  font-size: 14px;
+  font-size: calc(14px * var(--sakura-font-scale));
   color: var(--sakura-muted);
   margin: 0;
   line-height: 1.7;
@@ -56,7 +45,7 @@ textarea {
   align-items: center;
 }
 .el-button {
-  font-size: 12px;
+  font-size: calc(12px * var(--sakura-font-scale));
   padding: 10px 16px;
   height: auto;
 }
@@ -65,13 +54,13 @@ textarea {
 }
 .panel {
   background: var(--sakura-surface);
-  border: 1px solid #eceef1;
+  border: 1px solid var(--sakura-border);
   border-radius: 18px;
   padding: 24px;
   margin-bottom: 24px;
 }
 .panel h2 {
-  font-size: 16px;
+  font-size: calc(16px * var(--sakura-font-scale));
   margin: 0 0 22px;
 }
 .panel-heading {
@@ -80,58 +69,54 @@ textarea {
   justify-content: space-between;
 }
 .panel-heading a {
-  font-size: 12px;
-  color: #aaa;
-}
-.eyebrow {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: calc(12px * var(--sakura-font-scale));
+  color: var(--sakura-muted);
 }
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
   margin: 24px 0;
 }
 .stat-card {
   background: var(--sakura-surface);
-  border: 1px solid #eceef1;
+  border: 1px solid var(--sakura-border);
   border-radius: 18px;
   padding: 22px;
 }
-.stat-card > span {
-  font-size: 12px;
-  color: #858a94;
+.stat-card > span:not(.sakura-flower) {
+  font-size: calc(12px * var(--sakura-font-scale));
+  color: var(--sakura-muted);
 }
 .stat-card strong {
   display: block;
-  font-size: 32px;
+  font-size: calc(32px * var(--sakura-font-scale));
   font-weight: 400;
   margin: 14px 0 18px;
 }
 .stat-card small {
-  font-size: 10px;
-  color: #b4b8c0;
+  font-size: calc(10px * var(--sakura-font-scale));
+  color: var(--sakura-muted);
 }
 .recent-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 18px 0;
-  border-bottom: 1px solid #f0f1f3;
+  border-bottom: 1px solid var(--sakura-border);
 }
 .recent-row:last-child {
   border: 0;
 }
 .recent-row a {
-  font-size: 14px;
+  font-size: calc(14px * var(--sakura-font-scale));
 }
 .recent-row small {
   display: block;
   margin-top: 8px;
-  font-size: 10px;
-  color: #a4a9b0;
+  font-size: calc(10px * var(--sakura-font-scale));
+  color: var(--sakura-muted);
 }
 .table-toolbar {
   display: flex;
@@ -146,8 +131,8 @@ textarea {
   margin-left: auto;
 }
 .muted {
-  font-size: 12px;
-  color: #9399a2;
+  font-size: calc(12px * var(--sakura-font-scale));
+  color: var(--sakura-muted);
   line-height: 1.8;
 }
 .table-title {
@@ -155,8 +140,8 @@ textarea {
 }
 .table-slug {
   display: block;
-  color: #aaa;
-  font-size: 11px;
+  color: var(--sakura-muted);
+  font-size: calc(11px * var(--sakura-font-scale));
   padding-top: 5px;
 }
 .el-table th.el-table__cell {
@@ -196,7 +181,7 @@ textarea {
 }
 .media-card {
   background: var(--sakura-surface);
-  border: 1px solid #eceef1;
+  border: 1px solid var(--sakura-border);
   border-radius: 18px;
   overflow: hidden;
 }
@@ -209,7 +194,7 @@ textarea {
   padding: 14px 18px;
 }
 .media-card strong {
-  font-size: 12px;
+  font-size: calc(12px * var(--sakura-font-scale));
   font-weight: 400;
   display: block;
   overflow: hidden;
@@ -217,8 +202,8 @@ textarea {
   white-space: nowrap;
 }
 .media-card small {
-  font-size: 10px;
-  color: #a0a6ad;
+  font-size: calc(10px * var(--sakura-font-scale));
+  color: var(--sakura-muted);
   display: block;
   margin: 8px 0;
 }
@@ -228,7 +213,7 @@ textarea {
 }
 .moderation-card {
   padding: 20px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--sakura-border);
 }
 .moderation-card header {
   display: flex;
@@ -236,11 +221,11 @@ textarea {
   gap: 15px;
 }
 .moderation-card header strong {
-  font-size: 14px;
+  font-size: calc(14px * var(--sakura-font-scale));
 }
 .moderation-card small {
-  font-size: 11px;
-  color: #999;
+  font-size: calc(11px * var(--sakura-font-scale));
+  color: var(--sakura-muted);
 }
 .moderation-card header .el-tag {
   margin-left: auto;
@@ -248,7 +233,7 @@ textarea {
 .moderation-card p {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font-size: 14px;
+  font-size: calc(14px * var(--sakura-font-scale));
   line-height: 1.8;
 }
 .moderation-card footer {
@@ -258,8 +243,8 @@ textarea {
   gap: 12px;
 }
 .moderation-card footer > a {
-  font-size: 12px;
-  color: #999;
+  font-size: calc(12px * var(--sakura-font-scale));
+  color: var(--sakura-muted);
 }
 .settings-panel {
   max-width: 900px;
@@ -276,26 +261,6 @@ textarea {
   grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
-:root {
-  --el-color-primary: var(--sakura-accent);
-  --el-color-primary-light-3: var(--sakura-accent-light-3);
-  --el-color-primary-light-5: var(--sakura-accent-light-5);
-  --el-color-primary-light-7: var(--sakura-accent-light-7);
-  --el-color-primary-light-8: var(--sakura-accent-light-8);
-  --el-color-primary-light-9: var(--sakura-soft);
-  --el-color-primary-dark-2: var(--sakura-accent-strong);
-  --el-color-danger: var(--sakura-danger);
-  --el-border-radius-base: 10px;
-  --el-text-color-primary: var(--sakura-text);
-  --el-text-color-regular: var(--sakura-text-regular);
-  --el-text-color-secondary: var(--sakura-muted);
-  --el-border-color: var(--sakura-control-border);
-  --el-border-color-light: var(--sakura-border-light);
-  --el-fill-color-light: var(--sakura-fill-light);
-  --el-menu-hover-bg-color: var(--sakura-soft);
-  background: var(--sakura-page);
-  color: var(--sakura-text);
-}
 body {
   background: var(--sakura-page);
 }
@@ -309,17 +274,13 @@ body {
   box-shadow: var(--sakura-shadow);
 }
 .panel h2 {
-  color: #68445f;
+  color: var(--sakura-heading);
 }
 .panel-heading a,
 .recent-row small,
 .table-slug,
 .media-card small {
   color: var(--sakura-muted);
-}
-.eyebrow {
-  color: #9c4267;
-  letter-spacing: 2px;
 }
 
 .stat-card {
@@ -329,23 +290,25 @@ body {
     border-color 0.2s,
     transform 0.2s;
 }
-.stat-card::after {
+.stat-flower {
   position: absolute;
-  right: 12px;
-  color: #f3e3ee;
-  font-size: 65px;
   pointer-events: none;
+  width: 55px;
+  height: 55px;
+  right: 14px;
+  bottom: 14px;
 }
+
 .stat-card:hover {
-  border-color: #d79ab7;
+  border-color: var(--sakura-accent-light-5);
   transform: translateY(-2px);
 }
-.stat-card > span,
+.stat-card > span:not(.sakura-flower),
 .stat-card small {
-  color: #786679;
+  color: var(--sakura-muted);
 }
 .stat-card strong {
-  color: #9a466e;
+  color: var(--sakura-heading);
 }
 
 .el-button {
@@ -355,17 +318,17 @@ body {
   box-shadow: 0 3px 9px #b342721c;
 }
 .el-table th.el-table__cell {
-  background: #fff7fb !important;
-  color: #7b647a;
+  background: var(--sakura-soft);
+  color: var(--sakura-text-regular);
 }
 .el-dialog,
 .el-message-box {
-  border: 1px solid #ead3e2;
+  border: 1px solid var(--sakura-border);
   border-radius: 16px;
 }
 .el-dialog__header,
 .el-message-box__header {
-  border-bottom: 1px solid #f2e4ed;
+  border-bottom: 1px solid var(--sakura-border);
   margin-bottom: 16px;
 }
 .el-empty {
@@ -375,13 +338,13 @@ body {
   filter: sepia(0.15) hue-rotate(280deg);
 }
 .el-empty__description p {
-  color: #81687c;
+  color: var(--sakura-muted);
 }
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #ad3c71;
+  outline: 2px solid var(--sakura-button-primary);
   outline-offset: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -392,12 +355,4 @@ textarea:focus-visible {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
-}
-.stat-card::after {
-  content: '';
-  width: 55px;
-  height: 55px;
-  bottom: 14px;
-  opacity: 0.35;
-  background: url('/sakura/images/footer/sakura.svg') center / contain no-repeat;
 }

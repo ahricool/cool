@@ -2,7 +2,9 @@
 defineProps<{ spinning?: boolean }>();
 </script>
 <template>
-  <span
+  <img
+    src="/sakura/images/footer/sakura.svg"
+    alt=""
     class="sakura-flower"
     :class="{ 'sakura-flower--spinning': spinning }"
     aria-hidden="true"
@@ -14,10 +16,8 @@ defineProps<{ spinning?: boolean }>();
   flex-shrink: 0;
   width: 1em;
   height: 1em;
-  color: var(--sakura-flower-color);
   opacity: 0.8;
-  background: currentColor;
-  mask: url('/sakura/images/footer/sakura.svg') center / contain no-repeat;
+  object-fit: contain;
   transform-origin: center;
 }
 .sakura-flower--spinning {

@@ -155,12 +155,14 @@ export type PatternShape = 'heart' | 'star' | 'dot';
 export type SiteFont = 'default' | 'bubble-candy';
 export interface SiteAppearance {
   font: SiteFont;
+  fontSize: number;
   avatar: PatternShape;
   cover: PatternShape;
   background: PatternShape | 'none';
 }
 export const defaultAppearance: SiteAppearance = {
   font: 'default',
+  fontSize: 100,
   avatar: 'heart',
   cover: 'dot',
   background: 'dot',

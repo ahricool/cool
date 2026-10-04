@@ -235,6 +235,7 @@ onMounted(load);
           <el-form-item :label="t('首页背景')"
             ><AssetPicker
               :model-value="form.homepage.coverUrl"
+              :default-value="defaultHomepage.coverUrl"
               @update:model-value="
                 form.homepage.coverUrl = $event ?? defaultHomepage.coverUrl
               "

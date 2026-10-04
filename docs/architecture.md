@@ -96,15 +96,15 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 
 共享 `assets/tokens.css` 定义 Sakura 颜色、文字和表面。公共样式由 `blog/base.css`（基础控件与状态）、`shell.css`（导航、横幅、抽屉和页脚）、`content.css`（文章、阅读、归档、分类、瞬间和图库）组成；原主题及补丁层已删除。Admin 样式按 shell/workspace/editor/login 分离并清除被后续同选择器覆盖的声明。PostCSS 为每个表面添加低优先级作用域，避免 SPA 切换或传送弹层污染另一表面。`useReadingShell` 管理阅读导航的焦点、滚动和生命周期；内容组件只负责其展示。
 
-公共页与 Admin 外层使用 `SakuraPattern` SVG 平铺背景。组件支持 `shape`（heart/star/dot，默认 heart）、`size`、`spacing`、`colors`、`opacity`、`seed`；默认 seed 保持颜色布局稳定；每次只显示所选的一种形状。默认图案尺寸 15px、水平间距 72px，使用淡红、粉、橙、黄、绿、青、蓝、紫八色。SVG pattern 使用错行网格和跨边界副本，元素数量固定，不随页面长度增长。正文面板保留实色表面，公共深色背景独立调整透明度。页脚继续显示原始 `/sakura/images/footer/sakura.svg`。
+公共页与 Admin 外层使用 `SakuraPattern` SVG 平铺背景。组件支持 `shape`（heart/star/dot，默认 heart）、`size`、`spacing`、`colors`、`opacity`、`seed`；默认 seed 保持颜色布局稳定；每次只显示所选的一种形状。默认心形/星形尺寸 22.5px，圆点 15px、水平间距 72px，使用淡红、粉、橙、黄、绿、青、蓝、紫八色。SVG pattern 使用错行网格和跨边界副本，元素数量固定，不随页面长度增长。正文面板保留实色表面，公共深色背景独立调整透明度。页脚继续显示原始 `/sakura/images/footer/sakura.svg`。
 
-外观配置共用现有 settings：默认头像 heart，文章缺省封面 dot，页面背景 dot（可选 none）。自定义图片优先，旧默认头像/封面路径按缺省图案处理；保留首页照片。生成器一次只用一种图形，15px 图案、72px 横向间距、八色固定种子随机分布。公开和后台评论界面已移除，后端接口、数据库及现有评论保留。页脚樱花复用 currentColor/固定浅粉 flower token（#ff6699，opacity 0.8，明暗一致），通过 mask 保留原 SVG 路径，12s 顺时针旋转并尊重 reduced motion。
+外观配置共用现有 settings：默认头像 heart，文章缺省封面 dot，页面背景 dot（可选 none）。自定义图片优先，旧默认头像/封面路径按缺省图案处理；保留首页照片。生成器一次只用一种图形，心形/星形 22.5px、圆点 15px、72px 横向间距、八色固定种子随机分布。公开和后台评论界面已移除，后端接口、数据库及现有评论保留。全站樱花共用 SakuraFlower 与原始 SVG（#ff6699，opacity 0.8，明暗一致），直接显示原 SVG 文件，五瓣填充统一为 #ff6699，不使用遮罩，12s 顺时针旋转并尊重 reduced motion。
 
-头像直接用 PatternSurface 裁切共享 SakuraPattern；没有固定 viewBox、图形缩放或独立单图标渲染。48/72/80/120px 头像与封面/页面背景使用相同 15px 图案及 72px 横向间距，只改变容器尺寸与圆形裁切。文章底部保留标签和分享，不再显示“全文完”。
+头像直接用 PatternSurface 裁切共享 SakuraPattern；没有固定 viewBox、图形缩放或独立单图标渲染。48/72/80/120px 头像与封面/页面背景使用相同图案尺寸（心形/星形 22.5px、圆点 15px）及 72px 横向间距，只改变容器尺寸与圆形裁切。文章底部保留标签和分享，不再显示“全文完”。
 
 页面背景配色的 seed 只在每次 SPA 打开/刷新时创建，当前页面运行周期内保持稳定，不跨刷新持久化。头像与封面保留稳定身份 seed；显式传入 seed 仍可复现。
 
-公共导航的独立非交互背景层使用 18px backdrop blur（不叠加白色/深灰 tint），底部 48px 延伸、64px 渐隐用 mask 自然渐隐；header 点击区域和高度不变。顶部仍按滚动透明，reduced transparency 使用不透明底色并停止模糊，旧浏览器使用轻微黑色半透明 fallback。
+公共与 Admin 导航共用 navigation.css 的独立非交互背景层使用 18px backdrop blur（不叠加白色/深灰 tint），底部 48px 延伸、64px 渐隐用 mask 自然渐隐；header 点击区域和高度不变。顶部仍按滚动透明，reduced transparency 使用不透明底色并停止模糊，旧浏览器使用轻微黑色半透明 fallback。
 
 移动公共抽屉共用导航的模糊 token 和背景伪元素，右侧 48px 渐隐；视觉层不接收点击，原焦点、遮罩、Esc 和滚动锁定行为不变。遮罩只拦截点击，不再叠加紫灰蒙层；图片上的文字使用浅色及轻微文字阴影。
 
@@ -123,3 +123,7 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 全站字体通过 site.appearance.font 保存，旧配置默认 default。梦幻泡泡糖果由授权原 TTF 完整转换 WOFF2（10055 字形、10051 Unicode 映射，12,204,828→4,620,016 字节，减少 62.15%）；原 TTF 不进入前端。字体使用 font-display:swap，不预加载或预取候选；站点配置就绪后才启用当前字体，避免先下载默认字体再下载自定义字体。外观页只预览选中项；代码保留系统等宽字体，SVG logo 不变。
 
 公共抽屉与顶部搜索共用 ReadingIcon 轻量 SVG：20px / 24 viewBox、2.4px currentColor 圆角描边，无额外图标依赖；首页房屋、归档盒、分类网格、标签牌、瞬间短消息、图库照片。图标 aria-hidden 且不可聚焦，菜单文字承担名称，既有 active/hover/键盘焦点反馈保留。
+
+公共与 Admin 共用 useDrawerFocus 管理抽屉焦点与滚动锁；Admin 去掉面包屑，保留桌面侧栏和移动抽屉。useCoolTheme 用一年期 cool_theme cookie 保存全站明暗选择，Admin theme.css 将 Element Plus 状态映射到共享语义色，公共搜索与 Admin 主按钮随主题变化。
+
+site.appearance.fontSize 保存 85–115 的整数字号比例，默认 100；外观设置以步长 5 调整并可恢复默认。根 --sakura-font-scale 缩放文字，图标与点击区域保持尺寸；移动搜索文字至少 16px。默认图片预览不显示无效移除操作，自定义上传仍可移除并恢复缺省图案/首页照片。Footer 恢复无年份版权与静态小心心，不恢复旧技术署名。

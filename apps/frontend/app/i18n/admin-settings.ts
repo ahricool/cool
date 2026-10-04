@@ -1,4 +1,6 @@
 export const adminSettingsMessages: Record<string, string> = {
+  字号: 'Text size',
+  恢复默认: 'Reset to default',
   全站字体: 'Site font',
   默认字体: 'Default font',
   梦幻泡泡糖果: 'Bubble Candy',

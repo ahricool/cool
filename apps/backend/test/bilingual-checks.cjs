@@ -393,6 +393,7 @@ module.exports = async function verifyBilingual(t, http, token) {
             commentsEnabled: true,
             appearance: {
               font: 'bubble-candy',
+              fontSize: 115,
               avatar: 'star',
               cover: 'heart',
               background: 'none',
@@ -440,6 +441,13 @@ module.exports = async function verifyBilingual(t, http, token) {
                 cover: 'dot',
                 background: 'none',
               },
+            },
+          }).expect(400);
+          await admin('put', 'settings', {
+            ...settings,
+            site: {
+              ...settings.site,
+              appearance: { ...settings.site.appearance, fontSize: 116 },
             },
           }).expect(400);
           assert.equal(site.translations, undefined);

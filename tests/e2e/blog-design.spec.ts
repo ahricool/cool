@@ -176,6 +176,8 @@ test('populated reading pages remain usable on desktop and mobile in both palett
     await page.setViewportSize({ width: width!, height: height! });
     await page.goto(blog);
     await expect(page.locator('.hero-brand')).toBeVisible();
+    if ((await page.locator('html').getAttribute('class'))?.includes('dark'))
+      await page.getByRole('button', { name: '切换浅色', exact: true }).click();
     await expect(page.getByText('Hello, 梦桜', { exact: true })).toHaveCount(0);
     await page
       .locator('.site-footer')
@@ -192,6 +194,8 @@ test('populated reading pages remain usable on desktop and mobile in both palett
     await capture(page, info, `home-${width}-light.png`);
     await page.getByRole('button', { name: '切换深色', exact: true }).click();
     await capture(page, info, `home-${width}-dark.png`);
+    await page.reload();
+    await expect(page.locator('html')).toHaveClass(/dark/);
     await page.goto(blog + '/posts/visual-spring');
     await expect(page.locator('.entry-content').first()).toContainText(
       '留一点空白',

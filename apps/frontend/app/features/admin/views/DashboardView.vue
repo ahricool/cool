@@ -53,8 +53,9 @@ onMounted(load);
       class="stat-card"
       ><span>{{ t(stat.label) }}</span
       ><strong>{{ stat.value }}</strong
-      ><small>{{ t('查看详情 ↗') }}</small></RouterLink
-    >
+      ><small>{{ t('查看详情 ↗') }}</small
+      ><SakuraFlower class="stat-flower"
+    /></RouterLink>
   </div>
   <section class="panel">
     <header class="panel-heading">

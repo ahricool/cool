@@ -1,11 +1,15 @@
 /* The blog and editorial workspace share one Sakura palette and font stack. */
 :root {
+  --sakura-font-scale: 1;
   --sakura-default-font:
     Ubuntu, 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC',
     'Microsoft YaHei', sans-serif;
   --sakura-font: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --navigation-blur-radius: 18px;
+  --navigation-header-height: 64px;
+  --navigation-sidebar-width: min(272px, 72vw);
+  --navigation-content-shadow: 0 0 0 #0000;
   --sakura-accent: #ff6699;
-  --sakura-flower-color: #ff6699;
   --sakura-wordmark-shadow: #461a2a66;
   --sakura-accent-strong: #b52e63;
   --sakura-accent-light-3: #ff94b8;
@@ -13,10 +17,14 @@
   --sakura-accent-light-7: #efcedc;
   --sakura-accent-light-8: #f6e2eb;
   --sakura-danger: #c23d5a;
+  --sakura-danger-solid: #b33b55;
+  --sakura-success: #287b50;
+  --sakura-warning: #956315;
+  --sakura-modal-mask: #0005;
   --sakura-button-primary: #c7366b;
   --sakura-button-hover: #b62d60;
   --sakura-button-active: #a22454;
-  --sakura-button-disabled: #df9cb5;
+  --sakura-button-disabled: #985b74;
   --sakura-button-foreground: #fff;
   --sakura-text: #303236;
   --sakura-text-regular: #505258;
@@ -36,17 +44,27 @@
 
 :root[data-surface='blog'] {
   --sakura-page: #fff;
-  --reading-header-height: 64px;
-  --reading-blur-radius: 18px;
+  --reading-header-height: var(--navigation-header-height);
 }
 @media (max-width: 768px) {
-  :root[data-surface='blog'] {
-    --reading-header-height: 56px;
+  :root {
+    --navigation-header-height: 56px;
   }
 }
 
-/* Blog's reading preference must never change the admin workspace palette. */
-:root[data-surface='blog'].dark {
+:root.dark {
+  --sakura-button-primary: #b52e63;
+  --sakura-button-hover: #c7366b;
+  --sakura-button-active: #a22454;
+  --sakura-button-disabled: #744553;
+  --sakura-danger: #f09caf;
+  --sakura-danger-solid: #a7304d;
+  --sakura-success: #74c69d;
+  --sakura-warning: #edc572;
+  --sakura-modal-mask: #0008;
+  --sakura-accent-light-3: #c784a1;
+  --sakura-accent-light-7: #654258;
+  --sakura-accent-light-8: #4b3543;
   --sakura-wordmark-shadow: #ff66994d;
   --sakura-accent: #d34e7e;
   --sakura-accent-strong: #f58bae;

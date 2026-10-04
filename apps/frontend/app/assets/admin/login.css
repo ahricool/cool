@@ -15,12 +15,12 @@
 .login-story > p:not(.eyebrow) {
   line-height: 2.2;
   color: #a69b88;
-  font-size: 14px;
+  font-size: calc(14px * var(--sakura-font-scale));
 }
 .login-footnote {
   position: absolute;
   bottom: 45px;
-  font-size: 10px;
+  font-size: calc(10px * var(--sakura-font-scale));
   color: #b2a793;
 }
 .login-form {
@@ -28,7 +28,7 @@
   margin: auto;
 }
 .login-form h2 {
-  font-size: 30px;
+  font-size: calc(30px * var(--sakura-font-scale));
   margin: 18px 0;
 }
 .login-form .el-form {
@@ -42,40 +42,12 @@
   padding: 6px 12px;
 }
 @media (max-width: 760px) {
-  .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.2s;
-  }
-  .sidebar.open {
-    transform: none;
-  }
-  .sidebar-mask {
-    display: block;
-    position: fixed;
-    inset: 0;
-    border: 0;
-    background: #0005;
-    z-index: 40;
-  }
-  .admin-body {
-    margin-left: 0;
-    width: 100%;
-  }
-  .menu-toggle {
-    display: inline-flex;
-  }
-  .workspace {
-    padding: 24px 16px;
-  }
-  .topbar {
-    padding: 0 16px;
-  }
   .view-header {
     align-items: flex-start;
     flex-direction: column;
   }
   .view-header h1 {
-    font-size: 24px;
+    font-size: calc(24px * var(--sakura-font-scale));
   }
   .view-actions {
     flex-wrap: wrap;
@@ -109,11 +81,8 @@
   .media-picker-grid {
     grid-template-columns: 1fr 1fr;
   }
-  .topbar-right {
-    gap: 15px;
-  }
   .view-header p {
-    font-size: 12px;
+    font-size: calc(12px * var(--sakura-font-scale));
   }
   .table-toolbar {
     flex-wrap: wrap;
@@ -126,7 +95,7 @@
   }
 }
 .login-page {
-  background: #fffafd;
+  background: var(--sakura-page);
 }
 .login-story {
   padding: 10vh 12%;
@@ -142,31 +111,21 @@
 .login-story .brand-mark {
   position: absolute;
   top: 8vh;
-  color: #ffe7f3;
 }
-.login-story .eyebrow,
 .login-story h1,
-.login-story > p:not(.eyebrow),
 .login-footnote {
   color: #fff4fa;
   text-shadow: 0 2px 12px #30152c66;
 }
 .login-story h1 {
   margin: 12px 0 20px;
-  font-size: clamp(38px, 4vw, 58px);
-}
-.login-story .eyebrow {
-  margin-top: 30px;
+  font-size: calc(clamp(38px, 4vw, 58px) * var(--sakura-font-scale));
 }
 .login-form {
   width: 380px;
 }
 .login-form h2 {
-  color: #654057;
-}
-.login-form .eyebrow::before {
-  color: #c96891;
-  font-size: 20px;
+  color: var(--sakura-heading);
 }
 .login-form .el-input__wrapper {
   background: var(--sakura-surface);
@@ -180,12 +139,15 @@
   }
   .login-page {
     background:
-      linear-gradient(#fff7fbdc, #fff7fbf5),
+      linear-gradient(
+        color-mix(in srgb, var(--sakura-page) 85%, transparent),
+        var(--sakura-page)
+      ),
       url('/sakura/images/default/hd.webp') center / cover;
   }
   .login-form {
-    background: #fffcfe;
-    border: 1px solid #efdae6;
+    background: var(--sakura-surface);
+    border: 1px solid var(--sakura-border);
     border-radius: 20px;
     padding: 32px 24px;
     width: 400px;
@@ -194,17 +156,8 @@
   }
 
   .editor-status {
-    font-size: 11px;
+    font-size: calc(11px * var(--sakura-font-scale));
     flex-wrap: wrap;
     gap: 8px;
   }
-}
-.login-form .eyebrow::before {
-  content: '';
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 8px;
-  width: 20px;
-  height: 20px;
-  background: url('/sakura/images/footer/sakura.svg') center / contain no-repeat;
 }

@@ -47,7 +47,7 @@ const { locale, setLocale } = useCoolI18n();
   align-items: center;
   gap: 12px;
   color: inherit;
-  font-size: 12px;
+  font-size: calc(12px * var(--sakura-font-scale));
   line-height: 1.9;
 }
 .language-links button {
@@ -76,7 +76,7 @@ const { locale, setLocale } = useCoolI18n();
   align-items: center;
   gap: 6px;
   color: inherit;
-  font-size: 13px;
+  font-size: calc(13px * var(--sakura-font-scale));
 }
 .language-selector select {
   min-height: 36px;

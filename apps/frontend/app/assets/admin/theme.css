@@ -1,0 +1,151 @@
+/* Element Plus consumes the same semantic palette and text scale as the reader. */
+:root {
+  --el-font-family: var(--sakura-font);
+  --el-font-size-base: calc(14px * var(--sakura-font-scale));
+  --el-font-size-extra-large: calc(20px * var(--sakura-font-scale));
+  --el-font-size-large: calc(18px * var(--sakura-font-scale));
+  --el-font-size-medium: calc(16px * var(--sakura-font-scale));
+  --el-font-size-small: calc(13px * var(--sakura-font-scale));
+  --el-font-size-extra-small: calc(12px * var(--sakura-font-scale));
+  font-family: var(--el-font-family);
+  font-synthesis: style;
+
+  --el-color-primary: var(--sakura-accent);
+  --el-color-primary-light-3: var(--sakura-accent-light-3);
+  --el-color-primary-light-5: var(--sakura-accent-light-5);
+  --el-color-primary-light-7: var(--sakura-accent-light-7);
+  --el-color-primary-light-8: var(--sakura-accent-light-8);
+  --el-color-primary-light-9: var(--sakura-soft);
+  --el-color-primary-dark-2: var(--sakura-accent-strong);
+  --el-color-danger: var(--sakura-danger);
+  --el-color-success: var(--sakura-success);
+  --el-color-warning: var(--sakura-warning);
+  --el-color-info: var(--sakura-muted);
+  --el-bg-color: var(--sakura-surface);
+  --el-bg-color-page: var(--sakura-page);
+  --el-bg-color-overlay: var(--sakura-surface);
+  --el-fill-color: var(--sakura-soft);
+  --el-fill-color-blank: var(--sakura-surface);
+  --el-fill-color-dark: var(--sakura-border);
+  --el-text-color-placeholder: var(--sakura-muted);
+  --el-text-color-disabled: var(--sakura-muted);
+  --el-border-color-lighter: var(--sakura-border-light);
+  --el-border-color-extra-light: var(--sakura-border-light);
+  --el-disabled-bg-color: var(--sakura-soft);
+  --el-disabled-text-color: var(--sakura-muted);
+  --el-overlay-color-lighter: var(--sakura-modal-mask);
+  --el-border-radius-base: 10px;
+  --el-text-color-primary: var(--sakura-text);
+  --el-text-color-regular: var(--sakura-text-regular);
+  --el-text-color-secondary: var(--sakura-muted);
+  --el-border-color: var(--sakura-control-border);
+  --el-border-color-light: var(--sakura-border-light);
+  --el-fill-color-light: var(--sakura-fill-light);
+  --el-menu-hover-bg-color: var(--sakura-soft);
+  background: var(--sakura-page);
+  color: var(--sakura-text);
+
+  --el-color-success-light-3: color-mix(
+    in srgb,
+    var(--sakura-success) 70%,
+    var(--sakura-surface)
+  );
+  --el-color-success-light-5: color-mix(
+    in srgb,
+    var(--sakura-success) 50%,
+    var(--sakura-surface)
+  );
+  --el-color-success-light-7: color-mix(
+    in srgb,
+    var(--sakura-success) 30%,
+    var(--sakura-surface)
+  );
+  --el-color-success-light-8: color-mix(
+    in srgb,
+    var(--sakura-success) 20%,
+    var(--sakura-surface)
+  );
+  --el-color-success-light-9: color-mix(
+    in srgb,
+    var(--sakura-success) 10%,
+    var(--sakura-surface)
+  );
+
+  --el-color-warning-light-3: color-mix(
+    in srgb,
+    var(--sakura-warning) 70%,
+    var(--sakura-surface)
+  );
+  --el-color-warning-light-5: color-mix(
+    in srgb,
+    var(--sakura-warning) 50%,
+    var(--sakura-surface)
+  );
+  --el-color-warning-light-7: color-mix(
+    in srgb,
+    var(--sakura-warning) 30%,
+    var(--sakura-surface)
+  );
+  --el-color-warning-light-8: color-mix(
+    in srgb,
+    var(--sakura-warning) 20%,
+    var(--sakura-surface)
+  );
+  --el-color-warning-light-9: color-mix(
+    in srgb,
+    var(--sakura-warning) 10%,
+    var(--sakura-surface)
+  );
+
+  --el-color-danger-light-3: color-mix(
+    in srgb,
+    var(--sakura-danger) 70%,
+    var(--sakura-surface)
+  );
+  --el-color-danger-light-5: color-mix(
+    in srgb,
+    var(--sakura-danger) 50%,
+    var(--sakura-surface)
+  );
+  --el-color-danger-light-7: color-mix(
+    in srgb,
+    var(--sakura-danger) 30%,
+    var(--sakura-surface)
+  );
+  --el-color-danger-light-8: color-mix(
+    in srgb,
+    var(--sakura-danger) 20%,
+    var(--sakura-surface)
+  );
+  --el-color-danger-light-9: color-mix(
+    in srgb,
+    var(--sakura-danger) 10%,
+    var(--sakura-surface)
+  );
+
+  --el-color-info-light-3: color-mix(
+    in srgb,
+    var(--sakura-muted) 70%,
+    var(--sakura-surface)
+  );
+  --el-color-info-light-5: color-mix(
+    in srgb,
+    var(--sakura-muted) 50%,
+    var(--sakura-surface)
+  );
+  --el-color-info-light-7: color-mix(
+    in srgb,
+    var(--sakura-muted) 30%,
+    var(--sakura-surface)
+  );
+  --el-color-info-light-8: color-mix(
+    in srgb,
+    var(--sakura-muted) 20%,
+    var(--sakura-surface)
+  );
+  --el-color-info-light-9: color-mix(
+    in srgb,
+    var(--sakura-muted) 10%,
+    var(--sakura-surface)
+  );
+}
