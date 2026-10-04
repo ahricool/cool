@@ -23,6 +23,7 @@ import {
 import { Type } from 'class-transformer';
 import { Database } from './database';
 import { AuthGuard } from './auth';
+import { ADMIN_DISPLAY_NAME } from './auth.constants';
 import { IsAssetPath } from './validators';
 import { LocaleDto } from './dto';
 class SiteTranslationDto extends LocaleDto {
@@ -79,7 +80,7 @@ class SettingsDto {
 }
 export const defaultSettings = {
   site: {
-    authorName: 'Administrator',
+    authorName: ADMIN_DISPLAY_NAME,
     avatarUrl: '/sakura/images/default/avatar.webp',
     commentsEnabled: true,
     translations: [

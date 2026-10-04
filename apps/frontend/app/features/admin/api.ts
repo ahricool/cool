@@ -1,9 +1,9 @@
 import { reactive } from 'vue';
-import type { Author, Media } from '@cool/content';
+import { DEFAULT_OWNER_EMAIL, type Author, type Media } from '@cool/content';
 
 type Owner = Author & { email: string };
 export type AuthResult = { user: Owner; csrfToken: string };
-export const ADMIN_EMAIL = 'whoreahri@gmail.com';
+export const ADMIN_EMAIL = DEFAULT_OWNER_EMAIL;
 export const session = reactive({
   owner: null as Owner | null,
   csrfToken: '',

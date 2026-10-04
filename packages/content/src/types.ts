@@ -1,3 +1,4 @@
+export const DEFAULT_OWNER_EMAIL = 'whoreahri@gmail.com';
 export type ContentLocale = 'zh' | 'en';
 export type Locale = ContentLocale;
 export interface LocalizedContent {
@@ -201,7 +202,9 @@ export interface AdminSettings {
 export const defaultSite: Site = {
   title: '梦桜',
   description: '记录生活，也记录每一次灵感。',
-  authorName: 'Administrator',
+  authorName: DEFAULT_OWNER_EMAIL.split('@')[0]!.replace(/^./u, (first) =>
+    first.toUpperCase(),
+  ),
   authorBio: '在这里，收藏日常的微光。',
   avatarUrl: '/sakura/images/default/avatar.webp',
   commentsEnabled: true,
