@@ -25,7 +25,8 @@
   --sakura-control-border: #dcdde2;
   --sakura-border-light: #ececf0;
   --sakura-fill-light: #fff5f9;
-  --sakura-page: #f8f8fa;
+  --sakura-page: #fff;
+  --sakura-pattern-opacity: 0.45;
   --sakura-header-background: #fffafdef;
   --sakura-shadow: 0 8px 32px #593b5808;
 }
@@ -57,6 +58,7 @@
   --sakura-accent-light-5: #88617b;
   --sakura-accent-light-7: #654258;
   --sakura-page: #17181a;
+  --sakura-pattern-opacity: 0.16;
   --sakura-header-background: #222327f2;
   --sakura-shadow: 0 5px 24px #0b070f20;
 }

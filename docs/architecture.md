@@ -95,3 +95,5 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 ## 前端视觉模块
 
 共享 `assets/tokens.css` 定义 Sakura 颜色、文字和表面。公共样式由 `blog/base.css`（基础控件与状态）、`shell.css`（导航、横幅、抽屉和页脚）、`content.css`（文章、阅读、归档、分类、瞬间和图库）组成；原主题及补丁层已删除。Admin 样式按 shell/workspace/editor/login 分离并清除被后续同选择器覆盖的声明。PostCSS 为每个表面添加低优先级作用域，避免 SPA 切换或传送弹层污染另一表面。`useReadingShell` 管理阅读导航的焦点、滚动和生命周期；内容组件只负责其展示。
+
+公共页与 Admin 外层使用 `SakuraPattern` SVG 平铺背景。组件支持 `shapes`（heart/star/dot）、`size`、`spacing`、`colors`、`opacity`、`seed`；默认 seed 保持图案稳定。SVG pattern 使用错行网格和跨边界副本，元素数量固定，不随页面长度增长。正文面板保留实色表面，公共深色背景独立调整透明度。页脚继续显示原始 `/sakura/images/footer/sakura.svg`。

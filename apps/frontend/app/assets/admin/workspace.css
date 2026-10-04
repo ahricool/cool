@@ -331,9 +331,7 @@ textarea {
   color: var(--sakura-text);
 }
 body {
-  background:
-    radial-gradient(ellipse at top right, #f7eaf5 0, transparent 55%),
-    var(--sakura-page);
+  background: var(--sakura-page);
 }
 .view-header h1 {
   color: var(--sakura-heading);

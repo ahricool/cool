@@ -11,5 +11,16 @@ useHead(() => ({
 }));
 </script>
 <template>
-  <NuxtLayout><NuxtPage /></NuxtLayout>
+  <div class="app-surface">
+    <SakuraPattern />
+    <NuxtLayout><NuxtPage /></NuxtLayout>
+  </div>
 </template>
+
+<style scoped>
+.app-surface {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+}
+</style>

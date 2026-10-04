@@ -69,6 +69,7 @@
 }
 .page-content.post,
 .page-content.page {
+  background: var(--sakura-page);
   max-width: 840px;
 }
 .reading-banner {
