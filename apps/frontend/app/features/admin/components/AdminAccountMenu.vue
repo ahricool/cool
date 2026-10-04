@@ -13,9 +13,7 @@ const open = ref(false);
 const root = ref<HTMLElement>();
 const trigger = ref<HTMLButtonElement>();
 const menu = ref<HTMLElement>();
-const avatar = computed(() =>
-  resolveCustomImage(props.owner?.avatarUrl, store.site.avatarUrl),
-);
+const avatar = computed(() => resolveCustomImage(props.owner?.avatarUrl));
 let closeTimer: ReturnType<typeof setTimeout> | undefined;
 function cancelClose() {
   clearTimeout(closeTimer);

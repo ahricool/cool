@@ -16,7 +16,7 @@ async function seed() {
           },
           data: { displayName: ADMIN_DISPLAY_NAME },
         });
-        const owner = await tx.user.upsert({
+        await tx.user.upsert({
           where: { email: ADMIN_EMAIL },
           update: {},
           create: {
@@ -32,7 +32,6 @@ async function seed() {
             key: 'site',
             value: {
               ...defaultSettings.site,
-              authorName: owner.displayName,
             },
           },
         });

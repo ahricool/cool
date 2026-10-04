@@ -352,3 +352,36 @@ textarea:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Reserve space inside clipped table cells for action shadows and focus. */
+.el-table .table-actions-cell .cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+}
+.table-actions-cell :is(.el-button, .table-action) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  height: auto;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: calc(12px * var(--sakura-font-scale));
+  line-height: 1.4;
+  border: 0;
+  border-radius: 10px;
+  color: var(--sakura-accent-strong);
+  background: var(--sakura-surface);
+  box-shadow: var(--sakura-button-shadow);
+}
+.table-actions-cell :is(.el-button, .table-action):hover {
+  box-shadow: var(--sakura-button-hover-shadow);
+}
+.table-action:focus-visible {
+  outline: 2px solid var(--sakura-accent-strong);
+  outline-offset: 3px;
+}

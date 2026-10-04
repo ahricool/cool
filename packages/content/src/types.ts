@@ -178,9 +178,8 @@ export const defaultAppearance: SiteAppearance = {
 export interface Site extends LocalizedContent {
   title: string;
   description: string;
-  authorName: string;
   authorBio: string;
-  avatarUrl: string | null;
+  author: Pick<Author, 'displayName' | 'avatarUrl'>;
   commentsEnabled: boolean;
   appearance: SiteAppearance;
 }
@@ -191,8 +190,6 @@ export interface SiteTranslation {
   authorBio: string;
 }
 export interface AdminSite {
-  authorName: string;
-  avatarUrl: string | null;
   commentsEnabled: boolean;
   appearance: SiteAppearance;
   translations: SiteTranslation[];
@@ -228,11 +225,13 @@ export interface AdminSettings {
 export const defaultSite: Site = {
   title: '梦桜',
   description: '记录生活，也记录每一次灵感。',
-  authorName: DEFAULT_OWNER_EMAIL.split('@')[0]!.replace(/^./u, (first) =>
-    first.toUpperCase(),
-  ),
+  author: {
+    displayName: DEFAULT_OWNER_EMAIL.split('@')[0]!.replace(/^./u, (first) =>
+      first.toUpperCase(),
+    ),
+    avatarUrl: null,
+  },
   authorBio: '在这里，收藏日常的微光。',
-  avatarUrl: null,
   appearance: { ...defaultAppearance },
   commentsEnabled: true,
   contentLocale: 'zh',

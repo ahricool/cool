@@ -1,9 +1,9 @@
 <script setup lang="ts">
 const { t, contentLang, locale } = useCoolI18n();
 import { computed, nextTick, ref } from 'vue';
-import { toast } from '~/utils/toast';
 import { renderMarkdown } from '@cool/content';
-import { upload, errorText } from '../api';
+import type { Media } from '@cool/content';
+import MediaLibraryDialog from './MediaLibraryDialog.vue';
 import { translate } from '~/i18n/messages';
 const props = defineProps<{
   modelValue: string;
@@ -17,7 +17,9 @@ const emit = defineEmits<{
 }>();
 const preview = ref(false);
 const textarea = ref<HTMLTextAreaElement>();
-const fileInput = ref<HTMLInputElement>();
+const mediaOpen = ref(false);
+let imageSelection = { start: 0, end: 0 };
+let imageSource = '';
 const busy = ref(false);
 const authoredText = (source: string) =>
   translate(source, {}, props.contentLocale ?? locale.value);
@@ -44,22 +46,37 @@ async function insert(prefix: string, suffix = '', placeholder = '') {
     el?.setSelectionRange(start + text.length, start + text.length);
   }
 }
-async function image(event: Event) {
+function browseImages() {
   if (busy.value || props.disabled || props.readOnly) return;
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (!file) return;
-  busy.value = true;
-  emit('busy-change', true);
-  try {
-    const media = await upload(file);
-    insert(`\n![${authoredText('图片描述')}](${media.url})\n`);
-  } catch (e) {
-    toast.error(t(errorText(e)));
-  } finally {
-    busy.value = false;
-    emit('busy-change', false);
-    (event.target as HTMLInputElement).value = '';
+  imageSelection = {
+    start: textarea.value?.selectionStart ?? props.modelValue.length,
+    end: textarea.value?.selectionEnd ?? props.modelValue.length,
+  };
+  imageSource = props.modelValue;
+  mediaOpen.value = true;
+}
+async function selectImage(media: Media) {
+  if (props.readOnly || props.modelValue !== imageSource) return;
+  const el = textarea.value;
+  if (!el) return;
+  el.focus();
+  el.setSelectionRange(imageSelection.start, imageSelection.end);
+  const text = `\n![${authoredText('图片描述')}](${media.url})\n`;
+  // Native insertion retains the textarea undo/redo history and input handling.
+  if (!document.execCommand('insertText', false, text)) {
+    el.setRangeText(text, imageSelection.start, imageSelection.end, 'end');
+    emit('update:modelValue', el.value);
   }
+  await nextTick();
+  el.setSelectionRange(
+    imageSelection.start + text.length,
+    imageSelection.start + text.length,
+  );
+}
+function restoreImageFocus() {
+  textarea.value?.focus();
+  if (props.modelValue === imageSource)
+    textarea.value?.setSelectionRange(imageSelection.start, imageSelection.end);
 }
 </script>
 <template>
@@ -88,16 +105,9 @@ async function image(event: Event) {
           class="upload-label"
           text
           :disabled="busy || disabled || readOnly"
-          @click="fileInput?.click()"
+          @click="browseImages"
           >{{ busy ? t('上传中') : t('插入图片') }}</el-button
-        ><input
-          ref="fileInput"
-          hidden
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          :disabled="busy || disabled || readOnly"
-          @change="image"
-        />
+        >
       </div>
       <el-button :aria-pressed="preview" @click="preview = !preview">{{
         t('预览')
@@ -129,5 +139,15 @@ async function image(event: Event) {
     <div class="editor-status">
       {{ t('{count} 字符', { count: modelValue.length }) }}
     </div>
+    <MediaLibraryDialog
+      v-model="mediaOpen"
+      :disabled="disabled || readOnly"
+      @select="selectImage"
+      @busy-change="
+        busy = $event;
+        emit('busy-change', $event);
+      "
+      @closed="restoreImageFocus"
+    />
   </div>
 </template>

@@ -6,3 +6,10 @@ export function defaultDisplayName(email: string) {
 export const ADMIN_DISPLAY_NAME = defaultDisplayName(ADMIN_EMAIL);
 export const SESSION_COOKIE = 'cool_session';
 export const SESSION_COOKIE_AGE_MS = 15 * 24 * 60 * 60 * 1000;
+
+export function normalizeOwner<T extends { displayName: string }>(owner: T): T {
+  return {
+    ...owner,
+    displayName: owner.displayName.trim() || ADMIN_DISPLAY_NAME,
+  };
+}

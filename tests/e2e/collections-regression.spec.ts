@@ -38,6 +38,21 @@ test('a pending moment image upload locks language, save, and dismissal and upda
         json: { user: owner, csrfToken: 'moment-test-csrf' },
       });
     if (endpoint === '/auth/me') return route.fulfill({ json: owner });
+    if (endpoint === '/media')
+      return route.fulfill({
+        json: {
+          items: [
+            {
+              id: 'moment-image',
+              url: imageUrl,
+              originalName: 'moment-image.webp',
+            },
+          ],
+          total: 1,
+          page: 1,
+          pageSize: 12,
+        },
+      });
     if (endpoint === '/media/upload') {
       uploadStarted = true;
       await uploaded;
@@ -87,7 +102,19 @@ test('a pending moment image upload locks language, save, and dismissal and upda
   const save = dialog.getByRole('button', { name: 'Save', exact: true });
   await expect(close).toBeVisible();
   await dialog
-    .locator('.markdown-editor input[type="file"]')
+    .getByRole('button', { name: 'Insert image', exact: true })
+    .click();
+  const library = page.getByRole('dialog', { name: 'Choose an image' });
+  await expect(library).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(library).toBeHidden();
+  await expect(dialog).toBeVisible();
+  await expect(content).toHaveValue(chineseText);
+  await dialog
+    .getByRole('button', { name: 'Insert image', exact: true })
+    .click();
+  await library
+    .locator('input[type="file"]')
     .setInputFiles('apps/frontend/public/sakura/images/default/hd.webp');
   await expect.poll(() => uploadStarted).toBe(true);
   try {
@@ -102,6 +129,10 @@ test('a pending moment image upload locks language, save, and dismissal and upda
   } finally {
     releaseUpload();
   }
+  await library
+    .getByRole('button', { name: 'moment-image.webp', exact: true })
+    .click();
+  await expect(library).toBeHidden();
   const chineseWithImage = `${chineseText}\n![图片描述](${imageUrl})\n`;
   await expect(content).toHaveValue(chineseWithImage);
   await expect(english).toBeEnabled();

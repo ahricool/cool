@@ -15,6 +15,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { normalizeOwner } from './auth.constants';
 import { Database } from './database';
 import { AuthGuard, type AuthRequest, publicUser } from './auth';
 import { CreatePostDto, ListQuery, UpdatePostDto } from './dto';
@@ -51,6 +52,7 @@ const translationSummary = {
 } as const;
 function publicPost<
   T extends {
+    author: { id: string; displayName: string; avatarUrl: string | null };
     translations: { locale: ContentLocale }[];
     categories: {
       category: {
@@ -70,6 +72,7 @@ function publicPost<
 >(post: T, locale: ContentLocale) {
   return {
     ...localize(post, locale)!,
+    author: normalizeOwner(post.author),
     categories: post.categories.map(({ category }) => ({
       category: localize(category, locale),
     })),

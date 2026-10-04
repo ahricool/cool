@@ -26,8 +26,8 @@ const { data, pending, error, refresh } = await useAsyncData(
           <div class="moment-container">
             <AvatarImage
               class="avatar"
-              :src="store.site.avatarUrl"
-              :alt="store.site.authorName"
+              :src="store.site.author.avatarUrl"
+              :alt="store.site.author.displayName"
               :width="48"
               :height="48"
             />

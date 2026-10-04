@@ -3,8 +3,8 @@ const { t } = useCoolI18n();
 import { computed, ref } from 'vue';
 import { resolveCustomImage } from '~/utils/custom-image';
 import { toast } from '~/utils/toast';
-import { api, upload, errorText } from '../api';
-import type { Media, Pagination } from '@cool/content';
+import { upload, errorText } from '../api';
+import MediaLibraryDialog from './MediaLibraryDialog.vue';
 const props = defineProps<{
   modelValue: string | null | undefined;
   disabled?: boolean;
@@ -27,9 +27,6 @@ const store = useSiteStore();
 const busy = ref(false);
 const fileInput = ref<HTMLInputElement>();
 const dialog = ref(false);
-const items = ref<Media[]>([]);
-const page = ref(1);
-const total = ref(0);
 async function fileChanged(event: Event) {
   if (busy.value || props.disabled) return;
   const file = (event.target as HTMLInputElement).files?.[0];
@@ -45,18 +42,6 @@ async function fileChanged(event: Event) {
     busy.value = false;
     emit('busy-change', false);
     (event.target as HTMLInputElement).value = '';
-  }
-}
-async function browse() {
-  dialog.value = true;
-  try {
-    const data = await api<Pagination<Media>>(
-      `/admin/media?page=${page.value}&pageSize=12`,
-    );
-    items.value = data.items;
-    total.value = data.total;
-  } catch (e) {
-    toast.error(t(errorText(e)));
   }
 }
 </script>
@@ -86,7 +71,7 @@ async function browse() {
         :disabled="busy || disabled"
         @change="fileChanged"
       />
-      <el-button text :disabled="busy || disabled" @click="browse">{{
+      <el-button text :disabled="busy || disabled" @click="dialog = true">{{
         t('从媒体库选择')
       }}</el-button
       ><el-button
@@ -102,31 +87,15 @@ async function browse() {
       t('图片不超过8MB，动图将显示为静态图片。')
     }}</small>
   </div>
-  <el-dialog v-model="dialog" :title="t('选择图片')" width="min(720px, 92vw)"
-    ><div class="media-picker-grid">
-      <button
-        v-for="item in items"
-        :key="item.id"
-        :disabled="busy || disabled"
-        @click="
-          emit('update:modelValue', item.url);
-          dialog = false;
-        "
-      >
-        <img :src="item.url" :alt="item.originalName" /><span>{{
-          item.originalName
-        }}</span>
-      </button>
-    </div>
-    <el-empty
-      v-if="!items.length"
-      :description="t('媒体库还是空的')" /><el-pagination
-      v-model:current-page="page"
-      :total="total"
-      :page-size="12"
-      layout="prev,pager,next"
-      @current-change="browse"
-  /></el-dialog>
+  <MediaLibraryDialog
+    v-model="dialog"
+    :disabled="disabled"
+    @select="emit('update:modelValue', $event.url)"
+    @busy-change="
+      busy = $event;
+      emit('busy-change', $event);
+    "
+  />
 </template>
 
 <style scoped>

@@ -115,9 +115,14 @@ test('Admin formatting preserves prose and upload buttons work from keyboard', a
   );
   const upload = page.getByRole('button', { name: '插入图片', exact: true });
   await upload.focus();
-  const chooser = page.waitForEvent('filechooser');
   await page.keyboard.press('Enter');
-  await (await chooser).setFiles([]);
+  const library = page.getByRole('dialog', { name: '选择图片' });
+  await expect(library).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(library).toBeHidden();
+  await expect(content).toHaveValue(
+    '**\n```typescript\n把日常写成故事\n```\n**',
+  );
   await page.getByRole('button', { name: '上传图片', exact: true }).focus();
   const coverChooser = page.waitForEvent('filechooser');
   await page.keyboard.press('Space');
