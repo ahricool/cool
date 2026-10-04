@@ -10,10 +10,7 @@ const { t, routePath } = useCoolI18n();
       :aria-label="t('搜索')"
       :title="t('搜索')"
     >
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <circle cx="10.75" cy="10.75" r="6.75" />
-        <path d="m16 16 4.25 4.25" />
-      </svg>
+      <ReadingIcon name="search" />
     </NuxtLink>
   </div>
 </template>

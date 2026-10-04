@@ -87,36 +87,7 @@ textarea {
   font-size: 10px;
   font-weight: 700;
 }
-.welcome-card {
-  border: 1px solid #efe8df;
-  border-radius: 18px;
-  padding: 32px 38px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  overflow: hidden;
-  position: relative;
-}
-.welcome-card h2 {
-  font-size: 28px;
-  line-height: 1.5;
-  font-weight: 400;
-  margin: 14px 0;
-}
-.welcome-card p:not(.eyebrow) {
-  font-size: 12px;
-}
-.welcome-card a {
-  display: inline-block;
-  font-size: 12px;
-  margin-top: 16px;
-}
-.welcome-flower {
-  line-height: 1;
-  margin-right: 40px;
-  transform: rotate(-20deg);
-  user-select: none;
-}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -161,11 +132,6 @@ textarea {
   margin-top: 8px;
   font-size: 10px;
   color: #a4a9b0;
-}
-.admin-footer {
-  font-size: 10px;
-  text-align: center;
-  padding: 18px;
 }
 .table-toolbar {
   display: flex;
@@ -355,26 +321,7 @@ body {
   color: #9c4267;
   letter-spacing: 2px;
 }
-.welcome-card {
-  background:
-    linear-gradient(90deg, #fff1f8 0%, #fff1f8f5 45%, #fff1f815 100%),
-    url('/sakura/images/default/hd.webp') center 45% / cover;
-  border-color: #efd4e3;
-  min-height: 240px;
-}
-.welcome-card h2 {
-  color: var(--sakura-heading);
-}
-.welcome-card p:not(.eyebrow) {
-  color: #795d70;
-}
-.welcome-card a {
-  color: #94375e;
-  font-weight: 700;
-}
-.welcome-flower {
-  text-shadow: 0 4px 24px #ad6a9b30;
-}
+
 .stat-card {
   position: relative;
   overflow: hidden;
@@ -400,15 +347,7 @@ body {
 .stat-card strong {
   color: #9a466e;
 }
-.stat-card small,
-.recent-row small,
-.media-card small,
-.admin-footer {
-  font-size: 11px;
-}
-.admin-footer {
-  color: #877087;
-}
+
 .el-button {
   min-height: 36px;
 }
@@ -453,12 +392,6 @@ textarea:focus-visible {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
-}
-.welcome-flower {
-  width: 160px;
-  height: 160px;
-  flex-shrink: 0;
-  font-size: 0;
 }
 .stat-card::after {
   content: '';

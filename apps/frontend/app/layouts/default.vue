@@ -1,20 +1,12 @@
 <script setup lang="ts">
-import {
-  House,
-  Notebook,
-  Folder,
-  PriceTag,
-  EditPen,
-  Camera,
-} from '@element-plus/icons-vue';
 const navigationIcons = {
-  '/': House,
-  '/archives': Notebook,
-  '/categories': Folder,
-  '/tags': PriceTag,
-  '/moments': EditPen,
-  '/photos': Camera,
-};
+  '/': 'home',
+  '/archives': 'archive',
+  '/categories': 'categories',
+  '/tags': 'tag',
+  '/moments': 'moments',
+  '/photos': 'photos',
+} as const;
 const { t, routePath, contentLang } = useCoolI18n();
 import { readingShellKey } from '~/utils/reading-shell';
 const route = useRoute();
@@ -29,8 +21,6 @@ const {
   hasBanner,
   hasIllustration,
   registerBanner,
-  mobileQuery,
-  mobileSearchFailure,
   sidebarKeydown,
 } = useReadingShell();
 provide(readingShellKey, { menuOpen, openMenu, registerBanner });
@@ -42,18 +32,6 @@ const menu = [
   ['/moments', '瞬间'],
   ['/photos', '图库'],
 ];
-function mobileSearch() {
-  mobileSearchFailure.value = mobileQuery.value.trim()
-    ? ''
-    : '请输入搜索关键词。';
-  if (!mobileSearchFailure.value) {
-    menuOpen.value = false;
-    void navigateTo({
-      path: routePath('/search'),
-      query: { q: mobileQuery.value.trim() },
-    });
-  }
-}
 useHead(() => ({
   title: store.site.title,
   htmlAttrs: { class: dark.value ? 'dark' : '' },
@@ -75,7 +53,7 @@ useHead(() => ({
       :class="{
         'home-header': isHome,
         'over-banner': hasBanner && hasIllustration,
-        'header-readable': !hasIllustration || scrollProgress > 0.12,
+        'header-readable': !hasIllustration || scrollProgress >= 1,
         'header-solid': scrollProgress >= 1 / 3,
       }"
       :style="{ '--header-progress': scrollProgress }"
@@ -119,7 +97,10 @@ useHead(() => ({
     id="mobile-sidebar"
     ref="sidebar"
     class="site-sidebar"
-    :class="{ open: menuOpen }"
+    :class="{
+      open: menuOpen,
+      'over-illustration': hasIllustration && scrollProgress < 1,
+    }"
     :inert="!menuOpen"
     :aria-hidden="!menuOpen"
     role="dialog"
@@ -127,16 +108,6 @@ useHead(() => ({
     :aria-label="t('移动端菜单')"
     @keydown="sidebarKeydown"
   >
-    <button
-      class="sidebar-close reading-control"
-      type="button"
-      :aria-label="t('关闭菜单')"
-      @click="menuOpen = false"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m6 6 12 12M18 6 6 18" />
-      </svg>
-    </button>
     <div class="sidebar-inner">
       <div class="mobile-sidebar">
         <div class="sidebar-brand">
@@ -149,40 +120,16 @@ useHead(() => ({
               :aria-label="store.site.title"
               ><SakuraWordmark
             /></span>
-            <small>{{ t('你的内容，自在生长。') }}</small>
           </div>
-        </div>
-        <div class="search">
-          <form
-            class="search-form"
-            role="search"
-            novalidate
-            @submit.prevent="mobileSearch"
-          >
-            <input
-              v-model="mobileQuery"
-              :aria-invalid="!!mobileSearchFailure"
-              :aria-describedby="
-                mobileSearchFailure ? 'mobile-search-error' : undefined
-              "
-              class="m-search-input"
-              type="search"
-              :aria-label="t('搜索文章')"
-              :placeholder="t('搜索文章…')"
-              maxlength="100"
-              required
-            />
-            <p v-if="mobileSearchFailure" id="mobile-search-error" role="alert">
-              {{ t(mobileSearchFailure) }}
-            </p>
-          </form>
         </div>
         <nav class="navbar" :aria-label="t('移动端导航')">
           <ul class="menu-root">
             <li v-for="item in menu" :key="item[0]" class="menu-item">
               <NuxtLink :to="routePath(item[0]!)" @click="menuOpen = false">
-                <component
-                  :is="navigationIcons[item[0] as keyof typeof navigationIcons]"
+                <ReadingIcon
+                  :name="
+                    navigationIcons[item[0] as keyof typeof navigationIcons]
+                  "
                   class="sidebar-nav-icon"
                   aria-hidden="true"
                 />

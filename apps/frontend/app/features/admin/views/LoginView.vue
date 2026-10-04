@@ -79,24 +79,13 @@ async function login() {
   <main class="login-page">
     <section class="login-story">
       <SakuraFlower class="brand-mark" />
-      <p class="eyebrow">{{ t('你的专属天地') }}</p>
       <h1>{{ t('让灵感，') }}<br />{{ t('慢慢生长。') }}</h1>
-      <p>
-        {{ t('记录热爱，整理思绪。') }}<br />{{ t('这里是属于你的内容空间。') }}
-      </p>
       <span class="login-footnote">梦桜 · {{ t('创作工作台') }}</span>
     </section>
     <section class="login-form">
-      <p class="eyebrow">{{ t(firstSetup ? '新的篇章' : '欢迎归来') }}</p>
-      <h2>{{ t(firstSetup ? '开启你的创作空间' : '欢迎回来') }}</h2>
+      <h2>{{ t(firstSetup ? '设置登录密码' : '欢迎回来') }}</h2>
       <p class="muted">
-        {{
-          t(
-            firstSetup
-              ? '第一次使用，为你的唯一站长账户设置密码。'
-              : '登录后，继续你的创作。',
-          )
-        }}
+        {{ t(firstSetup ? '请先设置登录密码。' : '登录后，继续你的创作。') }}
       </p>
       <el-alert
         v-if="error"
@@ -136,7 +125,7 @@ async function login() {
             required
           />
           <small v-if="firstSetup" class="muted">{{
-            t('至少 6 个字符，可使用一句容易记住的话')
+            t('至少 6 个字符')
           }}</small>
         </el-form-item>
         <el-form-item v-if="firstSetup" :label="t('确认密码')">

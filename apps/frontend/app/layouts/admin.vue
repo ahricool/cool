@@ -150,9 +150,7 @@ useHead(() => ({
       </button>
       <RouterLink to="/admin" class="brand" @click="open = false"
         ><SakuraFlower class="brand-mark" />
-        <div>
-          梦桜<small>{{ t('你的内容，自在生长。') }}</small>
-        </div></RouterLink
+        <div>梦桜</div></RouterLink
       ><span class="nav-caption">{{ t('工作空间') }}</span>
       <nav>
         <RouterLink
@@ -213,19 +211,6 @@ useHead(() => ({
         </div>
       </header>
       <main class="workspace"><slot /></main>
-      <footer class="admin-footer">
-        <span>梦桜 · {{ t('写下值得记住的事') }}</span>
-      </footer>
     </div>
   </div>
 </template>
-
-<style scoped>
-.admin-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 12px 24px;
-}
-</style>

@@ -32,6 +32,10 @@ class SiteTranslationDto extends LocaleDto {
   @ApiProperty() @IsString() @MaxLength(500) authorBio!: string;
 }
 class AppearanceDto {
+  @ApiPropertyOptional({ enum: ['default', 'bubble-candy'] })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsIn(['default', 'bubble-candy'])
+  font?: 'default' | 'bubble-candy';
   @ApiProperty({ enum: ['heart', 'star', 'dot'] })
   @IsIn(['heart', 'star', 'dot'])
   avatar!: 'heart' | 'star' | 'dot';
@@ -100,6 +104,7 @@ export const defaultSettings = {
     authorName: ADMIN_DISPLAY_NAME,
     avatarUrl: null,
     appearance: {
+      font: 'default' as const,
       avatar: 'heart' as const,
       cover: 'dot' as const,
       background: 'dot' as const,
@@ -171,7 +176,8 @@ export class SettingsController {
     return readSettings(this.db);
   }
   @Put() async save(@Body() d: SettingsDto) {
-    d.site.appearance ??= (await readSettings(this.db)).site.appearance;
+    const currentAppearance = (await readSettings(this.db)).site.appearance;
+    d.site.appearance = { ...currentAppearance, ...d.site.appearance };
     await this.db.$transaction(
       Object.entries(d).map(([key, value]) =>
         this.db.siteSetting.upsert({

@@ -130,10 +130,10 @@ for (const kind of ['posts', 'pages']) {
       const delay = delayedSave();
       await editor(page, `/${kind}/${isNew ? 'new' : id}`, delay.handler);
       const title = page.getByRole('textbox', { name: '标题', exact: true });
-      const content = page.getByRole('textbox', { name: 'Markdown 内容' });
+      const content = page.getByRole('textbox', { name: '正文' });
       await title.fill('请求发送时的标题');
       await page
-        .getByLabel('URL 标识', { exact: true })
+        .getByLabel('链接名称', { exact: true })
         .fill('editor-regression');
       await content.fill('请求发送时的正文');
       await page.getByRole('button', { name: '保存草稿', exact: true }).click();
@@ -146,9 +146,7 @@ for (const kind of ['posts', 'pages']) {
       );
       await expect(title).toHaveValue('保存期间继续写的新标题');
       await expect(content).toHaveValue('保存期间继续写的新正文');
-      await expect(
-        page.getByText('有未保存的修改 · 浏览器草稿已保留'),
-      ).toBeVisible();
+      await expect(page.getByText('有未保存的修改 · 草稿已保留')).toBeVisible();
       expect(delay.submitted[0].translations[0].content).toBe(
         '请求发送时的正文',
       );
@@ -159,9 +157,9 @@ for (const kind of ['posts', 'pages']) {
         )
         .toContain('保存期间继续写的新正文');
       await page.getByRole('button', { name: '保存草稿', exact: true }).click();
-      await expect(
-        page.getByText('有未保存的修改 · 浏览器草稿已保留'),
-      ).toHaveCount(0);
+      await expect(page.getByText('有未保存的修改 · 草稿已保留')).toHaveCount(
+        0,
+      );
       expect(delay.submitted).toHaveLength(2);
       expect(delay.submitted[1].translations[0].content).toBe(
         '保存期间继续写的新正文',
@@ -181,18 +179,16 @@ test('canceling navigation preserves the editor, URL, and local draft', async ({
   await editor(page, `/posts/${id}`, async (route, body) =>
     route.fulfill({ json: body }),
   );
-  await page
-    .getByRole('textbox', { name: 'Markdown 内容' })
-    .fill('尚未保存的重要内容');
+  await page.getByRole('textbox', { name: '正文' }).fill('尚未保存的重要内容');
   await page
     .locator('.sidebar')
     .getByRole('link', { name: '概览', exact: true })
     .click();
   await page.getByRole('button', { name: '继续编辑', exact: true }).click();
   await expect(page).toHaveURL((url) => url.pathname === `/admin/posts/${id}`);
-  await expect(
-    page.getByRole('textbox', { name: 'Markdown 内容' }),
-  ).toHaveValue('尚未保存的重要内容');
+  await expect(page.getByRole('textbox', { name: '正文' })).toHaveValue(
+    '尚未保存的重要内容',
+  );
   await expect
     .poll(() =>
       page.evaluate(
@@ -218,7 +214,7 @@ test('expired session returns to login and restores unsaved work after login', a
     } else await route.fulfill({ json: body });
   });
   await page
-    .getByRole('textbox', { name: 'Markdown 内容' })
+    .getByRole('textbox', { name: '正文' })
     .fill('登录失效也不能丢失的正文');
   await page.getByRole('button', { name: '保存草稿', exact: true }).click();
   await expect(page).toHaveURL(
@@ -228,13 +224,11 @@ test('expired session returns to login and restores unsaved work after login', a
   );
   await login(page);
   await page.getByRole('button', { name: '恢复草稿', exact: true }).click();
-  await expect(
-    page.getByRole('textbox', { name: 'Markdown 内容' }),
-  ).toHaveValue('登录失效也不能丢失的正文');
-  await page.getByRole('button', { name: '保存草稿', exact: true }).click();
-  await expect(page.getByText('有未保存的修改 · 浏览器草稿已保留')).toHaveCount(
-    0,
+  await expect(page.getByRole('textbox', { name: '正文' })).toHaveValue(
+    '登录失效也不能丢失的正文',
   );
+  await page.getByRole('button', { name: '保存草稿', exact: true }).click();
+  await expect(page.getByText('有未保存的修改 · 草稿已保留')).toHaveCount(0);
 });
 
 for (const target of ['cover', 'content']) {
@@ -247,7 +241,7 @@ for (const target of ['cover', 'content']) {
       .getByRole('textbox', { name: '标题', exact: true })
       .fill('带图片的新文章');
     await page
-      .getByLabel('URL 标识', { exact: true })
+      .getByLabel('链接名称', { exact: true })
       .fill('upload-regression');
     let releaseUpload!: () => void;
     const uploaded = new Promise<void>((resolve) => {
@@ -337,10 +331,10 @@ for (const kind of ['posts', 'pages']) {
     };
     const title = page.getByRole('textbox', { name: '标题', exact: true });
     const content = page.getByRole('textbox', {
-      name: 'Markdown 内容',
+      name: '正文',
       exact: true,
     });
-    const slugInput = page.getByLabel('URL 标识', { exact: true });
+    const slugInput = page.getByLabel('链接名称', { exact: true });
     async function expectFields(locale: 'zh' | 'en') {
       await expect(title).toHaveValue(drafts[locale].title);
       await expect(content).toHaveValue(drafts[locale].content);
@@ -478,9 +472,7 @@ for (const kind of ['posts', 'pages']) {
       coverUrl,
     );
     await page.getByRole('button', { name: '保存草稿', exact: true }).click();
-    await expect(
-      page.getByText('有未保存的修改 · 浏览器草稿已保留'),
-    ).toHaveCount(0);
+    await expect(page.getByText('有未保存的修改 · 草稿已保留')).toHaveCount(0);
     expect(submitted).toHaveLength(2);
     expect(submitted[1].method).toBe('PUT');
     expect(submitted[1].body.slug).toBe(currentSlug);

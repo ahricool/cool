@@ -41,7 +41,7 @@
   padding: 24px;
   color: #535862;
   line-height: 1.9;
-  font-family: ui-monospace, 'Noto Sans SC', monospace;
+  font-family: ui-monospace, 'PingFang SC', monospace;
   font-size: 13px;
   outline: none;
 }
@@ -135,9 +135,6 @@
   }
   .stat-grid {
     gap: 12px;
-  }
-  .welcome-flower {
-    margin-right: 0;
   }
   .editor-panes.split {
     grid-template-columns: 1fr;

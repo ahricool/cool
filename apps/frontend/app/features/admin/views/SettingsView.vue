@@ -150,10 +150,7 @@ async function save() {
 onMounted(load);
 </script>
 <template>
-  <ViewHeader
-    :title="t('网站配置')"
-    :description="t('让这个小小世界，更像你。')"
-  >
+  <ViewHeader :title="t('网站配置')">
     <el-button
       type="primary"
       :disabled="!loaded"
@@ -176,11 +173,7 @@ onMounted(load);
       </el-radio-group>
     </div>
     <p class="muted content-language-note">
-      {{
-        t(
-          '分别编写中英文内容，切换界面语言不会更改这里的内容。保存时会保留两种语言。',
-        )
-      }}
+      {{ t('中英文内容分别编辑。') }}
     </p>
     <el-tabs v-model="tab">
       <el-tab-pane :label="t('基本信息')" name="site">
@@ -246,14 +239,6 @@ onMounted(load);
                 form.homepage.coverUrl = $event ?? defaultHomepage.coverUrl
               "
           /></el-form-item>
-          <el-form-item :label="t('首屏展示')">
-            <el-radio-group v-model="form.homepage.focusMode">
-              <el-radio-button value="glitch-text">{{
-                t('标题文字')
-              }}</el-radio-button>
-              <el-radio-button value="avatar">{{ t('头像') }}</el-radio-button>
-            </el-radio-group>
-          </el-form-item>
           <el-form-item :label="t('波浪动画')"
             ><el-switch v-model="form.homepage.wave"
           /></el-form-item>

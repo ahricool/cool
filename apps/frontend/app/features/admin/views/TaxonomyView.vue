@@ -37,7 +37,7 @@ function edit(item?: AdminTaxonomy) {
 async function save() {
   if (busy.value) return;
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug)) {
-    ElMessage.warning(t('请填写有效的 URL 标识'));
+    ElMessage.warning(t('请填写有效的 链接名称'));
     return;
   }
   if (!names.zh.trim() && !names.en.trim()) {
@@ -83,9 +83,7 @@ async function remove(item: AdminTaxonomy) {
 onMounted(load);
 </script>
 <template>
-  <ViewHeader
-    :title="kind === 'categories' ? t('分类') : t('标签')"
-    :description="t('给每一份内容，找到合适的位置。')"
+  <ViewHeader :title="kind === 'categories' ? t('分类') : t('标签')"
     ><el-button type="primary" @click="edit()">{{
       t('＋ 新建')
     }}</el-button></ViewHeader
@@ -103,7 +101,7 @@ onMounted(load);
             }}</span
           ></template
         ></el-table-column
-      ><el-table-column prop="slug" :label="t('URL 标识')" /><el-table-column
+      ><el-table-column prop="slug" :label="t('链接名称')" /><el-table-column
         :label="t('操作')"
         width="160"
         ><template #default="{ row }"
@@ -149,7 +147,7 @@ onMounted(load);
           v-model="names[contentLocale]"
           :lang="contentLang(contentLocale)"
           maxlength="100" /></el-form-item
-      ><el-form-item :label="t('URL 标识')"
+      ><el-form-item :label="t('链接名称')"
         ><el-input
           v-model="form.slug"
           required

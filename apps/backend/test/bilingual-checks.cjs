@@ -391,7 +391,12 @@ module.exports = async function verifyBilingual(t, http, token) {
             authorName: 'Shared owner',
             avatarUrl: original.site.avatarUrl,
             commentsEnabled: true,
-            appearance: { avatar: 'star', cover: 'heart', background: 'none' },
+            appearance: {
+              font: 'bubble-candy',
+              avatar: 'star',
+              cover: 'heart',
+              background: 'none',
+            },
             translations: [
               {
                 locale: 'zh',

@@ -7,8 +7,6 @@ export function useReadingShell() {
     menuTrigger.value = event.currentTarget as HTMLButtonElement;
     menuOpen.value = true;
   }
-  const mobileQuery = ref('');
-  const mobileSearchFailure = ref('');
   let previousOverflow = '';
   const dark = useState('reading-dark', () => false);
   const banner = shallowRef<HTMLElement>();
@@ -117,8 +115,6 @@ export function useReadingShell() {
     hasBanner,
     hasIllustration,
     registerBanner,
-    mobileQuery,
-    mobileSearchFailure,
     sidebarKeydown,
   };
 }

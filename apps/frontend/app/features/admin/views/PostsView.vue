@@ -61,9 +61,7 @@ onMounted(load);
   <ViewHeader
     :title="kind === 'posts' ? t('文章') : t('独立页面')"
     :description="
-      kind === 'posts'
-        ? t('每一篇文字，都是与你的读者的一次相遇。')
-        : t('关于、介绍与其它长期保留的内容。')
+      kind === 'pages' ? t('关于、介绍与其它长期保留的内容。') : undefined
     "
     ><RouterLink :to="`/admin/${kind}/new`"
       ><el-button type="primary"
