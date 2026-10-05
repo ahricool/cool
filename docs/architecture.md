@@ -98,7 +98,7 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 
 公共页与 Admin 外层使用 `SakuraPattern` SVG 平铺背景。组件支持 `shape`（heart/star/dot，默认 heart）、`size`、`spacing`、`colors`、`opacity`、`seed`；默认 seed 保持颜色布局稳定；每次只显示所选的一种形状。默认心形/星形尺寸 19.5px，圆点 15px、水平间距 72px，使用淡红、粉、橙、黄、绿、青、蓝、紫八色。SVG pattern 使用错行网格和跨边界副本，元素数量固定，不随页面长度增长。正文面板保留实色表面，公共深色背景独立调整透明度。页脚继续显示原始 `/sakura/images/footer/sakura.svg`。
 
-外观配置共用现有 settings：默认头像 heart，文章缺省封面 dot，页面背景 dot（可选 none）。自定义图片优先，旧默认头像/封面路径按缺省图案处理；保留首页照片。生成器一次只用一种图形，心形/星形 19.5px、圆点 15px、72px 横向间距、八色固定种子随机分布。公开和后台评论界面已移除，后端接口、数据库及现有评论保留。全站樱花共用 SakuraFlower 与原始 SVG（#ff6699，opacity 0.8，明暗一致），直接显示原 SVG 文件，五瓣填充统一为 #ff6699，不使用遮罩，12s 顺时针旋转并尊重 reduced motion。
+外观配置共用现有 settings：默认头像 heart，文章缺省封面 dot，页面背景 dot（可选 none）。自定义图片优先，旧默认头像/封面路径按缺省图案处理；保留首页照片。生成器一次只用一种图形，心形/星形 19.5px、圆点 15px、72px 横向间距、八色固定种子随机分布。公开和后台评论界面已移除，后端接口、数据库及现有评论保留。全站樱花共用 SakuraFlower 与原始 SVG（#ff6699，opacity 0.8，明暗一致），直接显示原 SVG 文件，五瓣填充统一为 #ff6699，不使用遮罩；默认静止，仅 Footer 显式开启 12s 顺时针旋转并尊重 reduced motion。
 
 头像直接用 PatternSurface 裁切共享 SakuraPattern；没有固定 viewBox、图形缩放或独立单图标渲染。48/72/80/120px 头像与封面/页面背景使用相同图案尺寸（心形/星形 19.5px、圆点 15px）及 72px 横向间距，只改变容器尺寸与圆形裁切。文章底部保留标签和分享，不再显示“全文完”。
 
@@ -128,6 +128,6 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 
 site.appearance.fontSize 保存 80–150 的整数字体大小比例，默认 100；外观设置以步长 5 调整并可恢复默认。根 --sakura-font-scale 缩放文字，图标与点击区域保持尺寸；移动搜索文字至少 16px。默认图片预览不显示无效移除操作，自定义上传仍可移除并恢复缺省图案/首页照片。Footer 恢复无年份版权与静态小心心，不恢复旧技术署名。
 
-品牌旁的樱花直接显示同一个 SakuraFlower 原 SVG：公共顶部、首页横幅、公共抽屉及 Admin 侧栏均使用 12s 旋转并尊重 reduced motion。Admin 使用同一右下悬浮 ThemeToggle，不再重复提供顶部入口。Admin 顶部与侧栏由一块 L 形 mask 的模糊背景层绘制；mask 仅裁切背景渐隐，不用于樱花图形。单次过滤避免导航交接处重复模糊。
+品牌旁的樱花直接显示同一个 SakuraFlower 原 SVG：公共顶部、首页横幅、公共抽屉、登录页及 Admin 侧栏均保持静止；仅 Footer 使用 12s 旋转并尊重 reduced motion。Admin 使用同一右下悬浮 ThemeToggle，不再重复提供顶部入口。Admin 顶部与侧栏由一块 L 形 mask 的模糊背景层绘制；mask 仅裁切背景渐隐，不用于樱花图形。单次过滤避免导航交接处重复模糊。
 
 前端视觉维护遵循 [DESIGN.md](../apps/frontend/DESIGN.md)：粉灰白黑状态色、组件阴影、无边框按钮/标签及统一左上 Toast。所有通知调用共享 toast.ts，保留原 Element Plus alert、超时与堆叠。归档条目不再使用横线分隔。头像菜单优先账户/网站自定义头像，否则用共享图案；扩大容器不缩放 tile。搜索桌面输入框最大宽度 446px，为原默认 892px 的一半。

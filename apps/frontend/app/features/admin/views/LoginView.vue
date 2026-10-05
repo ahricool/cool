@@ -78,7 +78,7 @@ async function login() {
 <template>
   <main class="login-page">
     <section class="login-story">
-      <SakuraFlower spinning class="brand-mark" />
+      <SakuraFlower class="brand-mark" />
       <h1>{{ t('让灵感，') }}<br />{{ t('慢慢生长。') }}</h1>
       <span class="login-footnote">梦桜 · {{ t('创作工作台') }}</span>
     </section>

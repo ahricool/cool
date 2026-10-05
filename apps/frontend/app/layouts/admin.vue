@@ -58,7 +58,7 @@ useHead(() => ({
       :aria-label="t('工作空间导航')"
     >
       <RouterLink to="/admin" class="brand" aria-label="梦桜">
-        <SakuraFlower spinning class="brand-mark" />
+        <SakuraFlower class="brand-mark" />
         <SakuraWordmark />
       </RouterLink>
       <nav>
