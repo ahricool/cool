@@ -35,7 +35,7 @@ useHead(() => ({
     ><template #header
       ><div class="post-header">
         <PageHeader
-          fallback="cover"
+          :fallback="data?.coverUrl ? 'cover' : 'none'"
           :seed="slug"
           :title="data?.title ?? t('文章')"
           :title-lang="data ? contentLang(data.contentLocale) : undefined"

@@ -14,11 +14,12 @@ defineProps<{
   };
 }>();
 const { t, contentLang } = useCoolI18n();
-const store = useSiteStore();
+
 </script>
 <template>
   <article class="post story-card">
     <NuxtLink
+      v-if="resolveCustomImage(post.coverUrl)"
       :to="`/posts/${post.slug}`"
       class="story-cover"
       :aria-label="post.title"
@@ -31,13 +32,7 @@ const store = useSiteStore();
         height="480"
         loading="lazy"
       />
-      <PatternSurface
-        v-else
-        :shape="store.site.appearance.cover"
-        :seed="post.slug"
-        class="story-pattern"
-        data-pattern="cover"
-      />
+
     </NuxtLink>
     <div class="story-body">
       <NuxtLink :to="`/posts/${post.slug}`" class="story-title"

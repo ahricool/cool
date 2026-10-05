@@ -2,7 +2,7 @@
 import EditorView from '~/features/admin/views/EditorView.vue';
 definePageMeta({
   layout: 'admin',
-  title: '文章编辑',
+  title: '内容编辑',
   key: (route) => route.path,
 });
 </script>

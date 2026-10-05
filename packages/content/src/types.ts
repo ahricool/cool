@@ -31,6 +31,7 @@ export interface AdminTag {
   translations: TagTranslation[];
 }
 interface PostIdentity {
+  type: 'ARTICLE' | 'MOMENT';
   id: string;
   slug: string;
   coverUrl: string | null;
@@ -127,7 +128,27 @@ export interface AdminPhoto {
   published: boolean;
   translations: PhotoTranslation[];
 }
+export interface AlbumItem {
+  id: string;
+  albumId: string;
+  mediaId: string | null;
+  url: string;
+  name: string;
+  mimeType: string;
+  position: number;
+}
+export interface Album {
+  id: string;
+  name: string;
+  nameEn: string;
+  description: string;
+  descriptionEn: string;
+  coverUrl: string | null;
+  isDefault: boolean;
+  items: AlbumItem[];
+}
 export interface Media {
+  mimeType: string;
   id: string;
   key: string;
   url: string;
@@ -268,7 +289,7 @@ export type TimelineItem =
       | 'author'
       | 'contentLocale'
     >)
-  | ({ kind: 'moment'; author: Author | null } & Pick<
+  | ({ kind: 'moment'; author: Author | null; title?: string | null } & Pick<
       Moment,
       'id' | 'content' | 'publishedAt' | 'contentLocale'
     >);

@@ -60,13 +60,13 @@ onMounted(load);
 </script>
 <template>
   <ViewHeader
-    :title="kind === 'posts' ? t('文章') : t('独立页面')"
+    :title="kind === 'posts' ? t('内容') : t('独立页面')"
     :description="
       kind === 'pages' ? t('关于、介绍与其它长期保留的内容。') : undefined
     "
     ><RouterLink :to="`/admin/${kind}/new`"
       ><el-button type="primary"
-        >＋ {{ kind === 'posts' ? t('写文章') : t('新建页面') }}</el-button
+        >＋ {{ kind === 'posts' ? t('新建内容') : t('新建页面') }}</el-button
       ></RouterLink
     ></ViewHeader
   ><ErrorNotice :error="error" @retry="load" />
@@ -101,13 +101,17 @@ onMounted(load);
             "
             class="table-title"
             >{{
-              displayTranslation(row as AdminPost | AdminPage)?.title ??
+              displayTranslation(row as AdminPost | AdminPage)?.title ||
               row.slug
             }}</RouterLink
           ><small class="table-slug"
             >/{{ kind }}/{{ row.slug }}</small
           ></template
         ></el-table-column
+      ><el-table-column v-if="kind === 'posts'" :label="t('类型')" width="100"
+        ><template #default="{ row }">{{
+          row.type === 'MOMENT' ? t('瞬间') : t('文章')
+        }}</template></el-table-column
       ><el-table-column :label="t('状态')" min-width="180"
         ><template #default="{ row }"
           ><div

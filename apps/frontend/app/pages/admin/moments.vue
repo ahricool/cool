@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import CollectionsView from '~/features/admin/views/CollectionsView.vue';
-definePageMeta({ layout: 'admin', title: '瞬间', key: (route) => route.path });
+definePageMeta({
+  middleware: () => navigateTo('/admin/posts', { replace: true }),
+});
 </script>
-<template>
-  <CollectionsView kind="moments" />
-</template>
+<template><div /></template>

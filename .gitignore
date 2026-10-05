@@ -17,3 +17,7 @@ deployment/
 
 # Local visual review evidence.
 /review/
+
+# Isolated development databases and screenshot evidence.
+/.local/
+/artifacts/

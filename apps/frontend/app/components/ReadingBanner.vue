@@ -7,7 +7,7 @@ const props = withDefaults(
     cover?: string | null;
     imageAlt?: string;
     wave?: boolean;
-    fallback?: 'illustration' | 'cover';
+    fallback?: 'illustration' | 'cover' | 'none';
     seed?: string;
   }>(),
   { variant: 'page', imageAlt: '', wave: true, fallback: 'illustration' },
@@ -38,7 +38,10 @@ onBeforeUnmount(() => unregister?.());
   >
     <div
       class="banner-artwork"
-      :class="{ 'banner-artwork--pattern': !hasImage }"
+      :class="{
+        'banner-artwork--pattern': !hasImage && fallback !== 'none',
+        'banner-artwork--plain': !hasImage && fallback === 'none',
+      }"
     >
       <picture v-if="image"
         ><img
@@ -50,7 +53,7 @@ onBeforeUnmount(() => unregister?.());
           :fetchpriority="variant === 'home' ? 'high' : 'auto'"
       /></picture>
       <PatternSurface
-        v-else
+        v-else-if="fallback !== 'none'"
         :shape="store.site.appearance.cover"
         :seed="seed"
         data-pattern="cover"
@@ -60,3 +63,13 @@ onBeforeUnmount(() => unregister?.());
     <ReadingWave v-if="wave" />
   </section>
 </template>
+
+<style scoped>
+.reading-banner:has(.banner-artwork--plain) {
+  min-height: 0;
+}
+.banner-artwork--plain {
+  min-height: 220px;
+  background: var(--sakura-surface);
+}
+</style>

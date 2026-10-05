@@ -6,7 +6,7 @@ const { data, pending, error, refresh } = await useAsyncData(
   () => `about-${locale.value}`,
   () => api<Page>('/public/about'),
 );
-useHead(() => ({ title: t('关于我') }));
+useHead(() => ({ title: t('我') }));
 </script>
 <template>
   <div id="content" class="page-content about-page">

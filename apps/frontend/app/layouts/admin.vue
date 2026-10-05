@@ -15,12 +15,10 @@ const blogUrl = computed(() => publicUrl());
 provide('admin-active-menu', ref<string | null>(null));
 const nav = [
   { path: '/admin', label: '概览', icon: 'home' },
-  { path: '/admin/posts', label: '文章', icon: 'document' },
+  { path: '/admin/posts', label: '内容', icon: 'document' },
   { path: '/admin/about', label: '关于我', icon: 'document' },
   { path: '/admin/pages', label: '独立页面', icon: 'pages' },
-  { path: '/admin/media', label: '媒体库', icon: 'photos' },
   { path: '/admin/tags', label: '标签', icon: 'tag' },
-  { path: '/admin/moments', label: '短动态', icon: 'moments' },
   { path: '/admin/photos', label: '相册', icon: 'photos' },
 ] as const;
 watch(

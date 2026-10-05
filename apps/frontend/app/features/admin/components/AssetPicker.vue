@@ -72,7 +72,7 @@ async function fileChanged(event: Event) {
         @change="fileChanged"
       />
       <el-button text :disabled="busy || disabled" @click="dialog = true">{{
-        t('从媒体库选择')
+        t('从相册选择')
       }}</el-button
       ><el-button
         v-if="selectedImage"

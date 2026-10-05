@@ -4,6 +4,8 @@ import vue from 'eslint-plugin-vue';
 export default ts.config(
   {
     ignores: [
+      '.local/**',
+      'artifacts/**',
       '**/dist/**',
       '**/generated/**',
       'node_modules/**',

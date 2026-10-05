@@ -9,7 +9,7 @@ const shapes = [
 ] as const;
 const fields = [
   { key: 'avatar', label: '默认头像' },
-  { key: 'cover', label: '文章默认封面' },
+  { key: 'cover', label: '相册默认封面' },
   { key: 'background', label: '页面背景' },
 ] as const;
 </script>

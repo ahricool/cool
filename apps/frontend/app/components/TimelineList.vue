@@ -12,6 +12,12 @@ const { contentLang } = useCoolI18n();
         :author="item.author ?? store.site.author"
         :published-at="item.publishedAt"
       />
+      <h2
+        v-if="'title' in item && item.title"
+        :lang="contentLang(item.contentLocale)"
+      >
+        {{ item.title }}
+      </h2>
       <div
         class="entry-content"
         :lang="contentLang(item.contentLocale)"

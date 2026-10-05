@@ -300,3 +300,39 @@
 .post-article .entry-content table {
   background: var(--sakura-page);
 }
+
+.content-media-group {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0;
+}
+.content-media-group--grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.content-media-group img,
+.content-media-group video {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 12px;
+}
+.content-media-group audio {
+  width: 100%;
+}
+.content-media-group figure {
+  margin: 0;
+  min-width: 0;
+}
+.content-media-group figcaption {
+  font-size: 0.85em;
+  opacity: 0.65;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 520px) {
+  .content-media-group {
+    gap: 10px;
+  }
+}

@@ -1,11 +1,6 @@
 <script setup lang="ts">
-import MediaView from '~/features/admin/views/MediaView.vue';
 definePageMeta({
-  layout: 'admin',
-  title: '媒体库',
-  key: (route) => route.path,
+  middleware: () => navigateTo('/admin/photos', { replace: true }),
 });
 </script>
-<template>
-  <MediaView />
-</template>
+<template><div /></template>

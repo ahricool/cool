@@ -36,6 +36,7 @@ const relations = {
   tags: { include: { tag: { include: { translations: true } } } },
 } as const;
 const commonSummary = {
+  type: true,
   id: true,
   slug: true,
   coverUrl: true,
@@ -74,8 +75,9 @@ function publicPost<
 @Injectable()
 export class PostsService {
   constructor(private readonly db: Database) {}
-  async listAdmin(query: ListQuery) {
+  async listAdmin(query: ListQuery, type?: 'ARTICLE' | 'MOMENT') {
     const where: Prisma.PostWhereInput = {
+      ...(type ? { type } : {}),
       ...(query.q
         ? {
             translations: {
@@ -165,6 +167,11 @@ export class PostsService {
   }
   async create(body: CreatePostDto, authorId: string) {
     const { tagIds, translations, ...data } = body;
+    if (
+      (body.type ?? 'ARTICLE') === 'ARTICLE' &&
+      translations.some((t) => t.status === 'PUBLISHED' && !t.title.trim())
+    )
+      throw new BadRequestException('Published articles require a title');
     return createWithResourcePath((slug) =>
       this.db.post.create({
         data: {
@@ -192,12 +199,35 @@ export class PostsService {
         include: { translations: true },
       });
       if (!current) throw new NotFoundException('Post not found');
+      const nextType = body.type ?? current.type;
+      const merged = current.translations.map((t) => ({
+        ...t,
+        ...translations?.find((row) => row.locale === t.locale),
+      }));
+      for (const t of translations ?? [])
+        if (!merged.some((row) => row.locale === t.locale))
+          merged.push({
+            ...t,
+            title: t.title ?? '',
+            content: t.content ?? '',
+            excerpt: t.excerpt ?? '',
+            contentFormat: 'markdown',
+            status: t.status ?? 'DRAFT',
+            publishedAt: null,
+            updatedAt: new Date(),
+            postId: id,
+          });
+      if (
+        nextType === 'ARTICLE' &&
+        merged.some((t) => t.status === 'PUBLISHED' && !t.title.trim())
+      )
+        throw new BadRequestException(
+          'Published articles require a title in every published language',
+        );
       for (const translation of translations ?? []) {
         const existing = current.translations.find(
           (row) => row.locale === translation.locale,
         );
-        if (!existing && !translation.title)
-          throw new BadRequestException('A new translation requires a title');
         const values = {
           ...translation,
           ...publication(translation, existing),
@@ -207,7 +237,7 @@ export class PostsService {
           create: {
             ...values,
             postId: id,
-            title: translation.title ?? existing!.title,
+            title: translation.title ?? existing?.title ?? '',
           },
           update: values,
         });
