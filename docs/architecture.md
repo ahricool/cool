@@ -129,3 +129,7 @@ site.appearance.fontSize 保存 80–150 的整数字体大小比例，默认 10
 品牌旁的樱花直接显示同一个 SakuraFlower 原 SVG：公共顶部、首页横幅、登录页及 Admin 侧栏均保持静止；仅 Footer 使用 12s 旋转并尊重 reduced motion。Admin 使用同一右下悬浮 ThemeToggle，不再重复提供顶部入口。Admin 顶部与侧栏由一块 L 形 mask 的模糊背景层绘制；mask 仅裁切背景渐隐，不用于樱花图形。单次过滤避免导航交接处重复模糊。
 
 前端视觉维护遵循 [DESIGN.md](../apps/frontend/DESIGN.md)：粉灰白黑状态色、组件阴影、无边框按钮/标签及统一左上 Toast。所有通知调用共享 toast.ts，保留原 Element Plus alert、超时与堆叠。头像菜单优先账户/网站自定义头像，否则用共享图案；扩大容器不缩放 tile。搜索桌面输入框最大宽度 446px，为原默认 892px 的一半。
+
+## 内容与相册整合
+
+最新模型、增量迁移、保全与恢复规则见 [content-albums.md](content-albums.md)。后台入口统一为内容和相册，公开关于我改称我且地址不变。

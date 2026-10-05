@@ -1,3 +1,5 @@
+import { parseMediaGroup } from './media-groups';
+export * from './media-groups';
 import MarkdownIt from 'markdown-it';
 import hljs from 'highlight.js/lib/common';
 export * from './types';
@@ -23,10 +25,13 @@ export function renderMarkdown(source: string): {
   });
   const fenceRule = md.renderer.rules.fence!;
   md.renderer.rules.fence = (tokens, idx, options, env, self) =>
-    fenceRule(tokens, idx, options, env, self)
-      .replace('<pre>', '<pre class="highlight-wrap">')
-      .replace('<code class="', '<code class="hljs ')
-      .replace('<code>', '<code class="hljs">');
+    tokens[idx]!.info.trim() === 'cool-media' &&
+    parseMediaGroup(tokens[idx]!.content)
+      ? renderMediaGroup(tokens[idx]!.content, md.utils.escapeHtml)
+      : fenceRule(tokens, idx, options, env, self)
+          .replace('<pre>', '<pre class="highlight-wrap">')
+          .replace('<code class="', '<code class="hljs ')
+          .replace('<code>', '<code class="hljs">');
   md.renderer.rules.heading_open = (tokens, idx, options, _env, self) => {
     const token = tokens[idx]!;
     const id = `heading-${toc.length + 1}`;
@@ -58,4 +63,22 @@ export function renderMarkdown(source: string): {
     return imageRule(tokens, idx, options, env, self);
   };
   return { html: md.render(source), toc };
+}
+
+function renderMediaGroup(source: string, escape: (value: string) => string) {
+  const group = parseMediaGroup(source)!;
+  return (
+    `<div class="content-media-group content-media-group--${group.layout}">` +
+    group.assets
+      .map((asset) => {
+        const url = escape(asset.url),
+          name = escape(asset.name);
+        if (asset.mimeType.startsWith('image/'))
+          return `<img src="${url}" alt="${name}" loading="lazy" decoding="async" />`;
+        const kind = asset.mimeType.startsWith('video/') ? 'video' : 'audio';
+        return `<figure><${kind} controls preload="metadata" src="${url}"></${kind}><figcaption>${name}</figcaption></figure>`;
+      })
+      .join('') +
+    '</div>\n'
+  );
 }

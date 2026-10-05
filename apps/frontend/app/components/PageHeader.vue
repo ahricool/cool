@@ -3,7 +3,7 @@ defineProps<{
   title: string;
   titleLang?: string;
   cover?: string | null;
-  fallback?: 'illustration' | 'cover';
+  fallback?: 'illustration' | 'cover' | 'none';
   seed?: string;
 }>();
 </script>

@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import CollectionsView from '~/features/admin/views/CollectionsView.vue';
-definePageMeta({ layout: 'admin', title: '图库', key: (route) => route.path });
+import AlbumsView from '~/features/admin/views/AlbumsView.vue';
+definePageMeta({ layout: 'admin', title: '相册', key: (route) => route.path });
 </script>
-<template>
-  <CollectionsView kind="photos" />
-</template>
+<template><AlbumsView /></template>

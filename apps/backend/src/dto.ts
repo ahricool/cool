@@ -19,13 +19,16 @@ import {
   IsString,
   IsUUID,
   Length,
-  Matches,
   Max,
   MaxLength,
   Min,
   ValidateIf,
 } from 'class-validator';
-import { ContentLocale, PostStatus } from './generated/prisma/enums';
+import {
+  ContentLocale,
+  PostStatus,
+  ContentType,
+} from './generated/prisma/enums';
 export class ListQuery {
   @ApiPropertyOptional({ default: 1 })
   @ValidateIf((_o, v) => v !== undefined)
@@ -58,7 +61,7 @@ export class LocaleDto {
   locale!: ContentLocale;
 }
 export class PostTranslationDto extends LocaleDto {
-  @ApiProperty() @IsString() @Length(1, 200) @Matches(/\S/) title!: string;
+  @ApiProperty() @IsString() @MaxLength(200) title!: string;
   @ApiPropertyOptional()
   @ValidateIf((_o, v) => v !== undefined)
   @IsString()
@@ -90,6 +93,10 @@ export class UpdatePostTranslationDto extends PartialType(
   locale!: ContentLocale;
 }
 export class CreatePostDto {
+  @ApiPropertyOptional({ enum: ContentType })
+  @ValidateIf((_o, v) => v !== undefined)
+  @IsEnum(ContentType)
+  type?: ContentType;
   @ApiPropertyOptional({ nullable: true })
   @ValidateIf((_o, v) => v !== undefined && v !== null)
   @IsAssetPath()

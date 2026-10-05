@@ -72,15 +72,9 @@ export class TimelineController {
     const asOf = cursor?.asOf ?? new Date().toISOString();
     const rows = await this.db.$queryRaw<Row[]>(Prisma.sql`
       WITH feed AS (
-        SELECT p.id, 'post'::text AS kind, p.slug, p.cover_url AS "coverUrl", t.title, t.content, t.locale AS "contentLocale", t.published_at
+        SELECT p.id, CASE WHEN p.type='MOMENT' THEN 'moment' ELSE 'post' END AS kind, p.slug, p.cover_url AS "coverUrl", t.title, t.content, t.locale AS "contentLocale", t.published_at
         FROM posts p JOIN LATERAL (
           SELECT * FROM post_translations WHERE post_id=p.id AND status='PUBLISHED' AND published_at <= ${asOf}::timestamptz
-          ORDER BY (locale::text=${locale}) DESC LIMIT 1
-        ) t ON TRUE
-        UNION ALL
-        SELECT m.id, 'moment'::text, NULL, NULL, NULL, t.content, t.locale, t.published_at
-        FROM moments m JOIN LATERAL (
-          SELECT * FROM moment_translations WHERE moment_id=m.id AND status='PUBLISHED' AND published_at <= ${asOf}::timestamptz
           ORDER BY (locale::text=${locale}) DESC LIMIT 1
         ) t ON TRUE
       )

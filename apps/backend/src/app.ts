@@ -1,3 +1,4 @@
+import { AlbumsController } from './albums';
 import { TimelineController } from './timeline';
 import { AdminAboutController, PublicAboutController } from './about';
 import { LibraryController, PublicLibraryController } from './library';
@@ -52,6 +53,7 @@ class HealthController {
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
   ],
   controllers: [
+    AlbumsController,
     TimelineController,
     AdminAboutController,
     PublicAboutController,

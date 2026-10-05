@@ -38,15 +38,15 @@ onMounted(load);
       t('{name}，你好。', { name: session.owner?.displayName ?? t('站长') })
     "
     ><RouterLink to="/admin/posts/new"
-      ><el-button type="primary">{{ t('＋ 写文章') }}</el-button></RouterLink
+      ><el-button type="primary">{{ t('＋ 新建内容') }}</el-button></RouterLink
     ></ViewHeader
   ><ErrorNotice :error="error" @retry="load" />
   <div class="stat-grid">
     <RouterLink
       v-for="stat in [
-        { label: '全部文章', value: counts.posts, path: '/admin/posts' },
+        { label: '全部内容', value: counts.posts, path: '/admin/posts' },
         { label: '待完成草稿', value: counts.drafts, path: '/admin/posts' },
-        { label: '媒体资源', value: counts.media, path: '/admin/media' },
+        { label: '媒体资源', value: counts.media, path: '/admin/photos' },
       ]"
       :key="stat.label"
       :to="stat.path"
@@ -59,8 +59,8 @@ onMounted(load);
   </div>
   <section class="panel">
     <header class="panel-heading">
-      <h2>{{ t('最近的文章') }}</h2>
-      <RouterLink to="/admin/posts">{{ t('全部文章 →') }}</RouterLink>
+      <h2>{{ t('最近的内容') }}</h2>
+      <RouterLink to="/admin/posts">{{ t('全部内容 →') }}</RouterLink>
     </header>
     <el-empty
       v-if="!posts.length && !error"
@@ -71,7 +71,7 @@ onMounted(load);
         <RouterLink
           :to="`/admin/posts/${post.id}`"
           :lang="post.translation?.locale === 'zh' ? 'zh-CN' : 'en'"
-          >{{ post.translation?.title || t('未命名文章') }}</RouterLink
+          >{{ post.translation?.title || t('未命名内容') }}</RouterLink
         ><small>{{
           formatDate(post.translation?.updatedAt ?? post.updatedAt)
         }}</small>

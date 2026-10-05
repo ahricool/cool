@@ -92,10 +92,13 @@ export async function api<T>(
   }
 }
 
-export async function upload(file: File) {
+export async function upload(file: File, albumId?: string) {
   const body = new FormData();
   body.append('file', file);
-  return api<Media>('/admin/media/upload', { method: 'POST', body });
+  return api<Media>(
+    `/admin/media/upload${albumId ? '?albumId=' + encodeURIComponent(albumId) : ''}`,
+    { method: 'POST', body },
+  );
 }
 export function errorText(error: unknown) {
   if (!(error instanceof Error)) return '操作失败，请重试';
@@ -108,6 +111,12 @@ export function errorText(error: unknown) {
     'Untrusted request origin': '请求验证失败，请刷新后重试',
     'Cross-site request rejected': '请求验证失败，请刷新后重试',
     'Failed to fetch': '无法连接服务器，请稍后重试',
+    'Published articles require a title': '发布文章需要标题',
+    'Published articles require a title in every published language':
+      '每种已发布语言的文章都需要标题',
+    'Album contains assets referenced by content or settings':
+      '相册含有被内容或设置引用的素材，无法删除',
+    'The default album cannot be deleted': '默认相册不能删除',
     'Post not found': '内容不存在',
     'A new translation requires a title': '请填写标题',
     'A new translation requires content': '请填写正文',

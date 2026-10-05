@@ -60,6 +60,7 @@ const emptyTranslation = () => ({
   publishedAt: null as string | null,
 });
 const form = reactive({
+  type: 'ARTICLE' as 'ARTICLE' | 'MOMENT',
   title: '',
   excerpt: '',
   content: '',
@@ -133,6 +134,7 @@ function applyLanguage() {
     excerpt: translation && 'excerpt' in translation ? translation.excerpt : '',
     status: translation?.status ?? 'DRAFT',
     publishedAt: translation?.publishedAt ?? null,
+    type: d && 'type' in d ? d.type : 'ARTICLE',
     coverUrl: d?.coverUrl ?? null,
     tagIds: d && 'tags' in d ? d.tags.map((item) => item.tag.id) : [],
   });
@@ -140,6 +142,7 @@ function applyLanguage() {
 }
 function sharedFields(value: typeof form = form) {
   return {
+    type: value.type,
     coverUrl: value.coverUrl,
     tagIds: [...value.tagIds],
   };
@@ -156,6 +159,8 @@ function readSharedDraft() {
     )
       throw new Error('Invalid draft');
     return {
+      type:
+        value.type === 'MOMENT' ? ('MOMENT' as const) : ('ARTICLE' as const),
       coverUrl: value.coverUrl,
       tagIds: value.tagIds.filter((id) => typeof id === 'string'),
     };
@@ -300,7 +305,11 @@ watch(
 );
 async function save(status: Status) {
   if (busy.value || uploading.value || !loaded.value || draft.value) return;
-  if (!form.title.trim()) {
+  if (
+    !form.title.trim() &&
+    (props.kind !== 'posts' ||
+      (form.type === 'ARTICLE' && status === 'PUBLISHED'))
+  ) {
     toast.warning(t('请填写标题'));
     return;
   }
@@ -321,7 +330,9 @@ async function save(status: Status) {
     const body = {
       coverUrl: submitted.coverUrl,
       translations: [translated],
-      ...(props.kind === 'posts' ? { tagIds: submitted.tagIds } : {}),
+      ...(props.kind === 'posts'
+        ? { type: submitted.type, tagIds: submitted.tagIds }
+        : {}),
     };
     const saved = await api<AdminPost | AdminPage>(
       props.about
@@ -434,10 +445,10 @@ onBeforeRouteUpdate(confirmNavigation);
   <ViewHeader
     :title="
       about
-        ? t('关于我')
+        ? t('我')
         : isNew
           ? kind === 'posts'
-            ? t('写一篇新文章')
+            ? t('新建内容')
             : t('新建独立页面')
           : t('继续编辑')
     "
@@ -493,6 +504,15 @@ onBeforeRouteUpdate(confirmNavigation);
   </div>
   <div v-if="loaded" class="edit-layout">
     <section class="panel editor-main">
+      <el-radio-group
+        v-if="kind === 'posts'"
+        v-model="form.type"
+        :disabled="busy || !!draft"
+        :aria-label="t('内容类型')"
+      >
+        <el-radio-button value="ARTICLE">{{ t('文章') }}</el-radio-button>
+        <el-radio-button value="MOMENT">{{ t('瞬间') }}</el-radio-button>
+      </el-radio-group>
       <el-input
         v-if="!about"
         v-model="form.title"

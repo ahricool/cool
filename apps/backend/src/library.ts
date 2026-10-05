@@ -1,3 +1,6 @@
+import { PostsService } from './posts';
+import { AuthRequest } from './auth';
+import { Req } from '@nestjs/common';
 import { createWithResourcePath } from './resource-paths';
 import { ReaderLocale } from './request-locale';
 import {
@@ -44,7 +47,10 @@ const paging = (q: ListQuery) => ({
 @UseGuards(AuthGuard)
 @Controller('admin')
 export class LibraryController {
-  constructor(private readonly db: Database) {}
+  constructor(
+    private readonly db: Database,
+    private readonly posts: PostsService,
+  ) {}
   @Get('tags') tags() {
     return this.db.tag.findMany({
       include: { translations: true },
@@ -184,99 +190,46 @@ export class LibraryController {
     await this.db.page.delete({ where: { id } });
     return { deleted: true };
   }
+  // Historical admin routes remain usable while all active content uses Post.
   @Get('moments') async moments(@Query() q: ListQuery) {
-    const where = q.q
-      ? {
-          translations: {
-            some: { content: { contains: q.q, mode: 'insensitive' as const } },
-          },
-        }
-      : {};
-    return this.db.$transaction(
-      async (tx) => ({
-        items: await tx.moment.findMany({
-          where,
-          ...paging(q),
-          include: { translations: true },
-          orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
-        }),
-        total: await tx.moment.count({ where }),
-        page: q.page,
-        pageSize: q.pageSize,
-      }),
-      { isolationLevel: 'RepeatableRead' },
-    );
+    return this.posts.listAdmin(q, 'MOMENT');
   }
   @Get('moments/:id') async moment(@Param('id', ParseUUIDPipe) id: string) {
-    const item = await this.db.moment.findUnique({
+    const item = await this.db.post.findUnique({
       where: { id },
       include: { translations: true },
     });
     if (!item) throw new NotFoundException();
     return item;
   }
-  @Post('moments') createMoment(@Body() d: MomentDto) {
-    const { translations, ...data } = d;
-    return this.db.moment.create({
-      data: {
-        ...data,
-        translations: {
-          create: translations.map((row) => ({ ...row, ...publication(row) })),
-        },
+  @Post('moments') createMoment(@Body() d: MomentDto, @Req() req: AuthRequest) {
+    return this.posts.create(
+      {
+        type: 'MOMENT',
+        translations: d.translations.map((row) => ({ ...row, title: '' })),
       },
-      include: { translations: true },
-    });
+      req.userId,
+    );
   }
-  @Put('moments/:id') async updateMoment(
+  @Put('moments/:id') updateMoment(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() d: UpdateMomentDto,
   ) {
-    const { translations, ...data } = d;
-    return this.db.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM moments WHERE id = ${id}::uuid FOR UPDATE`;
-      const current = await tx.moment.findUnique({
-        where: { id },
-        include: { translations: true },
-      });
-      if (!current) throw new NotFoundException();
-      for (const row of translations ?? []) {
-        const existing = current.translations.find(
-          (translation) => translation.locale === row.locale,
-        );
-
-        if (!existing && !row.content)
-          throw new BadRequestException('A new translation requires content');
-        const values = { ...row, ...publication(row, existing) };
-        await tx.momentTranslation.upsert({
-          where: { momentId_locale: { momentId: id, locale: row.locale } },
-          create: {
-            ...values,
-            momentId: id,
-            content: row.content ?? existing!.content,
-          },
-          update: values,
-        });
-      }
-      return tx.moment.update({
-        where: { id },
-        data: { ...data, updatedAt: new Date() },
-        include: { translations: true },
-      });
-    });
+    return this.posts.update(id, { translations: d.translations });
   }
   @Delete('moments/:id/translations/:locale') async deleteMomentTranslation(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('locale', LocalePipe) locale: ContentLocale,
   ) {
-    await this.db.momentTranslation.delete({
-      where: { momentId_locale: { momentId: id, locale } },
+    await this.db.postTranslation.delete({
+      where: { postId_locale: { postId: id, locale } },
     });
     return { deleted: true };
   }
   @Delete('moments/:id') async deleteMoment(
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    await this.db.moment.delete({ where: { id } });
+    await this.db.post.delete({ where: { id } });
     return { deleted: true };
   }
   @Get('photos') async photos(@Query() q: ListQuery) {
