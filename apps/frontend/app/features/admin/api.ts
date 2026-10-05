@@ -60,7 +60,10 @@ export async function api<T>(
       credentials: 'include',
       headers,
     });
-    const data = await response.json().catch(() => ({ message: '请求失败' }));
+    // Nest sends an empty successful body when nullable About has no page yet.
+    const data = await response
+      .json()
+      .catch(() => (response.ok ? null : { message: '请求失败' }));
     if (!response.ok) {
       // Another tab can replace the shared HttpOnly cookie while this tab keeps
       // its editor draft and the previous session's CSRF value. This exact guard
@@ -71,7 +74,7 @@ export async function api<T>(
         mutation &&
         path.startsWith('/admin/') &&
         response.status === 403 &&
-        data.message === 'A valid X-CSRF-Token is required' &&
+        data?.message === 'A valid X-CSRF-Token is required' &&
         !(options.body instanceof ReadableStream) &&
         !options.signal?.aborted &&
         (await restoreSession())
@@ -80,9 +83,9 @@ export async function api<T>(
       if (response.status === 401 && path !== '/admin/auth/login')
         clearSession();
       throw new Error(
-        Array.isArray(data.message)
+        Array.isArray(data?.message)
           ? '请检查填写内容'
-          : (data.message ?? '请求失败'),
+          : (data?.message ?? '请求失败'),
       );
     }
     return data as T;

@@ -1,6 +1,6 @@
-/* Shared feedback stays beneath navigation and outside the fixed Admin rail. */
+/* Shared feedback stays beneath navigation. */
 :root[data-surface='admin'] {
-  --toast-left: 296px;
+  --toast-left: 24px;
 }
 .el-message.sakura-toast {
   position: fixed;
@@ -57,7 +57,7 @@
 }
 @media (max-width: 960px) {
   :root[data-surface='admin'] {
-    --toast-left: 216px;
+    --toast-left: 16px;
   }
 }
 @media (max-width: 600px) {
@@ -65,7 +65,7 @@
     --toast-left: 16px;
   }
   :root[data-surface='admin'] {
-    --toast-left: 120px;
+    --toast-left: 16px;
   }
   .el-message.sakura-toast {
     padding: 12px;

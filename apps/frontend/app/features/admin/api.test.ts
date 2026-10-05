@@ -266,3 +266,27 @@ test('unrelated forbidden responses do not refresh or retry', async (t) => {
   );
   assert.equal(requests, 1);
 });
+
+test('an empty successful About response is absent content, not an error object', async (t) => {
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () => new Response(null, { status: 200 }),
+  );
+  assert.equal(await api('/admin/about'), null);
+});
+test('explicit null About and existing bilingual pages retain their response shape', async (t) => {
+  const page = {
+    id: 'about-page',
+    slug: 'Ab12Cd34',
+    translations: [
+      { locale: 'zh', title: '关于我', content: '正文', status: 'DRAFT' },
+      { locale: 'en', title: 'About', content: 'English', status: 'PUBLISHED' },
+    ],
+  };
+  let current: unknown = null;
+  t.mock.method(globalThis, 'fetch', async () => Response.json(current));
+  assert.equal(await api('/admin/about'), null);
+  current = page;
+  assert.deepEqual(await api('/admin/about'), page);
+});

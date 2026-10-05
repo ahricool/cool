@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api, clearSession, errorText, session } from '~/features/admin/api';
 import { toast } from '~/utils/toast';
+import AdminNavigationMenu from '~/features/admin/components/AdminNavigationMenu.vue';
 import AdminAccountMenu from '~/features/admin/components/AdminAccountMenu.vue';
 import { publicUrl } from '~/features/admin/publicUrl';
 const { t } = useCoolI18n();
@@ -11,6 +12,7 @@ const route = useRoute();
 const dark = useCoolTheme();
 const router = useRouter();
 const blogUrl = computed(() => publicUrl());
+provide('admin-active-menu', ref<string | null>(null));
 const nav = [
   { path: '/admin', label: '概览', icon: 'home' },
   { path: '/admin/posts', label: '文章', icon: 'document' },
@@ -52,34 +54,9 @@ useHead(() => ({
 <template>
   <slot v-if="route.path === '/admin/login'" />
   <div v-else class="admin-shell">
-    <aside
-      id="admin-navigation"
-      class="sidebar"
-      :aria-label="t('工作空间导航')"
-    >
-      <RouterLink to="/admin" class="brand" aria-label="梦桜">
-        <SakuraFlower class="brand-mark" />
-        <SakuraWordmark />
-      </RouterLink>
-      <nav>
-        <RouterLink
-          v-for="item in nav"
-          :key="item.path"
-          :to="item.path"
-          :class="{
-            active:
-              item.path === '/admin'
-                ? route.path === '/admin'
-                : route.path.startsWith(item.path),
-          }"
-          ><ReadingIcon :name="item.icon" class="navigation-icon--shadow" />{{
-            t(item.label)
-          }}</RouterLink
-        >
-      </nav>
-    </aside>
     <div class="admin-body">
       <header class="topbar navigation-surface navigation-surface--top">
+        <AdminNavigationMenu :items="nav" />
         <div class="topbar-right">
           <AdminAccountMenu
             :owner="session.owner"
