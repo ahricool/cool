@@ -1,6 +1,5 @@
 import { blog, admin, api } from './urls';
 import { test, expect } from '@playwright/test';
-import { randomUUID } from 'node:crypto';
 
 const email = 'whoreahri@gmail.com';
 const password = process.env.E2E_PASSWORD ?? 'cool-e2e-owner-password';
@@ -49,9 +48,6 @@ test('cookie session survives reload and all-device logout revokes browser and s
   await page
     .getByRole('textbox', { name: '标题', exact: true })
     .fill('跨标签页继续写作');
-  await page
-    .getByLabel('链接名称', { exact: true })
-    .fill(`session-${randomUUID()}`);
   await page
     .getByRole('textbox', { name: '正文' })
     .fill('切换登录也不能丢失的正文');

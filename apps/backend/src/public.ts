@@ -20,13 +20,6 @@ export class PublicController {
   ) {
     return this.posts.list(query, locale);
   }
-  @Get('categories/:slug/posts') categoryPosts(
-    @ReaderLocale() locale: ContentLocale,
-    @Param('slug') slug: string,
-    @Query() query: ListQuery,
-  ) {
-    return this.posts.list({ ...query, category: slug }, locale);
-  }
   @Get('tags/:slug/posts') tagPosts(
     @ReaderLocale() locale: ContentLocale,
     @Param('slug') slug: string,
@@ -65,17 +58,6 @@ export class PublicController {
       homepage: localize(settings.homepage, locale),
     };
   }
-  @Get('categories') async categories(@ReaderLocale() locale: ContentLocale) {
-    const items = await this.db.category.findMany({
-      where: {
-        posts: { some: { post: visiblePosts() } },
-        translations: { some: {} },
-      },
-      include: { translations: { select: { locale: true, name: true } } },
-      orderBy: { slug: 'asc' },
-    });
-    return items.map((item) => localize(item, locale));
-  }
   @Get('tags') async tags(@ReaderLocale() locale: ContentLocale) {
     const items = await this.db.tag.findMany({
       where: {
@@ -86,23 +68,5 @@ export class PublicController {
       orderBy: { slug: 'asc' },
     });
     return items.map((item) => localize(item, locale));
-  }
-  @Get('archives') async archives(
-    @ReaderLocale() locale: ContentLocale,
-    @Query() query: ListQuery,
-  ) {
-    const result = await this.posts.list(query, locale);
-    return {
-      ...result,
-      items: result.items.map(
-        ({ id, slug, title, publishedAt, contentLocale }) => ({
-          id,
-          slug,
-          title,
-          publishedAt,
-          contentLocale,
-        }),
-      ),
-    };
   }
 }

@@ -1,1 +1,1 @@
-<template><TaxonomyPage kind="tags" /></template>
+<template><TagPage /></template>

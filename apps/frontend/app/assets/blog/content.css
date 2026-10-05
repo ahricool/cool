@@ -1,4 +1,4 @@
-/* Content modules: stories, reading, taxonomy, journals and photography. */
+/* Article cards, mixed timeline and Markdown reading surfaces. */
 .main-title {
   margin: 32px 0 24px;
   font-size: calc(24px * var(--sakura-font-scale));
@@ -12,33 +12,64 @@
   color: var(--sakura-text-regular);
 }
 .story-card {
-  display: grid;
-  grid-template-columns: 1fr 38%;
-  margin: 0 0 24px;
+  display: block;
+  margin: 0 0 32px;
   overflow: hidden;
   background: var(--sakura-surface);
-  border: 0;
   border-radius: 20px;
   box-shadow: var(--sakura-shadow);
-  transition:
-    box-shadow 0.2s,
-    transform 0.2s;
-}
-.story-card:hover {
-  box-shadow: var(--sakura-button-hover-shadow);
-  transform: translateY(-2px);
 }
 .story-body {
   padding: 32px;
 }
-.story-byline {
-  flex-wrap: wrap;
-  color: var(--sakura-muted);
-  font-size: calc(12px * var(--sakura-font-scale));
-}
 .story-title h2 {
-  margin: 16px 0 12px;
+  margin: 0 0 16px;
   font-size: calc(clamp(22px, 2.5vw, 28px) * var(--sakura-font-scale));
+  overflow-wrap: anywhere;
+}
+.story-summary {
+  margin-block: 24px;
+}
+.story-summary p {
+  margin: 0 0 16px;
+  color: var(--sakura-text-regular);
+  font-size: calc(14px * var(--sakura-font-scale));
+  line-height: 1.85;
+}
+.story-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: calc(13px * var(--sakura-font-scale));
+  font-weight: 700;
+  color: var(--sakura-accent-strong);
+}
+.story-cover {
+  display: block;
+}
+.story-cover :is(img, .story-pattern) {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+}
+.timeline-update {
+  padding: 32px;
+}
+.timeline-update .entry-content {
+  margin-top: 24px;
+}
+.timeline-update .entry-content > :first-child {
+  margin-top: 0;
+}
+.timeline-update .entry-content > :last-child {
+  margin-bottom: 0;
+}
+.timeline-status {
+  text-align: center;
+  color: var(--sakura-muted);
+  padding-block: 16px;
 }
 .post-meta {
   display: flex;
@@ -49,28 +80,6 @@
 }
 .page-heading .post-meta {
   color: inherit;
-}
-.story-summary p {
-  margin: 16px 0 24px;
-  color: var(--sakura-text-regular);
-  font-size: calc(14px * var(--sakura-font-scale));
-  line-height: 1.85;
-}
-.story-action a {
-  font-size: calc(13px * var(--sakura-font-scale));
-  font-weight: 700;
-  color: var(--sakura-accent-strong);
-}
-.story-cover a {
-  display: block;
-  height: 100%;
-}
-.story-cover :is(img, .story-pattern) {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 280px;
-  object-fit: cover;
 }
 .entry-content {
   font-size: calc(16px * var(--sakura-font-scale));
@@ -265,166 +274,17 @@
   color: var(--sakura-accent-strong);
   box-shadow: var(--sakura-button-hover-shadow);
 }
-.archive-item {
-  margin-bottom: 40px;
-}
-.archive-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--sakura-accent-strong);
-}
-.archive-title h3 {
-  font-size: calc(20px * var(--sakura-font-scale));
-}
-.archive-entry a {
-  display: flex;
-  gap: 24px;
-  padding: 16px 0;
-}
-.archive-entry .time {
-  min-width: 70px;
-  font-size: calc(13px * var(--sakura-font-scale));
-  color: var(--sakura-muted);
-}
-.moments-inner {
-  list-style: none;
-  padding: 0;
-}
-.moments-item {
-  padding: 28px;
-  margin-bottom: 24px;
-  background: var(--sakura-surface);
-  border: 0;
-  border-radius: 18px;
-}
-.moment-container {
-  display: flex;
-  gap: 20px;
-}
-.moment-container .avatar {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-}
-.moment-inner {
-  min-width: 0;
-  flex: 1;
-}
-.moment-content p:first-child {
-  margin-top: 0;
-}
-.moment-time {
-  font-size: calc(12px * var(--sakura-font-scale));
-  color: var(--sakura-muted);
-}
-.masonry-gallery {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.masonry-gallery.is-masonry {
-  display: block;
-}
-.gallery-item {
-  width: calc((100% - 20px) / 3);
-  margin: 0;
-  overflow: hidden;
-  border-radius: 16px;
-  background: var(--sakura-surface);
-  border: 0;
-}
-.is-masonry .gallery-item {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-.gallery-icon button {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: zoom-in;
-}
-.gallery-icon img {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.gallery-caption {
-  padding: 16px;
-}
-.gallery-caption h3 {
-  font-size: calc(16px * var(--sakura-font-scale));
-  margin: 0 0 8px;
-}
-.gallery-caption p {
-  font-size: calc(13px * var(--sakura-font-scale));
-  margin: 0;
-  color: var(--sakura-muted);
-}
-.gallery-caption small {
-  color: var(--sakura-accent-strong);
-}
-.photo-dialog {
-  max-width: 92vw;
-  max-height: 92vh;
-  padding: 20px;
-  border: 0;
-  border-radius: 18px;
-  background: var(--sakura-surface);
-  color: var(--sakura-text);
-}
-.photo-dialog::backdrop {
-  background: #17181ad9;
-}
-.photo-dialog img {
-  display: block;
-  max-width: 80vw;
-  max-height: 75vh;
-  object-fit: contain;
-}
-.photo-dialog > button {
-  display: block;
-  margin-left: auto;
-  padding: 0 8px;
-  font-size: calc(28px * var(--sakura-font-scale));
-  border: 0;
-  background: none;
-  color: inherit;
-}
 @media (max-width: 768px) {
   .story-card {
-    display: flex;
-    flex-direction: column-reverse;
     border-radius: 16px;
   }
-  .story-body {
-    padding: 24px;
-  }
-  .story-cover :is(img, .story-pattern) {
-    height: 200px;
-    min-height: 0;
-  }
-  .gallery-item {
-    width: 100%;
+  .story-body,
+  .timeline-update {
+    padding: 20px;
   }
   .author-profile {
     padding: 20px;
     gap: 16px;
-  }
-  .moments-item {
-    padding: 20px;
-  }
-  .moment-container {
-    gap: 14px;
-  }
-  .moment-container .avatar {
-    width: 36px;
-    height: 36px;
   }
 }
 

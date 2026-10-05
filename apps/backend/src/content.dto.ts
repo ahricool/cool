@@ -38,11 +38,6 @@ export class TaxonomyTranslationDto extends LocaleDto {
   @ApiProperty() @IsString() @Length(1, 100) @Matches(/\S/) name!: string;
 }
 export class TaxonomyDto {
-  @ApiProperty()
-  @IsString()
-  @Length(1, 160)
-  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-  slug!: string;
   @ApiProperty({ type: [TaxonomyTranslationDto] })
   @IsArray()
   @ArrayMinSize(1)
@@ -59,10 +54,7 @@ export class UpdatePageTranslationDto extends OmitType(
   UpdatePostTranslationDto,
   ['excerpt'] as const,
 ) {}
-export class PageDto extends PickType(CreatePostDto, [
-  'slug',
-  'coverUrl',
-] as const) {
+export class PageDto extends PickType(CreatePostDto, ['coverUrl'] as const) {
   @ApiProperty({ type: [PageTranslationDto] })
   @IsArray()
   @ArrayMinSize(1)

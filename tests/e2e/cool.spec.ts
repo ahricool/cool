@@ -1,6 +1,5 @@
 import { blog, admin, api } from './urls';
 import { test, expect } from '@playwright/test';
-import { randomUUID } from 'node:crypto';
 const email = 'whoreahri@gmail.com';
 const password = process.env.E2E_PASSWORD ?? 'cool-e2e-owner-password';
 test('owner writes, previews and publishes; readers browse; owner manages content', async ({
@@ -8,7 +7,6 @@ test('owner writes, previews and publishes; readers browse; owner manages conten
   context,
   request,
 }, info) => {
-  const slug = `e2e-${randomUUID()}`;
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(admin + '/login');
@@ -25,17 +23,24 @@ test('owner writes, previews and publishes; readers browse; owner manages conten
   for (const label of [
     '文章',
     '独立页面',
+    '关于我',
     '媒体库',
-    '分类',
     '标签',
-    '瞬间',
-    '图库',
+    '短动态',
+    '相册',
     '网站配置',
     '我的账户',
   ]) {
     if (['网站配置', '我的账户'].includes(label)) {
-      await page.getByRole('button', { name: '我的账户', exact: true }).focus();
+      const account = page.getByRole('button', {
+        name: '我的账户',
+        exact: true,
+      });
+      await account.hover();
+      await account.focus();
       await page.keyboard.press('ArrowDown');
+      await expect(page.getByRole('menuitem').first()).toBeFocused();
+      await page.mouse.move(0, 0);
       await page.getByRole('menuitem', { name: label, exact: true }).click();
     } else {
       await page
@@ -54,7 +59,6 @@ test('owner writes, previews and publishes; readers browse; owner manages conten
   await page
     .getByRole('textbox', { name: '标题', exact: true })
     .fill('在时光里，收藏一片春天');
-  await page.getByLabel('链接名称', { exact: true }).fill(slug);
   await page
     .getByRole('textbox', { name: '正文' })
     .fill(
@@ -79,7 +83,16 @@ test('owner writes, previews and publishes; readers browse; owner manages conten
     fullPage: true,
     animations: 'disabled',
   });
+  const creation = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/admin/posts') &&
+      response.request().method() === 'POST',
+  );
   await page.getByRole('button', { name: '保存草稿', exact: true }).click();
+  const created = await (await creation).json();
+  const slug = created.slug;
+  const postId = created.id;
+  expect(slug).toMatch(/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])[A-Za-z0-9]{8}$/);
   await expect(page).toHaveURL((url) =>
     /^\/admin\/posts\/[a-f0-9-]+$/.test(url.pathname),
   );
@@ -88,7 +101,7 @@ test('owner writes, previews and publishes; readers browse; owner manages conten
   await expect(page.getByRole('button', { name: '撤回为草稿' })).toBeVisible();
   const detail = await request.get(api + '/public/posts/' + slug);
   expect(detail.ok()).toBeTruthy();
-  const postId = (await detail.json()).id;
+  expect((await detail.json()).id).toBe(postId);
   await page.goto(blog + '/posts/' + slug);
   await expect(page.locator('.page-heading h1')).toHaveText(
     '在时光里，收藏一片春天',
@@ -130,15 +143,7 @@ test('all blog routes load on desktop and mobile without external resources', as
       external.push(r.url());
   });
   page.on('pageerror', (e) => errors.push(e.message));
-  for (const path of [
-    '/',
-    '/archives',
-    '/categories',
-    '/tags',
-    '/moments',
-    '/photos',
-    '/search',
-  ]) {
+  for (const path of ['/', '/tags', '/search']) {
     await page.goto(blog + path);
     await expect(page.locator('#content')).toBeVisible();
     await expect(page.locator('.api-state[role="alert"]')).toHaveCount(0);
@@ -152,12 +157,14 @@ test('all blog routes load on desktop and mobile without external resources', as
     animations: 'disabled',
   });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: '打开导航' }).click();
+  await expect(page.locator('#mobile-sidebar')).toHaveCount(0);
   await page
-    .getByRole('navigation', { name: '移动端导航' })
-    .getByRole('link', { name: '归档' })
+    .locator('.header-actions')
+    .getByRole('link', { name: '关于我', exact: true })
     .click();
-  await expect(page.locator('.page-heading h1')).toHaveText('归档');
+  await expect(page).toHaveURL(blog + '/about');
+  await page.locator('.header-brand a').click();
+  await expect(page).toHaveURL(blog + '/');
   await page.goto(blog);
   await expect(page.locator('#content')).toBeVisible();
   await expect(page.locator('#page')).toHaveCSS('opacity', '1');

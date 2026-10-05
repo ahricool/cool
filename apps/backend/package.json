@@ -8,10 +8,12 @@
     "start": "node dist/main.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy",
+    "db:deploy": "prisma migrate deploy && node dist/migrations/resource-paths.js",
     "db:seed": "node --env-file=../../.env dist/seed.js",
     "test": "node --test test/*.test.cjs",
-    "build:watch": "tsc -p tsconfig.json --watch"
+    "build:watch": "tsc -p tsconfig.json --watch",
+    "db:paths": "node dist/migrations/resource-paths.js",
+    "db:paths:rollback": "node dist/migrations/resource-paths.js --rollback"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.7",
@@ -30,12 +32,14 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "prisma": "7.10.0",
-    "sharp": "^0.35.5"
+    "sharp": "^0.35.5",
+    "markdown-it": "^14.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/express": "^5.0.0",
     "supertest": "^7.1.4",
-    "@types/multer": "^2.0.0"
+    "@types/multer": "^2.0.0",
+    "@types/markdown-it": "^14.1.2"
   }
 }

@@ -146,7 +146,6 @@ model Photo {
   @@map("photos")
 }
 
-
 model Media {
   id           String   @id @default(uuid()) @db.Uuid
   key          String   @unique
@@ -255,4 +254,40 @@ model PhotoTranslation {
 
   @@id([photoId, locale])
   @@map("photo_translations")
+}
+
+// Migration evidence only; the historical taxonomy tables and relations remain intact.
+model ResourcePathBatch {
+  id           String                    @id @db.VarChar(80)
+  completedAt  DateTime?                 @map("completed_at") @db.Timestamptz(3)
+  rolledBackAt DateTime?                 @map("rolled_back_at") @db.Timestamptz(3)
+  paths        ResourcePathChange[]
+  references   ResourceReferenceChange[]
+
+  @@map("resource_path_batches")
+}
+
+model ResourcePathChange {
+  batchId    String            @map("batch_id") @db.VarChar(80)
+  batch      ResourcePathBatch @relation(fields: [batchId], references: [id])
+  kind       String            @db.VarChar(20)
+  resourceId String            @map("resource_id") @db.Uuid
+  oldSlug    String            @map("old_slug") @db.VarChar(160)
+  newSlug    String            @map("new_slug") @db.VarChar(8)
+
+  @@id([batchId, kind, resourceId])
+  @@unique([batchId, kind, newSlug])
+  @@map("resource_path_changes")
+}
+
+model ResourceReferenceChange {
+  batchId     String            @map("batch_id") @db.VarChar(80)
+  batch       ResourcePathBatch @relation(fields: [batchId], references: [id])
+  recordKey   String            @map("record_key") @db.VarChar(255)
+  target      Json
+  beforeValue String            @map("before_value") @db.Text
+  afterValue  String            @map("after_value") @db.Text
+
+  @@id([batchId, recordKey])
+  @@map("resource_reference_changes")
 }

@@ -1,21 +1,33 @@
 <script setup lang="ts">
-const { t, locale, contentLang } = useCoolI18n();
-import type { Pagination, Post } from '@cool/content';
+const { t, contentLang } = useCoolI18n();
 const store = useSiteStore();
-const route = useRoute();
-const api = useApi();
-const page = computed(() => Math.max(1, Number(route.query.page) || 1));
-const { data, pending, error, refresh } = await useAsyncData(
-  () => `home-${locale.value}-${page.value}`,
-  () =>
-    api<Pagination<Post>>('/public/posts', {
-      query: { page: page.value, pageSize: 8 },
-    }),
-);
+const { items, nextCursor, pending, error, started, loadMore } = useTimeline();
+const sentinel = ref<HTMLElement>();
+let observer: IntersectionObserver | undefined;
+let visible = false;
+function autoLoad() {
+  const bounds = sentinel.value?.getBoundingClientRect();
+  const nearby =
+    bounds && bounds.top <= window.innerHeight + 400 && bounds.bottom >= -400;
+  if (visible && nearby && !pending.value && !error.value && nextCursor.value)
+    void loadMore();
+}
+onMounted(() => {
+  observer = new IntersectionObserver(
+    ([entry]) => {
+      visible = entry?.isIntersecting ?? false;
+      autoLoad();
+    },
+    { rootMargin: '400px' },
+  );
+  if (sentinel.value) observer.observe(sentinel.value);
+});
+watch([pending, nextCursor], () => nextTick(autoLoad));
+onBeforeUnmount(() => observer?.disconnect());
 </script>
 <template>
-  <PageFrame content-class="index"
-    ><template #header><SakuraHero /></template>
+  <PageFrame content-class="index">
+    <template #header><SakuraHero /></template>
     <div v-if="store.homepage.notice" class="notice">
       <SakuraFlower />
       <div
@@ -25,24 +37,30 @@ const { data, pending, error, refresh } = await useAsyncData(
         {{ store.homepage.notice }}
       </div>
     </div>
-    <div id="primary" class="content-area">
-      <div id="main" class="site-main">
-        <h2 class="main-title flex-child-center">
-          <SakuraFlower />
-          {{ t('发现故事') }}
-        </h2>
+    <section class="timeline" :aria-label="t('时间线')">
+      <h1 class="main-title flex-child-center">
+        <SakuraFlower />{{ t('时间线') }}
+      </h1>
+      <TimelineList :items="items" />
+      <div ref="sentinel" class="timeline-status" aria-live="polite">
         <ApiState
           :pending="pending"
           :error="error"
-          :empty="data?.total === 0"
-          @retry="refresh()"
-        /><PostList v-if="data" :posts="data.items" />
+          :empty="started && items.length === 0"
+          @retry="loadMore()"
+        />
+        <button
+          v-if="nextCursor && !pending && !error"
+          type="button"
+          class="button-normal"
+          @click="loadMore()"
+        >
+          {{ t('加载更多') }}
+        </button>
+        <p v-else-if="started && items.length && !pending && !error">
+          {{ t('已读到最后') }}
+        </p>
       </div>
-      <Pagination
-        v-if="data"
-        :total="data.total"
-        :page="page"
-        :page-size="8"
-      /></div
-  ></PageFrame>
+    </section>
+  </PageFrame>
 </template>

@@ -2,18 +2,20 @@
 
 Cool 是个人博客与内容管理系统：NestJS + PostgreSQL 管理内容，一个 Nuxt 4 应用同时提供 Sakura 博客 `/` 和管理工作台 `/admin`。只有一个站长账户，其他人都是访客。
 
-项目独立实现前后端，不依赖 Halo 服务或 Halo 管理端。所有浏览器页面（包括登录、管理、错误和弹窗状态）采用统一的 Sakura / 二次元 / 少女风格；博客沿用已迁移的 Sakura 结构和资源，管理端使用 Element Plus，编辑和表格区域保持清晰易读。
+项目独立实现前后端，不依赖 Halo 服务或 Halo 管理端。所有浏览器页面（包括登录、管理、错误和弹窗状态）采用统一的 Sakura / 二次元 / 少女风格；公开页和管理端共用 Sakura 设计语言与本地资源，管理端使用 Element Plus，编辑和表格区域保持清晰易读。
 
 ## 已实现
 
-- **双语**：简体中文/English 界面，按浏览器语言选择初始界面，footer 可切换并保存到 cookie。文章、独立页面和其他公开内容可分别编辑双语版本；URL 不包含语言，缺少当前语言的已发布版本时自动展示另一语言的已发布内容。
+- **双语**：简体中文/English 界面，首次默认中文，footer 可切换并保存到 cookie。文章、独立页面和其他公开内容可分别编辑双语版本；URL 不包含语言，缺少当前语言的已发布版本时自动展示另一语言的已发布内容。
 
-- **博客**：Sakura 原版结构、CSS、本地图片与 SVG；Hero、波浪、明暗模式、响应式导航；首页、文章、归档、分类、标签、瞬间、图库、搜索和独立页面。
-- **管理工作台**：首次设置密码、登录、Markdown 编辑/预览、浏览器草稿恢复、发布/撤回/预约发布时间、媒体库、分类/标签、独立页面、瞬间、图库、评论审核、网站配置、个人资料、改密和会话撤销。
+- **博客**：首页按发布译文的时间混排文章和完整短动态，游标无限加载；顶栏仅 Logo、关于我和搜索。文章满宽封面、作者和完整时间、自动正文预览及阅读全文；保留文章标签页与独立页面。
+- **管理工作台**：首次设置密码、登录、Markdown 编辑/预览、浏览器草稿恢复、发布/撤回/预约发布时间、媒体库、标签、独立页面、关于我、短动态、相册、评论审核、网站配置、个人资料、改密和会话撤销。
 - **后端**：NestJS 11、Prisma 7、PostgreSQL 17、SQL migration、Swagger、JWT、限流和输入校验。数据库只保存 Markdown 原文。
 - **部署**：两个应用镜像、三个常驻服务：统一 Nuxt 静态前端/Nginx、后端、PostgreSQL。Nginx 同时提供页面和同源 API 网关；媒体保存在项目根目录 `./data`（Git 忽略），生产使用宿主机 bind mount，数据库使用 `cool_postgres_data` 命名卷，提供部署脚本及数据库/媒体一致性备份。
 
 当前前端为 SPA，`nuxt generate` 输出 `apps/frontend/.output/public`，生产不运行 Nuxt/Nitro 服务。SSR、SEO、sitemap、OpenGraph、Mermaid、Redis/BullMQ 和对象存储仍预留；没有多用户、主题商店或插件系统。详见 [架构](docs/architecture.md)。
+
+所有资源路径由后台生成 8 位大小写英数字随机标识；文章、页面、标签及历史分类的现有 slug 会在部署迁移时转换。数据库 ID、上传文件名和固定路由不变。旧公开 URL 不提供兼容跳转；详见 [路径迁移、审计与回滚](docs/resource-paths.md)。
 
 ## 本地开发
 
@@ -27,8 +29,8 @@ npm ci
 # 保留 .env.example 中面向宿主机的 DATABASE_URL
 docker compose up -d --wait
 npm run db:generate
-npm run db:deploy
 npm run build
+npm run db:deploy
 npm run db:seed
 ```
 

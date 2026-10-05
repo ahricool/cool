@@ -75,9 +75,9 @@ test('a pending moment image upload locks language, save, and dismissal and upda
   await context.addCookies([{ name: 'cool_locale', value: 'en', url: admin }]);
   await page.goto(admin + '/moments');
   await page
-    .getByRole('button', { name: '＋ Create Moments', exact: true })
+    .getByRole('button', { name: '＋ Create Updates', exact: true })
     .click();
-  const dialog = page.getByRole('dialog', { name: 'Create Moments' });
+  const dialog = page.getByRole('dialog', { name: 'Create Updates' });
   const languages = dialog.getByRole('group', { name: 'Content language' });
   const english = languages.getByRole('button', {
     name: 'English',

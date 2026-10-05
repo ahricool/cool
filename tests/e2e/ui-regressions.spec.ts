@@ -3,49 +3,20 @@ import { test, expect } from '@playwright/test';
 const email = 'whoreahri@gmail.com';
 const password = process.env.E2E_PASSWORD ?? 'cool-e2e-owner-password';
 
-test('Sakura mobile sidebar traps focus, closes, and restores navigation', async ({
+test('mobile readers navigate with the Logo, About and search without a drawer', async ({
   page,
-}, info) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+}) => {
+  await page.setViewportSize({ width: 320, height: 844 });
   await page.goto(blog);
-  const toggle = page.getByRole('button', { name: '打开导航' });
-  await toggle.click();
-  const dialog = page.getByRole('dialog', { name: '移动端菜单' });
-  const firstControl = dialog.locator('button, a[href], input, select').first();
-  await expect(firstControl).toBeFocused();
-  await expect(dialog.locator('.sidebar-brand-mark')).toBeVisible();
-  await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth,
-    ),
-  ).toBe(true);
-  await page.screenshot({
-    path: info.outputPath('sakura-mobile-sidebar.png'),
-    fullPage: true,
-    animations: 'disabled',
-  });
-  await page.keyboard.press('Shift+Tab');
-  await expect(
-    dialog.getByRole('link', { name: '图库', exact: true }),
-  ).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(firstControl).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(dialog).toBeHidden();
-  await expect(toggle).toBeFocused();
-  await expect(page.locator('body')).not.toHaveCSS('overflow', 'hidden');
-  await toggle.click();
-  await dialog.getByRole('link', { name: '首页', exact: true }).click();
-  await expect(dialog).toBeHidden();
-  await toggle.click();
-  await dialog.getByRole('link', { name: '归档', exact: true }).click();
-  await expect(page.locator('.page-heading h1')).toHaveText('归档');
-  await expect(dialog).toBeHidden();
-  await page
-    .locator('.header-actions')
-    .getByRole('link', { name: '搜索', exact: true })
-    .click();
+  await expect(page.locator('#mobile-sidebar')).toHaveCount(0);
+  await expect(page.locator('.header-brand a')).toBeVisible();
+  const navigation = page.getByRole('navigation', { name: '主导航' });
+  await expect(navigation.getByRole('link')).toHaveCount(2);
+  await navigation.getByRole('link', { name: '关于我', exact: true }).click();
+  await expect(page).toHaveURL(blog + '/about');
+  await page.locator('.header-brand a').click();
+  await expect(page).toHaveURL(blog + '/');
+  await navigation.getByRole('link', { name: '搜索', exact: true }).click();
   await expect(page.locator('.page-heading h1')).toHaveText('搜索');
   await page.getByRole('searchbox').fill('Sakura');
   await page.getByRole('searchbox').press('Enter');

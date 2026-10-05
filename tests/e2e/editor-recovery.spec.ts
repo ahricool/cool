@@ -132,9 +132,6 @@ for (const kind of ['posts', 'pages']) {
       const title = page.getByRole('textbox', { name: '标题', exact: true });
       const content = page.getByRole('textbox', { name: '正文' });
       await title.fill('请求发送时的标题');
-      await page
-        .getByLabel('链接名称', { exact: true })
-        .fill('editor-regression');
       await content.fill('请求发送时的正文');
       await page.getByRole('button', { name: '保存草稿', exact: true }).click();
       await delay.requestSeen;
@@ -240,9 +237,6 @@ for (const target of ['cover', 'content']) {
     await page
       .getByRole('textbox', { name: '标题', exact: true })
       .fill('带图片的新文章');
-    await page
-      .getByLabel('链接名称', { exact: true })
-      .fill('upload-regression');
     let releaseUpload!: () => void;
     const uploaded = new Promise<void>((resolve) => {
       releaseUpload = resolve;
@@ -345,8 +339,6 @@ for (const kind of ['posts', 'pages']) {
       });
       await route.fulfill({ json: body });
     });
-    const slug = `${kind}-bilingual-recovery`;
-    let currentSlug = slug;
     const coverUrl = '/sakura/images/footer/sakura.svg';
     let currentCover = '/sakura/images/default/hd.webp';
     await page.route('**/api/v1/admin/media/upload', (route) =>
@@ -354,12 +346,10 @@ for (const kind of ['posts', 'pages']) {
     );
     const drafts = {
       zh: {
-        slug,
         title: '反复切换也要保留的中文标题',
         content: '# 中文手记\n\n这一段中文只属于中文草稿。',
       },
       en: {
-        slug,
         title: 'An independent English draft',
         content:
           '# English journal\n\nThis exact paragraph belongs only to the English draft.',
@@ -370,11 +360,9 @@ for (const kind of ['posts', 'pages']) {
       name: '正文',
       exact: true,
     });
-    const slugInput = page.getByLabel('链接名称', { exact: true });
     async function expectFields(locale: 'zh' | 'en') {
       await expect(title).toHaveValue(drafts[locale].title);
       await expect(content).toHaveValue(drafts[locale].content);
-      await expect(slugInput).toHaveValue(currentSlug);
       await expect(page.getByAltText('所选图片')).toHaveAttribute(
         'src',
         currentCover,
@@ -404,13 +392,11 @@ for (const kind of ['posts', 'pages']) {
         await expect(dialog).toBeHidden();
       }
       await expect(tab).toHaveAttribute('aria-pressed', 'true');
-      await expect(slugInput).toHaveValue(currentSlug);
       await expect(page.getByAltText('所选图片')).toHaveAttribute(
         'src',
         currentCover,
       );
     }
-    await slugInput.fill(slug);
     await title.fill(drafts.zh.title);
     await content.fill(drafts.zh.content);
     await page
@@ -470,8 +456,6 @@ for (const kind of ['posts', 'pages']) {
     await expectStoredDraft('en');
     // The Chinese draft still contains the old common fields. Restoring it
     // after English creates the row must keep these newer shared values.
-    currentSlug = `${slug}-updated`;
-    await slugInput.fill(currentSlug);
     currentCover = coverUrl;
     await page
       .locator('.asset-picker input[type="file"]')
@@ -487,7 +471,7 @@ for (const kind of ['posts', 'pages']) {
     await expectFields('en');
     expect(submitted).toHaveLength(1);
     expect(submitted[0].method).toBe('POST');
-    expect(submitted[0].body.slug).toBe(currentSlug);
+    expect(submitted[0].body).not.toHaveProperty('slug');
     expect(submitted[0].body.coverUrl).toBe(coverUrl);
     expect(submitted[0].body.translations).toEqual([
       {
@@ -511,7 +495,7 @@ for (const kind of ['posts', 'pages']) {
     await expect(page.getByText('有未保存的修改 · 草稿已保留')).toHaveCount(0);
     expect(submitted).toHaveLength(2);
     expect(submitted[1].method).toBe('PUT');
-    expect(submitted[1].body.slug).toBe(currentSlug);
+    expect(submitted[1].body).not.toHaveProperty('slug');
     expect(submitted[1].body.coverUrl).toBe(coverUrl);
     expect(submitted[1].body.translations).toEqual([
       {

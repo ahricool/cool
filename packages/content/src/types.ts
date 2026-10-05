@@ -16,19 +16,19 @@ export interface Author {
   displayName: string;
   avatarUrl: string | null;
 }
-export interface Taxonomy extends LocalizedContent {
+export interface Tag extends LocalizedContent {
   id: string;
   name: string;
   slug: string;
 }
-export interface TaxonomyTranslation {
+export interface TagTranslation {
   locale: ContentLocale;
   name: string;
 }
-export interface AdminTaxonomy {
+export interface AdminTag {
   id: string;
   slug: string;
-  translations: TaxonomyTranslation[];
+  translations: TagTranslation[];
 }
 interface PostIdentity {
   id: string;
@@ -47,8 +47,7 @@ export interface Post extends PostIdentity, LocalizedContent {
   contentFormat?: string;
   status?: Status;
   publishedAt: string | null;
-  categories: { category: Taxonomy }[];
-  tags: { tag: Taxonomy }[];
+  tags: { tag: Tag }[];
 }
 export interface PostTranslation {
   locale: ContentLocale;
@@ -62,8 +61,7 @@ export interface PostTranslation {
 }
 export interface AdminPost extends PostIdentity {
   translations: PostTranslation[];
-  categories: { category: AdminTaxonomy }[];
-  tags: { tag: AdminTaxonomy }[];
+  tags: { tag: AdminTag }[];
 }
 interface PageIdentity {
   id: string;
@@ -257,3 +255,24 @@ export const formatDate = (
         timeZone: 'Asia/Shanghai',
       }).format(new Date(date))
     : '';
+
+export type TimelineItem =
+  | ({ kind: 'post' } & Pick<
+      Post,
+      | 'id'
+      | 'slug'
+      | 'coverUrl'
+      | 'title'
+      | 'excerpt'
+      | 'publishedAt'
+      | 'author'
+      | 'contentLocale'
+    >)
+  | ({ kind: 'moment'; author: Author | null } & Pick<
+      Moment,
+      'id' | 'content' | 'publishedAt' | 'contentLocale'
+    >);
+export interface Timeline {
+  items: TimelineItem[];
+  nextCursor: string | null;
+}

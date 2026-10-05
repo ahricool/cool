@@ -3,7 +3,7 @@ import { onMounted, reactive, ref } from 'vue';
 import { ElMessageBox } from 'element-plus';
 import { toast } from '~/utils/toast';
 import { api, errorText } from '../api';
-import type { AdminTaxonomy } from '@cool/content';
+import type { AdminTag } from '@cool/content';
 import ViewHeader from '../components/ViewHeader.vue';
 import ErrorNotice from '../components/ErrorNotice.vue';
 import { displayTranslation } from '../content';
@@ -11,24 +11,22 @@ import type { CoolLocale } from '~/i18n/locale';
 const { t, locale, contentLang } = useCoolI18n();
 const contentLocale = ref<CoolLocale>(locale.value);
 const names = reactive({ zh: '', en: '' });
-const props = defineProps<{ kind: 'categories' | 'tags' }>();
-const items = ref<AdminTaxonomy[]>([]);
+
+const items = ref<AdminTag[]>([]);
 const error = ref('');
 const dialog = ref(false);
 const busy = ref(false);
 const editId = ref('');
-const form = reactive({ slug: '' });
 async function load() {
   try {
     error.value = '';
-    items.value = await api(`/admin/${props.kind}`);
+    items.value = await api(`/admin/tags`);
   } catch (e) {
     error.value = errorText(e);
   }
 }
-function edit(item?: AdminTaxonomy) {
+function edit(item?: AdminTag) {
   editId.value = item?.id ?? '';
-  form.slug = item?.slug ?? '';
   names.zh =
     item?.translations.find((item) => item.locale === 'zh')?.name ?? '';
   names.en =
@@ -37,20 +35,15 @@ function edit(item?: AdminTaxonomy) {
 }
 async function save() {
   if (busy.value) return;
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug)) {
-    toast.warning(t('请填写有效的 链接名称'));
-    return;
-  }
   if (!names.zh.trim() && !names.en.trim()) {
     toast.warning(t('请至少填写一种语言的内容'));
     return;
   }
   busy.value = true;
   try {
-    await api(`/admin/${props.kind}${editId.value ? '/' + editId.value : ''}`, {
+    await api(`/admin/tags${editId.value ? '/' + editId.value : ''}`, {
       method: editId.value ? 'PUT' : 'POST',
       body: JSON.stringify({
-        slug: form.slug,
         translations: (['zh', 'en'] as const)
           .filter((locale) => names[locale].trim())
           .map((locale) => ({ locale, name: names[locale] })),
@@ -64,7 +57,7 @@ async function save() {
     busy.value = false;
   }
 }
-async function remove(item: AdminTaxonomy) {
+async function remove(item: AdminTag) {
   try {
     await ElMessageBox.confirm(
       t('删除后会解除文章关联，文章内容会保留。'),
@@ -75,7 +68,7 @@ async function remove(item: AdminTaxonomy) {
     return;
   }
   try {
-    await api(`/admin/${props.kind}/${item.id}`, { method: 'DELETE' });
+    await api(`/admin/tags/${item.id}`, { method: 'DELETE' });
     await load();
   } catch (e) {
     toast.error(t(errorText(e)));
@@ -84,7 +77,7 @@ async function remove(item: AdminTaxonomy) {
 onMounted(load);
 </script>
 <template>
-  <ViewHeader :title="kind === 'categories' ? t('分类') : t('标签')"
+  <ViewHeader :title="t('标签')"
     ><el-button type="primary" @click="edit()">{{
       t('＋ 新建')
     }}</el-button></ViewHeader
@@ -94,12 +87,8 @@ onMounted(load);
       ><el-table-column :label="t('名称')"
         ><template #default="{ row }"
           ><span
-            :lang="
-              contentLang(displayTranslation(row as AdminTaxonomy)?.locale)
-            "
-            >{{
-              displayTranslation(row as AdminTaxonomy)?.name ?? row.slug
-            }}</span
+            :lang="contentLang(displayTranslation(row as AdminTag)?.locale)"
+            >{{ displayTranslation(row as AdminTag)?.name ?? row.slug }}</span
           ></template
         ></el-table-column
       ><el-table-column prop="slug" :label="t('链接名称')" /><el-table-column
@@ -107,15 +96,12 @@ onMounted(load);
         width="160"
         class-name="table-actions-cell"
         ><template #default="{ row }"
-          ><el-button text type="primary" @click="edit(row as AdminTaxonomy)">{{
+          ><el-button text type="primary" @click="edit(row as AdminTag)">{{
             t('编辑')
           }}</el-button
-          ><el-button
-            text
-            type="danger"
-            @click="remove(row as AdminTaxonomy)"
-            >{{ t('删除') }}</el-button
-          ></template
+          ><el-button text type="danger" @click="remove(row as AdminTag)">{{
+            t('删除')
+          }}</el-button></template
         ></el-table-column
       ></el-table
     >
@@ -149,12 +135,6 @@ onMounted(load);
           v-model="names[contentLocale]"
           :lang="contentLang(contentLocale)"
           maxlength="100" /></el-form-item
-      ><el-form-item :label="t('链接名称')"
-        ><el-input
-          v-model="form.slug"
-          required
-          :placeholder="t('小写字母、数字、连字符')"
-          maxlength="160" /></el-form-item
       ><el-button native-type="submit" type="primary" :loading="busy">{{
         t('保存')
       }}</el-button></el-form

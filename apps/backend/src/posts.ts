@@ -1,3 +1,5 @@
+import { createWithResourcePath } from './resource-paths';
+import { articlePreview } from './preview';
 import {
   BadRequestException,
   Body,
@@ -31,7 +33,6 @@ import {
 export const visiblePosts = visibleContent;
 const relations = {
   author: { select: publicUser },
-  categories: { include: { category: { include: { translations: true } } } },
   tags: { include: { tag: { include: { translations: true } } } },
 } as const;
 const commonSummary = {
@@ -48,19 +49,13 @@ const translationSummary = {
   locale: true,
   title: true,
   excerpt: true,
+  content: true,
   publishedAt: true,
 } as const;
 function publicPost<
   T extends {
     author: { id: string; displayName: string; avatarUrl: string | null };
     translations: { locale: ContentLocale }[];
-    categories: {
-      category: {
-        translations: { locale: ContentLocale; name: string }[];
-        id: string;
-        slug: string;
-      };
-    }[];
     tags: {
       tag: {
         translations: { locale: ContentLocale; name: string }[];
@@ -73,9 +68,6 @@ function publicPost<
   return {
     ...localize(post, locale)!,
     author: normalizeOwner(post.author),
-    categories: post.categories.map(({ category }) => ({
-      category: localize(category, locale),
-    })),
     tags: post.tags.map(({ tag }) => ({ tag: localize(tag, locale) })),
   };
 }
@@ -94,9 +86,6 @@ export class PostsService {
               },
             },
           }
-        : {}),
-      ...(query.category
-        ? { categories: { some: { category: { slug: query.category } } } }
         : {}),
       ...(query.tag ? { tags: { some: { tag: { slug: query.tag } } } } : {}),
     };
@@ -126,7 +115,6 @@ export class PostsService {
       ORDER BY (t.locale::text = ${locale}) DESC LIMIT 1
     ) chosen ON TRUE WHERE TRUE
     ${query.q ? Prisma.sql`AND (chosen.title ILIKE ${'%' + query.q + '%'} OR chosen.excerpt ILIKE ${'%' + query.q + '%'} OR chosen.content ILIKE ${'%' + query.q + '%'})` : Prisma.empty}
-    ${query.category ? Prisma.sql`AND EXISTS (SELECT 1 FROM post_categories pc JOIN categories c ON c.id=pc.category_id WHERE pc.post_id=p.id AND c.slug=${query.category})` : Prisma.empty}
     ${query.tag ? Prisma.sql`AND EXISTS (SELECT 1 FROM post_tags pt JOIN tags t ON t.id=pt.tag_id WHERE pt.post_id=p.id AND t.slug=${query.tag})` : Prisma.empty}`;
     return this.db.$transaction(
       async (tx) => {
@@ -148,7 +136,10 @@ export class PostsService {
         });
         const indexed = new Map(rows.map((row) => [row.id, row]));
         return {
-          items: ids.map(({ id }) => publicPost(indexed.get(id)!, locale)),
+          items: ids.map(({ id }) => {
+            const { content, ...post } = publicPost(indexed.get(id)!, locale);
+            return { ...post, excerpt: articlePreview(content) };
+          }),
           total: Number(counts[0]!.total),
           page: query.page,
           pageSize: query.pageSize,
@@ -173,27 +164,27 @@ export class PostsService {
     return publicPost(post, locale);
   }
   async create(body: CreatePostDto, authorId: string) {
-    const { categoryIds, tagIds, translations, ...data } = body;
-    return this.db.post.create({
-      data: {
-        ...data,
-        authorId,
-        translations: {
-          create: translations.map((translation) => ({
-            ...translation,
-            ...publication(translation),
-          })),
+    const { tagIds, translations, ...data } = body;
+    return createWithResourcePath((slug) =>
+      this.db.post.create({
+        data: {
+          ...data,
+          slug,
+          authorId,
+          translations: {
+            create: translations.map((translation) => ({
+              ...translation,
+              ...publication(translation),
+            })),
+          },
+          tags: { create: tagIds?.map((tagId) => ({ tagId })) },
         },
-        categories: {
-          create: categoryIds?.map((categoryId) => ({ categoryId })),
-        },
-        tags: { create: tagIds?.map((tagId) => ({ tagId })) },
-      },
-      include: { ...relations, translations: true },
-    });
+        include: { ...relations, translations: true },
+      }),
+    );
   }
   async update(id: string, body: UpdatePostDto) {
-    const { categoryIds, tagIds, translations, ...data } = body;
+    const { tagIds, translations, ...data } = body;
     return this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM posts WHERE id = ${id}::uuid FOR UPDATE`;
       const current = await tx.post.findUnique({
@@ -226,14 +217,6 @@ export class PostsService {
         data: {
           ...data,
           updatedAt: new Date(),
-          ...(categoryIds
-            ? {
-                categories: {
-                  deleteMany: {},
-                  create: categoryIds.map((categoryId) => ({ categoryId })),
-                },
-              }
-            : {}),
           ...(tagIds
             ? {
                 tags: {
