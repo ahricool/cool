@@ -242,3 +242,139 @@ test('content conversion, independent languages, album ordering, uploads and ref
     await app.close();
   }
 });
+
+test('migrated snapshots do not outlive active media/album references', async () => {
+  assert.match(new URL(process.env.DATABASE_URL).pathname, /_test$/);
+  const app = await createApp();
+  await app.init();
+  const db = app.get(Database);
+  const http = request.agent(app.getHttpServer());
+  const login = await http
+    .post('/api/v1/admin/auth/login')
+    .send({
+      email: 'whoreahri@gmail.com',
+      password: 'isolated-browser-test-password',
+    })
+    .expect(201);
+  const call = (method, path) =>
+    http[method]('/api/v1' + path).set('X-CSRF-Token', login.body.csrfToken);
+  const id = randomUUID(),
+    photoId = randomUUID(),
+    albumId = randomUUID();
+  let media;
+  try {
+    await db.album.create({
+      data: { id: albumId, name: '迁移回归-' + id.slice(0, 8) },
+    });
+    const png = await sharp({
+      create: { width: 12, height: 12, channels: 3, background: '#ff6699' },
+    })
+      .png()
+      .toBuffer();
+    media = (
+      await call('post', '/admin/media/upload?albumId=' + albumId)
+        .attach('file', png, 'migrated.png')
+        .expect(201)
+    ).body;
+    const content = `![old](${media.url})`;
+    await db.moment.create({
+      data: {
+        id,
+        translations: {
+          create: {
+            locale: 'zh',
+            content,
+            status: 'PUBLISHED',
+            publishedAt: new Date(),
+          },
+        },
+      },
+    });
+    await db.photo.create({
+      data: {
+        id: photoId,
+        url: media.url,
+        translations: {
+          create: { locale: 'zh', title: '旧照片', album: '旧相册' },
+        },
+      },
+    });
+    // Apply the same additive copy as the migration: retain source IDs and snapshots.
+    await db.$transaction(async (tx) => {
+      await tx.$executeRaw`INSERT INTO posts(id,slug,type,source_moment_id,created_at,updated_at,author_id) SELECT m.id,${randomBytesForTest()},'MOMENT',m.id,m.created_at,m.updated_at,${login.body.user.id}::uuid FROM moments m WHERE m.id=${id}::uuid`;
+      await tx.$executeRaw`INSERT INTO post_translations(post_id,locale,title,excerpt,content,content_format,status,published_at,updated_at) SELECT moment_id,locale,'','',content,'markdown',status,published_at,updated_at FROM moment_translations WHERE moment_id=${id}::uuid`;
+      await tx.albumItem.updateMany({
+        where: { albumId, mediaId: media.id },
+        data: { legacyPhotoId: photoId },
+      });
+    });
+    await call('delete', '/admin/media/' + media.id).expect(409);
+    await call('delete', '/admin/albums/' + albumId).expect(409);
+    await call('put', '/admin/posts/' + id)
+      .send({ translations: [{ locale: 'zh', content: '引用已移除' }] })
+      .expect(200);
+    const escapedGroup =
+      '```cool-media\n' +
+      JSON.stringify({
+        layout: 'grid',
+        assets: [
+          {
+            id: media.id,
+            url: media.url,
+            name: '迁移图片',
+            mimeType: 'image/webp',
+          },
+        ],
+      }).replaceAll('-', '\\u002d') +
+      '\n```';
+    assert.equal(escapedGroup.includes(media.url), false);
+    assert.equal(escapedGroup.includes(media.key), false);
+    await call('put', '/admin/posts/' + id)
+      .send({ translations: [{ locale: 'zh', content: escapedGroup }] })
+      .expect(200);
+    await call('delete', '/admin/media/' + media.id).expect(409);
+    await call('delete', '/admin/albums/' + albumId).expect(409);
+    await call('put', '/admin/posts/' + id)
+      .send({ translations: [{ locale: 'zh', content: '引用已移除' }] })
+      .expect(200);
+    // The unmodified legacy snapshots still contain the URL, but are not active.
+    assert.equal(
+      (
+        await db.momentTranslation.findUnique({
+          where: { momentId_locale: { momentId: id, locale: 'zh' } },
+        })
+      ).content,
+      content,
+    );
+    assert.equal(
+      (await db.photo.findUnique({ where: { id: photoId } })).url,
+      media.url,
+    );
+    await call('delete', '/admin/albums/' + albumId).expect(200);
+    await call('put', '/admin/posts/' + id)
+      .send({ translations: [{ locale: 'zh', content }] })
+      .expect(200);
+    await call('delete', '/admin/media/' + media.id).expect(409);
+    await call('delete', '/admin/posts/' + id).expect(200);
+    await call('delete', '/admin/media/' + media.id).expect(200);
+  } finally {
+    await db.post.deleteMany({ where: { id } });
+    await db.albumItem.deleteMany({
+      where: {
+        OR: [
+          { albumId },
+          { legacyPhotoId: photoId },
+          ...(media ? [{ mediaId: media.id }] : []),
+        ],
+      },
+    });
+    await db.album.deleteMany({ where: { id: albumId } });
+    await db.photo.deleteMany({ where: { id: photoId } });
+    await db.moment.deleteMany({ where: { id } });
+    if (media) await call('delete', '/admin/media/' + media.id);
+    await app.close();
+  }
+});
+function randomBytesForTest() {
+  return randomUUID().replaceAll('-', '').slice(0, 8);
+}

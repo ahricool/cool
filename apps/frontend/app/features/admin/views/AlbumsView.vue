@@ -13,7 +13,9 @@ const albums = ref<Album[]>([]);
 const selected = ref('');
 const album = computed(() => albums.value.find((a) => a.id === selected.value));
 const error = ref('');
-const busy = ref(false);
+const saving = ref(false);
+const uploading = ref(false);
+const busy = computed(() => saving.value || uploading.value);
 const editing = ref(false);
 const editingId = ref('');
 const form = reactive({
@@ -39,6 +41,7 @@ async function load() {
   }
 }
 function edit(a?: Album) {
+  if (busy.value) return;
   editingId.value = a?.id ?? '';
   Object.assign(form, {
     name: a?.name ?? '',
@@ -50,8 +53,8 @@ function edit(a?: Album) {
   editing.value = true;
 }
 async function save() {
-  if (!form.name.trim()) return;
-  busy.value = true;
+  if (busy.value || !form.name.trim()) return;
+  saving.value = true;
   try {
     const saved = await api<Album>(
       `/admin/albums${editingId.value ? '/' + editingId.value : ''}`,
@@ -63,21 +66,22 @@ async function save() {
   } catch (e) {
     toast.error(errorText(e));
   } finally {
-    busy.value = false;
+    saving.value = false;
   }
 }
 async function uploadFiles(event: Event) {
   const el = event.target as HTMLInputElement;
-  if (!el.files || !album.value) return;
-  busy.value = true;
+  if (busy.value || !el.files || !album.value) return;
+  const targetAlbumId = album.value.id;
+  saving.value = true;
   try {
-    for (const file of el.files) await upload(file, album.value.id);
+    for (const file of el.files) await upload(file, targetAlbumId);
     await load();
   } catch (e) {
     toast.error(errorText(e));
     await load();
   } finally {
-    busy.value = false;
+    saving.value = false;
     el.value = '';
   }
 }
@@ -87,7 +91,7 @@ async function move(index: number, offset: number) {
   const target = index + offset;
   if (target < 0 || target >= ids.length) return;
   [ids[index], ids[target]] = [ids[target]!, ids[index]!];
-  busy.value = true;
+  saving.value = true;
   try {
     await api(`/admin/albums/${album.value.id}/order`, {
       method: 'PUT',
@@ -97,7 +101,7 @@ async function move(index: number, offset: number) {
   } catch (e) {
     toast.error(errorText(e));
   } finally {
-    busy.value = false;
+    saving.value = false;
   }
 }
 async function removeAlbum() {
@@ -111,14 +115,14 @@ async function removeAlbum() {
   } catch {
     return;
   }
-  busy.value = true;
+  saving.value = true;
   try {
     await api(`/admin/albums/${album.value.id}`, { method: 'DELETE' });
     await load();
   } catch (e) {
     toast.error(errorText(e));
   } finally {
-    busy.value = false;
+    saving.value = false;
   }
 }
 async function removeItem(item: AlbumItem) {
@@ -131,7 +135,7 @@ async function removeItem(item: AlbumItem) {
   } catch {
     return;
   }
-  busy.value = true;
+  saving.value = true;
   try {
     await api(
       item.mediaId
@@ -143,7 +147,7 @@ async function removeItem(item: AlbumItem) {
   } catch (e) {
     toast.error(errorText(e));
   } finally {
-    busy.value = false;
+    saving.value = false;
   }
 }
 onMounted(load);
@@ -170,6 +174,7 @@ onMounted(load);
       v-for="a in albums"
       :key="a.id"
       :aria-pressed="selected === a.id"
+      :disabled="busy"
       @click="selected = a.id"
     >
       <img v-if="cover(a)" :src="cover(a)" alt="" /><PatternSurface
@@ -250,6 +255,7 @@ onMounted(load);
     :title="editingId ? t('编辑相册') : t('新建相册')"
     width="min(540px,92vw)"
     :close-on-click-modal="!busy"
+    :close-on-press-escape="!busy"
     :show-close="!busy"
     ><el-form label-position="top"
       ><el-form-item :label="t('名称')"
@@ -258,19 +264,27 @@ onMounted(load);
           :disabled="busy || (!!album?.isDefault && editingId === album.id)"
           maxlength="100" /></el-form-item
       ><el-form-item label="English"
-        ><el-input v-model="form.nameEn" maxlength="100" /></el-form-item
+        ><el-input
+          v-model="form.nameEn"
+          :disabled="busy"
+          maxlength="100" /></el-form-item
       ><el-form-item :label="t('说明')"
         ><el-input
           v-model="form.description"
+          :disabled="busy"
           type="textarea"
           maxlength="500" /></el-form-item
       ><el-form-item :label="t('英文说明')"
         ><el-input
           v-model="form.descriptionEn"
+          :disabled="busy"
           type="textarea"
           maxlength="500" /></el-form-item
       ><el-form-item :label="t('封面')"
-        ><AssetPicker v-model="form.coverUrl" :disabled="busy"
+        ><AssetPicker
+          v-model="form.coverUrl"
+          :disabled="busy"
+          @busy-change="uploading = $event"
       /></el-form-item>
       <p class="muted">
         {{ t('未选择封面时，使用第一张图片；空相册使用全局默认图案。') }}
@@ -281,8 +295,8 @@ onMounted(load);
       }}</el-button
       ><el-button
         type="primary"
-        :disabled="!form.name.trim()"
-        :loading="busy"
+        :disabled="busy || !form.name.trim()"
+        :loading="saving"
         @click="save"
         >{{ t('保存') }}</el-button
       ></template

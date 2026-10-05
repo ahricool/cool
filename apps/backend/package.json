@@ -4,14 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "node --env-file=../../.env --watch dist/main.js",
-    "build": "tsc -p tsconfig.json",
+    "build": "node ../../scripts/sync-content-parser.mjs && tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy && node dist/migrations/resource-paths.js",
     "db:seed": "node --env-file=../../.env dist/seed.js",
     "test": "node --test test/*.test.cjs",
-    "build:watch": "tsc -p tsconfig.json --watch",
+    "build:watch": "node ../../scripts/sync-content-parser.mjs && tsc -p tsconfig.json --watch",
     "db:paths": "node dist/migrations/resource-paths.js",
     "db:paths:rollback": "node dist/migrations/resource-paths.js --rollback"
   },

@@ -1,3 +1,5 @@
+import MarkdownIt from 'markdown-it';
+import { parseMediaGroup } from './generated/content/media-groups';
 import {
   BadRequestException,
   Body,
@@ -152,34 +154,46 @@ export class AlbumsController {
     return { deleted: true };
   }
 }
+const markdown = new MarkdownIt({ html: false });
+export function contentReferences(source: string, url: string): boolean {
+  // Preserve conservative handling of historical ordinary Markdown references.
+  if (source.includes(url)) return true;
+  const tokens = markdown.parse(source, {});
+  for (const token of tokens) {
+    if (token.type === 'fence' && token.info.trim() === 'cool-media') {
+      const group = parseMediaGroup(token.content);
+      if (group?.assets.some((asset) => asset.url === url)) return true;
+    }
+    if (
+      token.children?.some(
+        (child) => child.type === 'image' && child.attrGet('src') === url,
+      )
+    )
+      return true;
+  }
+  return false;
+}
 export async function referenced(db: Database, url: string) {
-  // A JSON group may escape slashes; the stable file key still identifies it.
-  const needle = url.split('/').at(-1) || url;
-  const counts = await Promise.all([
-    db.post.count({
-      where: {
-        OR: [
-          { coverUrl: url },
-          { translations: { some: { content: { contains: needle } } } },
-        ],
-      },
+  // Legacy Moment/Photo tables are migration snapshots, not live references.
+  const [posts, pages, users, albums, settings] = await Promise.all([
+    db.post.findMany({
+      select: { coverUrl: true, translations: { select: { content: true } } },
     }),
-    db.page.count({
-      where: {
-        OR: [
-          { coverUrl: url },
-          { translations: { some: { content: { contains: needle } } } },
-        ],
-      },
-    }),
-    db.moment.count({
-      where: { translations: { some: { content: { contains: needle } } } },
+    db.page.findMany({
+      select: { coverUrl: true, translations: { select: { content: true } } },
     }),
     db.user.count({ where: { avatarUrl: url } }),
     db.album.count({ where: { coverUrl: url } }),
+    db.siteSetting.findMany(),
   ]);
   return (
-    counts.some(Boolean) ||
-    JSON.stringify(await db.siteSetting.findMany()).includes(url)
+    users > 0 ||
+    albums > 0 ||
+    JSON.stringify(settings).includes(url) ||
+    [...posts, ...pages].some(
+      (item) =>
+        item.coverUrl === url ||
+        item.translations.some((t) => contentReferences(t.content, url)),
+    )
   );
 }

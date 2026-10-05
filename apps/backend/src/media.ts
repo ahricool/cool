@@ -193,35 +193,9 @@ export class MediaController {
   @Delete(':id') async remove(@Param('id', ParseUUIDPipe) id: string) {
     const m = await this.db.media.findUniqueOrThrow({ where: { id } });
     const url = mediaUrl(m.key);
-    const used = await Promise.all([
-      this.db.post.count({
-        where: {
-          OR: [
-            { coverUrl: url },
-            { translations: { some: { content: { contains: url } } } },
-          ],
-        },
-      }),
-      this.db.page.count({
-        where: {
-          OR: [
-            { coverUrl: url },
-            { translations: { some: { content: { contains: url } } } },
-          ],
-        },
-      }),
-      this.db.moment.count({
-        where: { translations: { some: { content: { contains: url } } } },
-      }),
-      this.db.photo.count({ where: { url } }),
-      this.db.user.count({ where: { avatarUrl: url } }),
-    ]);
-    const settings = await this.db.siteSetting.findMany();
-    if (
-      used.some(Boolean) ||
-      JSON.stringify(settings).includes(url) ||
-      (await referenced(this.db, url))
-    )
+    // The shared check covers active content, covers, account and settings.
+    // Historical Moment/Photo snapshots are intentionally not live references.
+    if (await referenced(this.db, url))
       throw new ConflictException(
         'This image is still referenced by content or settings',
       );

@@ -9,6 +9,8 @@ COPY package.json package-lock.json ./
 COPY apps/backend/package.json apps/backend/package.json
 RUN npm ci --workspace @cool/backend --include-workspace-root
 COPY apps/backend apps/backend
+COPY packages/content/src/media-groups.ts packages/content/src/media-groups.ts
+COPY scripts/sync-content-parser.mjs scripts/sync-content-parser.mjs
 RUN npm run db:generate && npm run build -w @cool/backend && npm prune --omit=dev --workspace @cool/backend --include-workspace-root
 FROM base AS runtime
 ENV NODE_ENV=production MEDIA_ROOT=/app/data
