@@ -8,107 +8,19 @@ const props = defineProps<{
 defineEmits<{ logout: [] }>();
 const { t } = useCoolI18n();
 const store = useSiteStore();
-const route = useRoute();
-const open = ref(false);
-const root = ref<HTMLElement>();
-const trigger = ref<HTMLButtonElement>();
-const menu = ref<HTMLElement>();
 const avatar = computed(() => resolveCustomImage(props.owner?.avatarUrl));
-let closeTimer: ReturnType<typeof setTimeout> | undefined;
-function cancelClose() {
-  clearTimeout(closeTimer);
-}
-function close(restoreFocus = false) {
-  cancelClose();
-  open.value = false;
-  if (restoreFocus) trigger.value?.focus();
-}
-function hover(event: PointerEvent) {
-  if (event.pointerType !== 'mouse') return;
-  cancelClose();
-  open.value = true;
-}
-function leave(event: PointerEvent) {
-  if (
-    event.pointerType !== 'mouse' ||
-    menu.value?.contains(document.activeElement)
-  )
-    return;
-  closeTimer = setTimeout(() => {
-    if (!menu.value?.contains(document.activeElement)) close();
-  }, 180);
-}
-function outside(event: PointerEvent) {
-  if (
-    open.value &&
-    !root.value?.contains(event.target as Node) &&
-    !menu.value?.contains(event.target as Node)
-  )
-    close();
-}
-function escape(event: KeyboardEvent) {
-  if (open.value && event.key === 'Escape') {
-    event.preventDefault();
-    close(true);
-  }
-}
-const items = () =>
-  Array.from(
-    menu.value?.querySelectorAll<HTMLElement>(
-      '[role="menuitem"]:not([disabled])',
-    ) ?? [],
-  );
-async function triggerKeydown(event: KeyboardEvent) {
-  if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
-  event.preventDefault();
-  cancelClose();
-  open.value = true;
-  await nextTick();
-  const links = items();
-  (event.key === 'ArrowUp' ? links.at(-1) : links[0])?.focus();
-}
-function menuKeydown(event: KeyboardEvent) {
-  const links = items();
-  const index = links.indexOf(document.activeElement as HTMLElement);
-  if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
-    event.preventDefault();
-    const next =
-      event.key === 'Home'
-        ? 0
-        : event.key === 'End'
-          ? links.length - 1
-          : (index + (event.key === 'ArrowDown' ? 1 : -1) + links.length) %
-            links.length;
-    links[next]?.focus();
-  } else if (event.key === 'Tab') {
-    event.preventDefault();
-    const controls = Array.from(
-      document.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled])',
-      ),
-    ).filter(
-      (element) =>
-        element.getClientRects().length && !menu.value?.contains(element),
-    );
-    const next =
-      controls[controls.indexOf(trigger.value!) + (event.shiftKey ? -1 : 1)];
-    close();
-    next?.focus();
-  }
-}
-watch(
-  () => route.path,
-  () => close(),
-);
-onMounted(() => {
-  document.addEventListener('pointerdown', outside);
-  document.addEventListener('keydown', escape);
-});
-onBeforeUnmount(() => {
-  cancelClose();
-  document.removeEventListener('pointerdown', outside);
-  document.removeEventListener('keydown', escape);
-});
+const {
+  open,
+  root,
+  trigger,
+  menu,
+  cancelClose,
+  close,
+  hover,
+  leave,
+  triggerKeydown,
+  menuKeydown,
+} = useAdminMenu('account');
 </script>
 <template>
   <div
@@ -157,10 +69,10 @@ onBeforeUnmount(() => {
           @pointerleave="leave"
         >
           <p class="account-name">{{ owner?.displayName }}</p>
-          <RouterLink to="/admin/settings" role="menuitem" @click="close()"
+          <RouterLink to="/admin/settings" role="menuitem" @click="close(true)"
             ><ReadingIcon name="settings" />{{ t('网站配置') }}</RouterLink
           >
-          <RouterLink to="/admin/profile" role="menuitem" @click="close()"
+          <RouterLink to="/admin/profile" role="menuitem" @click="close(true)"
             ><ReadingIcon name="user" />{{ t('我的账户') }}</RouterLink
           >
           <button
