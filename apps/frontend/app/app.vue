@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { resolveSiteTheme, siteThemeCss } from '~/themes/registry';
 const route = useRoute();
 const dark = useCoolTheme();
 const store = useSiteStore();
@@ -14,7 +15,8 @@ useHead(() => ({
     lang: contentLang(locale.value),
     'data-surface': isAdmin.value ? 'admin' : 'blog',
     'data-font': store.loaded ? store.site.appearance.font : undefined,
-    style: `--sakura-font-scale: ${store.site.appearance.fontSize / 100}`,
+    'data-site-theme': resolveSiteTheme(store.site.appearance.themeId).id,
+    style: `${siteThemeCss(store.site.appearance.themeId, dark.value)} --sakura-font-scale: ${store.site.appearance.fontSize / 100}`,
   },
   bodyAttrs: { class: isAdmin.value ? 'admin-ui' : 'sakura-ui' },
 }));

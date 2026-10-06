@@ -7,6 +7,7 @@ import {
   type AdminSettings,
 } from '@cool/content';
 import { useCoolI18n } from '~/composables/useCoolI18n';
+import { resolveSiteTheme } from '~/themes/registry';
 import type { CoolLocale } from '~/i18n/locale';
 import { api, errorText } from '../api';
 import ViewHeader from '../components/ViewHeader.vue';
@@ -63,7 +64,11 @@ async function load() {
     const data = await api<AdminSettings>('/admin/settings');
     form.site = {
       ...data.site,
-      appearance: { ...defaultSite.appearance, ...data.site.appearance },
+      appearance: {
+        ...defaultSite.appearance,
+        ...data.site.appearance,
+        themeId: resolveSiteTheme(data.site.appearance?.themeId).id,
+      },
       translations: locales.map((locale) => ({
         ...blankSiteTranslation(locale),
         ...data.site.translations.find((entry) => entry.locale === locale),

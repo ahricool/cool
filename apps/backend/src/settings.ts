@@ -34,6 +34,12 @@ class SiteTranslationDto extends LocaleDto {
   @ApiProperty() @IsString() @MaxLength(500) authorBio!: string;
 }
 class AppearanceDto {
+  // Theme availability belongs to the frontend registry, not the database.
+  @ApiPropertyOptional({ default: 'default', maxLength: 48 })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsString()
+  @Matches(/^[a-z][a-z0-9-]{0,47}$/)
+  themeId?: string;
   @ApiPropertyOptional({ minimum: 80, maximum: 150, default: 100 })
   @ValidateIf((_o, value) => value !== undefined)
   @IsInt()
@@ -105,6 +111,7 @@ class SettingsDto {
 export const defaultSettings = {
   site: {
     appearance: {
+      themeId: 'default',
       font: 'default' as const,
       fontSize: 100,
       avatar: 'heart' as const,

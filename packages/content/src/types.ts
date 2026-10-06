@@ -173,6 +173,8 @@ export interface Comment {
 export type PatternShape = 'heart' | 'star' | 'dot';
 export type SiteFont = 'default' | 'bubble-candy';
 export interface SiteAppearance {
+  /** Site-wide visual identity, independent of the reader's light/dark cookie. */
+  themeId: string;
   font: SiteFont;
   fontSize: number;
   avatar: PatternShape;
@@ -188,6 +190,7 @@ export function normalizeFontSize(value: unknown): number {
     : 100;
 }
 export const defaultAppearance: SiteAppearance = {
+  themeId: 'default',
   font: 'default',
   fontSize: 100,
   avatar: 'heart',

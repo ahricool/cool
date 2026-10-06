@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { SiteAppearance, PatternShape } from '@cool/content';
+import { resolveSiteTheme, siteThemes } from '~/themes/registry';
 const model = defineModel<SiteAppearance>({ required: true });
 const { t } = useCoolI18n();
+const selectedTheme = computed(() => resolveSiteTheme(model.value.themeId));
 const shapes = [
   { value: 'heart', label: '心形' },
   { value: 'star', label: '星形' },
@@ -14,6 +16,26 @@ const fields = [
 ] as const;
 </script>
 <template>
+  <section class="appearance-setting">
+    <h3 id="appearance-theme-label">{{ t('网站主题') }}</h3>
+    <el-radio-group
+      v-model="model.themeId"
+      aria-labelledby="appearance-theme-label"
+      data-testid="appearance-theme"
+      class="theme-options"
+    >
+      <el-radio-button
+        v-for="theme in siteThemes"
+        :key="theme.id"
+        :value="theme.id"
+        >{{ t(theme.label) }}</el-radio-button
+      >
+    </el-radio-group>
+    <p class="muted">{{ t(selectedTheme.description) }}</p>
+    <p class="muted">
+      {{ t('保存配置后应用到全站，明暗和其他外观设置保持不变。') }}
+    </p>
+  </section>
   <section class="appearance-setting">
     <h3 id="appearance-font-label">{{ t('全站字体') }}</h3>
     <el-radio-group
@@ -99,6 +121,27 @@ const fields = [
   </div>
 </template>
 <style scoped>
+.theme-options {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.theme-options :deep(.el-radio-button .el-radio-button__inner) {
+  white-space: normal;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  outline: none;
+  border-radius: 10px;
+  box-shadow: var(--sakura-button-shadow) !important;
+}
+.theme-options
+  :deep(
+    .el-radio-button__original-radio:focus-visible + .el-radio-button__inner
+  ) {
+  outline: 2px solid var(--sakura-accent-strong);
+  outline-offset: 3px;
+}
 .font-size-setting {
   display: flex;
   align-items: center;

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { resolveSiteTheme } from '~/themes/registry';
 import {
   defaultSite,
   defaultHomepage,
@@ -38,6 +39,7 @@ export const useSiteStore = defineStore('site', () => {
           appearance: {
             ...defaultSite.appearance,
             ...s.appearance,
+            themeId: resolveSiteTheme(s.appearance?.themeId).id,
             fontSize: normalizeFontSize(s.appearance?.fontSize),
           },
         };

@@ -24,6 +24,7 @@
     "typecheck": "npm run typecheck -w @cool/frontend",
     "test:content": "npm test -w @cool/content",
     "test:e2e": "playwright test",
+    "test:themes": "playwright test --config playwright.theme.config.ts",
     "audit": "node scripts/audit.mjs",
     "dev:frontend": "npm run dev -w @cool/frontend",
     "test:unit": "node --import tsx --test tests/unit/*.test.ts apps/frontend/build/*.test.ts apps/frontend/app/features/admin/api.test.ts"

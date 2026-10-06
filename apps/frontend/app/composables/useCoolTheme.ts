@@ -1,4 +1,4 @@
-/** One explicit theme preference across the reading and editorial surfaces. */
+/** Reader light/dark preference; the site's visual theme lives in site.appearance. */
 export function useCoolTheme() {
   const cookie = useCookie<string>('cool_theme', {
     default: () => 'light',
