@@ -1,6 +1,123 @@
 import { test, expect } from '@playwright/test';
 import { themeFixture } from './fixture';
 
+test('first-load errors resolve appearance and a failed site API does not loop on recovery', async ({
+  page,
+}) => {
+  await themeFixture(page, { themeId: 'soft-preview' });
+  await page.goto('/synthetic-first-load-not-found');
+  await expect(page.locator('.error-card')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-site-theme',
+    'soft-preview',
+  );
+  await page.getByRole('button', { name: '返回首页', exact: true }).click();
+  await expect(page.locator('.story-title')).toBeVisible();
+  let siteRequests = 0;
+  await page.route('**/api/v1/public/site', async (route) => {
+    siteRequests++;
+    await route.fulfill({
+      status: 400,
+      json: { message: 'Synthetic site API failure' },
+    });
+  });
+  await page.goto('/synthetic-failed-site-not-found');
+  await expect(page.locator('.error-card')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-site-theme',
+    'default',
+  );
+  await page.getByRole('button', { name: '返回首页', exact: true }).click();
+  await expect(page.locator('.story-title')).toBeVisible();
+  expect(siteRequests).toBe(1);
+});
+
+test('404 and global errors retain theme and font settings through recovery', async ({
+  page,
+}) => {
+  await themeFixture(page, {
+    themeId: 'soft-preview',
+    font: 'bubble-candy',
+    fontSize: 125,
+  });
+  await page
+    .context()
+    .addCookies([
+      { name: 'cool_theme', value: 'dark', url: 'http://127.0.0.1:43871' },
+    ]);
+  await page.goto('/search');
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-site-theme',
+    'soft-preview',
+  );
+  await page.evaluate(async () => {
+    const root = document.getElementById('__nuxt') as HTMLElement & {
+      __vue_app__: {
+        config: {
+          globalProperties: {
+            $router: { push: (path: string) => Promise<void> };
+          };
+        };
+      };
+    };
+    await root.__vue_app__.config.globalProperties.$router.push(
+      '/synthetic-not-found',
+    );
+  });
+  await expect(page.locator('.error-card')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-site-theme',
+    'soft-preview',
+  );
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-font',
+    'bubble-candy',
+  );
+  await expect(page.locator('html')).toHaveAttribute(
+    'style',
+    /--sakura-font-scale: 1.25/,
+  );
+  await expect(page.locator('.error-card')).toHaveCSS(
+    'background-color',
+    'rgb(38, 39, 43)',
+  );
+  await page.getByRole('button', { name: '返回首页', exact: true }).click();
+  await expect(page.locator('.story-title')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-site-theme',
+    'soft-preview',
+  );
+  await page.evaluate(() => {
+    const root = document.getElementById('__nuxt') as HTMLElement & {
+      __vue_app__: {
+        config: {
+          globalProperties: { $nuxt: { payload: { error: unknown } } };
+        };
+      };
+    };
+    root.__vue_app__.config.globalProperties.$nuxt.payload.error = {
+      statusCode: 500,
+      message: 'Synthetic global error',
+      fatal: true,
+    };
+  });
+  await expect(page.locator('.error-card')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-site-theme',
+    'soft-preview',
+  );
+  await expect(page.locator('.error-card')).toHaveCSS(
+    'background-color',
+    'rgb(38, 39, 43)',
+  );
+  await page.getByRole('button', { name: '返回首页', exact: true }).click();
+  await expect(page.locator('.story-title')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-site-theme',
+    'soft-preview',
+  );
+});
+
 test('legacy and unknown IDs show the unchanged default in both reader palettes', async ({
   page,
 }) => {

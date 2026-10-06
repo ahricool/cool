@@ -25,6 +25,19 @@ function memoryDatabase(initial) {
   };
 }
 
+async function transformSettings(body) {
+  const metatype = Reflect.getMetadata(
+    'design:paramtypes',
+    SettingsController.prototype,
+    'save',
+  )[0];
+  return new ValidationPipe({
+    transform: true,
+    whitelist: true,
+    forbidNonWhitelisted: true,
+  }).transform(body, { type: 'body', metatype });
+}
+
 test('theme selection roundtrips and old clients preserve independent appearance and images', async () => {
   const initial = structuredClone(defaultSettings);
   initial.site.appearance = {
@@ -62,6 +75,28 @@ test('legacy settings gain the default ID on read without rewriting data', async
     rows.find((row) => row.key === 'site').value.appearance.themeId,
     undefined,
   );
+});
+
+test('transformed legacy DTO preserves omitted theme, font and fontSize after save', async () => {
+  const initial = structuredClone(defaultSettings);
+  initial.site.appearance.themeId = 'soft-preview';
+  initial.site.appearance.font = 'bubble-candy';
+  initial.site.appearance.fontSize = 150;
+  const db = memoryDatabase(initial);
+  const controller = new SettingsController(db);
+  for (const omitted of [
+    ['themeId'],
+    ['themeId', 'font', 'fontSize'],
+    ['appearance'],
+  ]) {
+    const body = structuredClone(initial);
+    for (const key of omitted) {
+      if (key === 'appearance') delete body.site.appearance;
+      else delete body.site.appearance[key];
+    }
+    await controller.save(await transformSettings(body));
+    assert.deepEqual(await readSettings(db), initial);
+  }
 });
 
 test('actual settings DTO accepts safe IDs and rejects invalid values', async () => {

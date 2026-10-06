@@ -198,7 +198,13 @@ export class SettingsController {
   }
   @Put() async save(@Body() d: SettingsDto) {
     const currentAppearance = (await readSettings(this.db)).site.appearance;
-    d.site.appearance = { ...currentAppearance, ...d.site.appearance };
+    // Native DTO fields are enumerable even when the client omitted them.
+    const suppliedAppearance = Object.fromEntries(
+      Object.entries(d.site.appearance ?? {}).filter(
+        ([, value]) => value !== undefined,
+      ),
+    );
+    d.site.appearance = { ...currentAppearance, ...suppliedAppearance };
     await this.db.$transaction(
       Object.entries(d).map(([key, value]) =>
         this.db.siteSetting.upsert({

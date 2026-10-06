@@ -1,18 +1,10 @@
 <script setup lang="ts">
-const { t, locale, routePath, contentLang } = useCoolI18n();
+const { t, routePath } = useCoolI18n();
 import type { NuxtError } from '#app';
 defineProps<{ error: NuxtError }>();
-const route = useRoute();
-const dark = useCoolTheme();
-const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
+const { isAdmin } = useSiteAppearanceHead();
 useHead(() => ({
   title: `${t('暂时迷路了')} · 梦桜`,
-  htmlAttrs: {
-    lang: contentLang(locale.value),
-    'data-surface': isAdmin.value ? 'admin' : 'blog',
-    class: dark.value ? 'dark' : '',
-  },
-  bodyAttrs: { class: isAdmin.value ? 'admin-ui' : 'sakura-ui' },
 }));
 </script>
 <template>

@@ -11,10 +11,10 @@
 `Admin 外观表单 → PUT /admin/settings → site_settings.site.appearance.themeId → GET /public/site → site store → app.vue 根变量 → 现有组件`
 
 - `site.appearance.themeId` 是站长保存的全站主题标识，初始为 `default`。复用现有 JSONB 配置与保存按钮，不新增表或 SQL migration。
-- 后端只校验标识格式（以小写字母开头的小写字母、数字、连字符，最多 48 字符），不导入前端注册表。旧客户端省略标识时保留当前值；旧数据缺字段时读取补上 `default`，不批量重写数据。
+- 后端只校验标识格式（以小写字母开头的小写字母、数字、连字符，最多 48 字符），不导入前端注册表。旧客户端省略标识时保留当前值；合并过滤 DTO 转换生成的自有 `undefined` 字段，显式空串/null/非法标识仍拒绝。旧数据缺字段时读取补上 `default`，不批量重写数据。
 - `app/themes/registry.ts` 是可用主题的唯一前端注册表，包含标识、双语文案键、预览状态和 light/dark 语义 token 覆盖。所有 CSS 值来自仓库代码，数据库内容不会直接成为 CSS。
 - `resolveSiteTheme` 在 store、表单和根应用层统一解析，未知、删除或损坏的标识安全回退默认。读取回退不写数据库；在外观表单显式保存时会保存当前显示的有效选择。
-- `app.vue` 输出独立 `data-site-theme`，按当前明暗选择整套根变量覆盖。每次替换完整覆盖字符串，切回默认、切换明暗或 SPA 切换路由不会残留上个主题的变量。
+- `useSiteAppearanceHead` 供 `app.vue` 与全屏 `error.vue` 共用，输出独立 `data-site-theme`，按当前明暗选择整套根变量覆盖。每次替换完整覆盖字符串，切回默认、切换明暗或 SPA 切换路由不会残留上个主题的变量。首次错误页可加载配置；复用待完成请求，失败后不因错误页/正常页切换反复请求，Pinia 未初始化时安全使用缺省外观。
 - Element Plus 已由 `assets/admin/theme.css` 映射到相同语义变量；不新增 Admin 专属主题、侧栏或主题切换入口。
 - 表单选择仅修改草稿，保存成功并重新读取公共配置后应用。其他标签页在刷新/重新读取配置时生效，本阶段不增加广播、实时预览或自动保存。
 
@@ -57,8 +57,8 @@ node --test apps/backend/test/settings-theme.test.cjs
 基线是最新 main `7501d14730ced16995634db870f0f83ee65325a1`（PR38 已合入）。本次使用独立 clone/分支、本地静态构建、Chromium headless 和合成数据，未启动/访问 FA 容器、数据库、日志或服务。
 
 - 前后端构建、前端 typecheck、全仓 lint、变更文件格式检查与 `git diff --check` 通过。
-- 23 项主题/样式作用域/Admin API 单测、3 项后端配置往返与实际 DTO 校验、4 项 Markdown/媒体内容测试通过。
-- 3 项合成浏览器测试通过：旧/未知标识回退、保存/刷新/切回默认、主题与明暗/两种字体/80%和150%字号/图案和无图案/自定义图片/显式 English 组合。包含键盘选择与焦点、390px 窄屏主题选择。
+- 23 项主题/样式作用域/Admin API 单测、4 项后端配置往返与实际 DTO 校验、4 项 Markdown/媒体内容测试通过。额外回归使用真实 `ValidationPipe.transform → controller.save`，确认省略 themeId/font/fontSize 及整个 appearance 均保留已保存值。
+- 5 项合成浏览器测试通过：旧/未知标识回退、保存/刷新/切回默认、主题与明暗/两种字体/80%和150%字号/图案和无图案/自定义图片/显式 English 组合。包含键盘选择与焦点、390px 窄屏主题选择，以及首次 404、非默认主题进入 404/全局错误再恢复、配置 API 失败时无请求循环。
 - 默认主题逐像素比较：同数据、固定图案 seed、关闭动画并等待字体/图片；首页、搜索、Admin 基本配置 × 1440/390px × light/dark，共 12 组，像素差异全部为 0。外观页新增选择控件不属于不变区域；另检查了实际桌面和手机预览主题截图。
 - 全量 `test:unit` 结果为 77 通过、13 失败。失败集中于未改动的备份/部署/媒体 smoke 脚本：macOS 的 `mktemp` 不支持 GNU `--suffix=.partial`，以及 `/var` 为符号链接触发路径检查；未扩展到运维兼容修复。
 - 全量 `format:check` 被原有 `app/components/ArticleCard.vue` 与 `tests/e2e/album-busy.spec.ts` 格式问题阻挡；这两个文件未修改，变更文件全部通过。
