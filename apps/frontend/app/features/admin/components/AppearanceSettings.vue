@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PatternSurface from '~/features/admin/visuals/PatternSurface.vue';
+import PatternAvatar from '~/features/admin/visuals/PatternAvatar.vue';
 import type { SiteAppearance, PatternShape } from '@cool/content';
 import { resolveSiteTheme, siteThemes } from '~/themes/registry';
 const model = defineModel<SiteAppearance>({ required: true });
@@ -33,7 +35,11 @@ const fields = [
     </el-radio-group>
     <p class="muted">{{ t(selectedTheme.description) }}</p>
     <p class="muted">
-      {{ t('保存配置后应用到全站，明暗和其他外观设置保持不变。') }}
+      {{
+        t(
+          '保存后应用到公共博客；管理后台保持独立，其他外观设置由各主题按需使用。',
+        )
+      }}
     </p>
   </section>
   <section class="appearance-setting">

@@ -2,10 +2,11 @@ export const adminSettingsMessages: Record<string, string> = {
   网站主题: 'Site theme',
   默认主题: 'Default theme',
   '保留现有梦桜风格。': 'Keep the current 梦桜 appearance.',
-  '柔灰（预览）': 'Soft gray (preview)',
-  '柔灰表面，保留樱粉点缀。': 'Soft gray surfaces with Sakura pink accents.',
-  '保存配置后应用到全站，明暗和其他外观设置保持不变。':
-    'Save to apply across the site. Light/dark and other appearance settings stay unchanged.',
+  Minimal: 'Minimal',
+  '独立的极简布局与内容展示。':
+    'An independent minimal layout and content presentation.',
+  '保存后应用到公共博客；管理后台保持独立，其他外观设置由各主题按需使用。':
+    'Save to apply to the public blog. Admin remains independent; each theme opts into other appearance settings.',
   字体大小: 'Font size',
   恢复默认: 'Reset to default',
   全站字体: 'Site font',

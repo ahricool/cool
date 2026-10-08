@@ -41,7 +41,7 @@ async function transformSettings(body) {
 test('theme selection roundtrips and old clients preserve independent appearance and images', async () => {
   const initial = structuredClone(defaultSettings);
   initial.site.appearance = {
-    themeId: 'soft-preview',
+    themeId: 'minimal',
     font: 'bubble-candy',
     fontSize: 150,
     avatar: 'star',
@@ -79,7 +79,7 @@ test('legacy settings gain the default ID on read without rewriting data', async
 
 test('transformed legacy DTO preserves omitted theme, font and fontSize after save', async () => {
   const initial = structuredClone(defaultSettings);
-  initial.site.appearance.themeId = 'soft-preview';
+  initial.site.appearance.themeId = 'minimal';
   initial.site.appearance.font = 'bubble-candy';
   initial.site.appearance.fontSize = 150;
   const db = memoryDatabase(initial);
@@ -110,7 +110,13 @@ test('actual settings DTO accepts safe IDs and rejects invalid values', async ()
     whitelist: true,
     forbidNonWhitelisted: true,
   });
-  for (const id of ['default', 'soft-preview', 'removed-theme', undefined]) {
+  for (const id of [
+    'default',
+    'minimal',
+    'soft-preview',
+    'removed-theme',
+    undefined,
+  ]) {
     const body = structuredClone(defaultSettings);
     body.site.appearance.themeId = id;
     await pipe.transform(body, { type: 'body', metatype });

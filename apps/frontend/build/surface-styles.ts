@@ -1,12 +1,22 @@
 import type { AnyNode, Plugin, Rule } from 'postcss';
 import selectorParser from 'postcss-selector-parser';
 
-type Surface = 'blog' | 'admin';
+import { siteThemes } from '../app/themes/registry';
+
+type Surface = string;
 
 function surfaceFor(file: string): Surface | undefined {
   const path = file.replaceAll('\\', '/');
+  const theme = siteThemes.find((entry) =>
+    path.includes(`/themes/${entry.directory}/`),
+  );
+  if (theme) return theme.id;
   if (path.includes('/assets/blog/')) return 'blog';
-  if (path.includes('/assets/admin/') || path.includes('/element-plus/')) {
+  if (
+    path.includes('/assets/admin/') ||
+    path.includes('/features/admin/') ||
+    path.includes('/element-plus/')
+  ) {
     return 'admin';
   }
 }
@@ -23,13 +33,15 @@ function insideKeyframes(rule: Rule): boolean {
 }
 
 function scopeSelector(selector: string, surface: Surface): string {
+  const constraint =
+    surface !== 'blog' && surface !== 'admin'
+      ? `[data-surface='blog'][data-site-theme='${surface}']`
+      : `[data-surface='${surface}']`;
   // :where adds no specificity, keeping component rules independent of the surface boundary.
-  const rootScope = selectorParser().astSync(
-    `:where(html[data-surface='${surface}'])`,
-  ).first.first;
-  const rootConstraint = selectorParser().astSync(
-    `:where([data-surface='${surface}'])`,
-  ).first.first;
+  const rootScope = selectorParser().astSync(`:where(html${constraint})`).first
+    .first;
+  const rootConstraint = selectorParser().astSync(`:where(${constraint})`).first
+    .first;
 
   return selectorParser((selectors) => {
     selectors.each((entry) => {
@@ -66,15 +78,32 @@ function scopeSelector(selector: string, surface: Surface): string {
   }).processSync(selector);
 }
 
-/** Keep both SPA surfaces loaded without leaking resets or CSS variables. */
+/** Theme and Admin CSS can stay loaded without leaking resets, variables or animations. */
 export default function surfaceStyles(): Plugin {
   return {
     postcssPlugin: 'sakura-surface-styles',
     Once(root, { result }) {
-      root.walkRules((rule) => {
-        const surface = surfaceFor(
-          rule.source?.input.file ?? result.opts.from ?? '',
+      const animations = new Map<string, string>();
+      root.walkAtRules(/(?:^|-)keyframes$/i, (rule) => {
+        const surface =
+          surfaceFor(rule.source?.input.file ?? '') ??
+          surfaceFor(result.opts.from ?? '');
+        if (!surface) return;
+        const name = rule.params.trim();
+        const scoped = `cool-${surface}-${name}`;
+        animations.set(name, scoped);
+        rule.params = scoped;
+      });
+      root.walkDecls(/^(?:-webkit-)?animation(?:-name)?$/, (declaration) => {
+        declaration.value = declaration.value.replace(
+          /[\w-]+/g,
+          (name) => animations.get(name) ?? name,
         );
+      });
+      root.walkRules((rule) => {
+        const surface =
+          surfaceFor(rule.source?.input.file ?? '') ??
+          surfaceFor(result.opts.from ?? '');
         if (!surface || insideKeyframes(rule)) return;
         rule.selector = scopeSelector(rule.selector, surface);
       });

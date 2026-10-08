@@ -7,6 +7,7 @@ export function installAdminUi(app: App) {
     import('element-plus'),
     import('element-plus/es/locale/lang/zh-cn'),
     import('element-plus/es/locale/lang/en'),
+    import('~/assets/admin/index.css'),
   ]).then(([{ default: ElementPlus }, { default: zh }, { default: en }]) => {
     const config = reactive({
       locale: preferredLocale.value === 'zh' ? zh : en,

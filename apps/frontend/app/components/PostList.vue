@@ -1,7 +1,0 @@
-<script setup lang="ts">
-import type { Post } from '@cool/content';
-defineProps<{ posts: Post[] }>();
-</script>
-<template>
-  <ArticleCard v-for="post in posts" :key="post.id" :post="post" />
-</template>

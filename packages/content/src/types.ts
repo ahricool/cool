@@ -173,7 +173,7 @@ export interface Comment {
 export type PatternShape = 'heart' | 'star' | 'dot';
 export type SiteFont = 'default' | 'bubble-candy';
 export interface SiteAppearance {
-  /** Site-wide visual identity, independent of the reader's light/dark cookie. */
+  /** Public site's complete frontend theme, independent of Admin and reader palettes. */
   themeId: string;
   font: SiteFont;
   fontSize: number;

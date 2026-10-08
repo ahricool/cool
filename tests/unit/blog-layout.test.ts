@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   createPatternTile,
   patternColors,
-} from '../../apps/frontend/app/utils/sakura-pattern';
+} from '../../apps/frontend/app/themes/sakura/utils/sakura-pattern';
 test('decorative pattern remains stable and repeats seamlessly across its grid boundaries', () => {
   const tile = createPatternTile({
     shape: 'heart',

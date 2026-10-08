@@ -3,6 +3,7 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: 'tests/theme',
   workers: 1,
+  snapshotPathTemplate: '{testDir}/../../artifacts/theme-baseline/{arg}{ext}',
   timeout: 30000,
   expect: { timeout: 10000 },
   use: {

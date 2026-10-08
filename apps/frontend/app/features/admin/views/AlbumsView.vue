@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PatternSurface from '~/features/admin/visuals/PatternSurface.vue';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessageBox } from 'element-plus';
 import type { Album, AlbumItem } from '@cool/content';

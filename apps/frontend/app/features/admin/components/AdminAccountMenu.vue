@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PatternAvatar from '~/features/admin/visuals/PatternAvatar.vue';
+import ReadingIcon from '~/features/admin/visuals/ReadingIcon.vue';
 import type { AuthResult } from '../api';
 import { resolveCustomImage } from '~/utils/custom-image';
 const props = defineProps<{

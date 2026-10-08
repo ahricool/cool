@@ -1,21 +1,27 @@
 import { defaultAppearance } from '@cool/content';
-import { resolveSiteTheme, siteThemeCss } from '~/themes/registry';
+import { resolveSiteTheme, resolveThemeColorMode } from '~/themes/registry';
 
-/** Both Nuxt roots apply the same appearance, including full-screen errors. */
+/** Both Nuxt roots establish the active surface; CSS remains isolated after SPA navigation. */
 export function useSiteAppearanceHead() {
   const route = useRoute();
-  const dark = useCoolTheme();
+  const blogDark = useCoolTheme('blog');
+  const adminDark = useCoolTheme('admin');
   const pinia = useNuxtApp().$pinia;
-  // A plugin initialization error may reach error.vue before Pinia is available.
   const store = pinia ? useSiteStore(pinia) : undefined;
   const appearance = computed(
     () => store?.site.appearance ?? defaultAppearance,
   );
   const { locale, contentLang } = useCoolI18n();
   const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
+  const theme = computed(() => resolveSiteTheme(appearance.value.themeId));
+  const dark = computed(() => {
+    const preferred = isAdmin.value ? adminDark.value : blogDark.value;
+    return isAdmin.value
+      ? preferred
+      : resolveThemeColorMode(theme.value, preferred ? 'dark' : 'light') ===
+          'dark';
+  });
   onMounted(() => {
-    // Share the store's pending request; don't repeatedly retry a failed API
-    // while switching between the app and the error root.
     if (store && !store.loaded && !store.failed) void store.load();
   });
   useHead(() => ({
@@ -24,10 +30,33 @@ export function useSiteAppearanceHead() {
       lang: contentLang(locale.value),
       'data-surface': isAdmin.value ? 'admin' : 'blog',
       'data-font': store?.loaded ? appearance.value.font : undefined,
-      'data-site-theme': resolveSiteTheme(appearance.value.themeId).id,
-      style: `${siteThemeCss(appearance.value.themeId, dark.value)} --sakura-font-scale: ${appearance.value.fontSize / 100}`,
+      'data-site-theme': isAdmin.value ? undefined : theme.value.id,
+      style: `--site-font-scale: ${appearance.value.fontSize / 100}`,
     },
-    bodyAttrs: { class: isAdmin.value ? 'admin-ui' : 'sakura-ui' },
+    bodyAttrs: {
+      class: isAdmin.value ? 'admin-ui' : `${theme.value.directory}-ui`,
+    },
+    link: [
+      {
+        key: 'site-icon',
+        rel: 'icon',
+        type: 'image/svg+xml',
+        href: isAdmin.value ? '/favicon.svg' : theme.value.assets.icon,
+      },
+      ...(isAdmin.value || theme.value.assets.touchIcon
+        ? [
+            {
+              key: 'touch-icon',
+              rel: 'apple-touch-icon' as const,
+              sizes: '180x180',
+              href: isAdmin.value
+                ? '/apple-touch-icon.png'
+                : (theme.value.assets.touchIcon ?? '/apple-touch-icon.png'),
+            },
+          ]
+        : []),
+    ],
   }));
-  return { appearance, dark, isAdmin };
+  const ready = computed(() => !store || store.loaded || store.failed);
+  return { appearance, dark, isAdmin, ready };
 }

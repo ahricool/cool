@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import '~/assets/admin/index.css';
+import ThemeToggle from '~/features/admin/visuals/ThemeToggle.vue';
 import { useCoolI18n } from '~/composables/useCoolI18n';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -9,7 +11,7 @@ import AdminAccountMenu from '~/features/admin/components/AdminAccountMenu.vue';
 import { publicUrl } from '~/features/admin/publicUrl';
 const { t } = useCoolI18n();
 const route = useRoute();
-const dark = useCoolTheme();
+const dark = useCoolTheme('admin');
 const router = useRouter();
 const blogUrl = computed(() => publicUrl());
 provide('admin-active-menu', ref<string | null>(null));

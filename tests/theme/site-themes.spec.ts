@@ -1,56 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { themeFixture } from './fixture';
 
-test('first-load errors resolve appearance and a failed site API does not loop on recovery', async ({
-  page,
-}) => {
-  await themeFixture(page, { themeId: 'soft-preview' });
-  await page.goto('/synthetic-first-load-not-found');
-  await expect(page.locator('.error-card')).toBeVisible();
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-site-theme',
-    'soft-preview',
-  );
-  await page.getByRole('button', { name: '返回首页', exact: true }).click();
-  await expect(page.locator('.story-title')).toBeVisible();
-  let siteRequests = 0;
-  await page.route('**/api/v1/public/site', async (route) => {
-    siteRequests++;
-    await route.fulfill({
-      status: 400,
-      json: { message: 'Synthetic site API failure' },
-    });
-  });
-  await page.goto('/synthetic-failed-site-not-found');
-  await expect(page.locator('.error-card')).toBeVisible();
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-site-theme',
-    'default',
-  );
-  await page.getByRole('button', { name: '返回首页', exact: true }).click();
-  await expect(page.locator('.story-title')).toBeVisible();
-  expect(siteRequests).toBe(1);
-});
-
-test('404 and global errors retain theme and font settings through recovery', async ({
-  page,
-}) => {
-  await themeFixture(page, {
-    themeId: 'soft-preview',
-    font: 'bubble-candy',
-    fontSize: 125,
-  });
-  await page
-    .context()
-    .addCookies([
-      { name: 'cool_theme', value: 'dark', url: 'http://127.0.0.1:43871' },
-    ]);
-  await page.goto('/search');
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-site-theme',
-    'soft-preview',
-  );
-  await page.evaluate(async () => {
+async function spa(page: Page, path: string) {
+  await page.evaluate(async (value) => {
     const root = document.getElementById('__nuxt') as HTMLElement & {
       __vue_app__: {
         config: {
@@ -60,112 +12,112 @@ test('404 and global errors retain theme and font settings through recovery', as
         };
       };
     };
-    await root.__vue_app__.config.globalProperties.$router.push(
-      '/synthetic-not-found',
-    );
+    await root.__vue_app__.config.globalProperties.$router.push(value);
+  }, path);
+}
+async function choose(page: Page, id: 'default' | 'minimal') {
+  await spa(page, '/admin/settings');
+  await page.getByRole('tab', { name: '外观', exact: true }).click();
+  const choice = page.getByRole('radio', {
+    name: id === 'default' ? '默认主题' : 'Minimal',
+    exact: true,
   });
-  await expect(page.locator('.error-card')).toBeVisible();
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-site-theme',
-    'soft-preview',
-  );
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-font',
-    'bubble-candy',
-  );
-  await expect(page.locator('html')).toHaveAttribute(
-    'style',
-    /--sakura-font-scale: 1.25/,
-  );
-  await expect(page.locator('.error-card')).toHaveCSS(
+  await choice.focus();
+  await choice.press('Space');
+  await expect(choice).toBeChecked();
+  await page.getByRole('button', { name: '保存配置', exact: true }).click();
+  await expect(page.locator('.sakura-toast')).toContainText('配置已保存');
+  await expect(page.locator('.sakura-toast')).toHaveCSS(
     'background-color',
-    'rgb(38, 39, 43)',
+    'rgb(255, 255, 255)',
   );
-  await page.getByRole('button', { name: '返回首页', exact: true }).click();
-  await expect(page.locator('.story-title')).toBeVisible();
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-site-theme',
-    'soft-preview',
-  );
-  await page.evaluate(() => {
-    const root = document.getElementById('__nuxt') as HTMLElement & {
-      __vue_app__: {
-        config: {
-          globalProperties: { $nuxt: { payload: { error: unknown } } };
-        };
-      };
-    };
-    root.__vue_app__.config.globalProperties.$nuxt.payload.error = {
-      statusCode: 500,
-      message: 'Synthetic global error',
-      fatal: true,
-    };
-  });
-  await expect(page.locator('.error-card')).toBeVisible();
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-site-theme',
-    'soft-preview',
-  );
-  await expect(page.locator('.error-card')).toHaveCSS(
-    'background-color',
-    'rgb(38, 39, 43)',
-  );
-  await page.getByRole('button', { name: '返回首页', exact: true }).click();
-  await expect(page.locator('.story-title')).toBeVisible();
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-site-theme',
-    'soft-preview',
-  );
-});
+}
+async function surface(page: Page, id: 'default' | 'minimal') {
+  await expect(page.locator(`[data-theme-root="${id}"]`)).toBeVisible();
+  await expect(
+    page.locator(id === 'default' ? '.site-header' : '.minimal-masthead'),
+  ).toBeVisible();
+  await expect(
+    page.locator(id === 'default' ? '.minimal-masthead' : '.site-header'),
+  ).toHaveCount(0);
+  await expect(page.locator('html')).toHaveAttribute('data-site-theme', id);
+}
 
-test('legacy and unknown IDs show the unchanged default in both reader palettes', async ({
+test('SPA switches complete trees in both directions; Admin, Teleports and history remain independent', async ({
   page,
 }) => {
   const state = await themeFixture(page);
-  for (const id of [undefined, 'default', 'removed-theme']) {
-    state.settings.site.appearance.themeId = id as string;
-    for (const mode of ['light', 'dark']) {
-      await page
-        .context()
-        .addCookies([
-          { name: 'cool_theme', value: mode, url: 'http://127.0.0.1:43871' },
-        ]);
-      await page.goto('/search');
-      await expect(page.locator('html')).toHaveAttribute(
-        'data-font',
-        'default',
-      );
-      await expect(page.locator('html')).toHaveAttribute(
-        'data-site-theme',
-        'default',
-      );
-      await expect(page.locator('body')).toHaveCSS(
-        'background-color',
-        mode === 'dark' ? 'rgb(23, 24, 26)' : 'rgb(255, 255, 255)',
-      );
-      await expect(page.locator('.primary-action')).toHaveCSS(
-        'background-color',
-        mode === 'dark' ? 'rgb(181, 46, 99)' : 'rgb(199, 54, 107)',
-      );
-      await expect(page.locator('html')).not.toHaveAttribute(
-        'style',
-        /--sakura-page/,
-      );
-      await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
-    }
-  }
-  await page.goto('/admin/settings');
-  await page.getByRole('tab', { name: '外观', exact: true }).click();
-  await expect(
-    page.getByRole('radio', { name: '默认主题', exact: true }),
-  ).toBeChecked();
-  expect(state.settings.site.appearance.themeId).toBe('removed-theme');
-  expect(state.writes).toEqual([]);
+  await page.goto('/');
+  await surface(page, 'default');
+  await expect(page.locator('.story-card')).toBeVisible();
+  await page.evaluate(() => {
+    (window as Window & { themeDocument?: boolean }).themeDocument = true;
+  });
+  await choose(page, 'minimal');
+  await expect(page.locator('html')).not.toHaveAttribute('data-site-theme');
+  await page.getByRole('button', { name: '我的账户', exact: true }).click();
+  await expect(page.locator('#admin-account-menu')).toBeVisible();
+  await expect(page.locator('#admin-account-menu')).toHaveCSS(
+    'background-color',
+    'rgb(255, 255, 255)',
+  );
+  await page.keyboard.press('Escape');
+  await spa(page, '/');
+  await surface(page, 'minimal');
+  await expect(page.locator('.minimal-story')).toBeVisible();
+  await expect(page.locator('.story-card')).toHaveCount(0);
+  await expect(page.locator('body')).toHaveCSS(
+    'background-color',
+    'rgb(250, 249, 246)',
+  );
+  expect(
+    await page
+      .locator('html')
+      .evaluate((el) =>
+        getComputedStyle(el).getPropertyValue('--sakura-accent'),
+      ),
+  ).toBe('');
+  await spa(page, '/posts/fixture-post');
+  await expect(page.locator('.minimal-document-header h1')).toContainText(
+    '合成文章',
+  );
+  await expect(page.locator('.post-header')).toHaveCount(0);
+  await page.goBack();
+  await surface(page, 'minimal');
+  await page.goForward();
+  await expect(page.locator('.minimal-document')).toBeVisible();
+  await choose(page, 'default');
+  await spa(page, '/posts/fixture-post');
+  await surface(page, 'default');
+  await expect(page.locator('.post-header')).toBeVisible();
+  await expect(page.locator('.minimal-document')).toHaveCount(0);
+  await expect(page.locator('body')).toHaveCSS(
+    'background-color',
+    'rgb(255, 255, 255)',
+  );
+  expect(
+    await page
+      .locator('html')
+      .evaluate((el) =>
+        getComputedStyle(el).getPropertyValue('--minimal-page'),
+      ),
+  ).toBe('');
+  expect(
+    await page.evaluate(
+      () => (window as Window & { themeDocument?: boolean }).themeDocument,
+    ),
+  ).toBe(true);
+  expect(state.writes.map((write) => write.site.appearance.themeId)).toEqual([
+    'minimal',
+    'default',
+  ]);
+  await page.reload();
+  await surface(page, 'default');
 });
 
-test('Admin saves only theme choice, retains appearance and pictures, and survives refresh and route changes', async ({
+test('an unsaved Admin choice does not affect public content; save persists without changing authored appearance', async ({
   page,
-}, info) => {
+}) => {
   const state = await themeFixture(page, {
     font: 'bubble-candy',
     fontSize: 150,
@@ -173,190 +125,331 @@ test('Admin saves only theme choice, retains appearance and pictures, and surviv
     cover: 'heart',
     background: 'none',
   });
-  const original = structuredClone(state.settings);
-  // The existing bilingual form orders translations by locale when saving.
-  original.site.translations.sort((a, b) => a.locale.localeCompare(b.locale));
-  original.homepage.translations.sort((a, b) =>
-    a.locale.localeCompare(b.locale),
-  );
+  const appearance = structuredClone(state.settings.site.appearance);
   await page.goto('/admin/settings');
   await page.getByRole('tab', { name: '外观', exact: true }).click();
-  const previewChoice = page.getByRole('radio', {
-    name: '柔灰（预览）',
-    exact: true,
-  });
-  await previewChoice.focus();
-  await previewChoice.press('Space');
-  await expect(previewChoice).toBeChecked();
-  await expect(
-    page
-      .getByTestId('appearance-theme')
-      .locator('.el-radio-button__inner')
-      .last(),
-  ).toHaveCSS('outline-width', '2px');
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-site-theme',
-    'default',
-  );
+  const unsaved = page.getByRole('radio', { name: 'Minimal', exact: true });
+  await unsaved.focus();
+  await unsaved.press('Space');
   expect(state.writes).toEqual([]);
-  expect(state.settings.site.appearance.themeId).toBe('default');
-  await page.goto('/search');
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-site-theme',
-    'default',
-  );
-  await expect(page.locator('body')).toHaveCSS(
-    'background-color',
-    'rgb(255, 255, 255)',
-  );
-  await page.goto('/admin/settings');
-  await page.getByRole('tab', { name: '外观', exact: true }).click();
-  await expect(
-    page.getByRole('radio', { name: '默认主题', exact: true }),
-  ).toBeChecked();
-  await previewChoice.focus();
-  await previewChoice.press('Space');
-  await page.getByRole('button', { name: '保存配置', exact: true }).click();
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-site-theme',
-    'soft-preview',
-  );
-  expect(state.writes).toEqual([
-    {
-      ...original,
-      site: {
-        ...original.site,
-        appearance: { ...original.site.appearance, themeId: 'soft-preview' },
-      },
-    },
-  ]);
-  await expect(page.locator('.panel')).toHaveCSS(
-    'background-color',
-    'rgb(255, 255, 255)',
-  );
-  await expect(page.locator('body')).toHaveCSS(
-    'background-color',
-    'rgb(245, 245, 246)',
-  );
-  await page.getByRole('button', { name: '切换深色', exact: true }).click();
-  await expect(page.locator('.panel')).toHaveCSS(
-    'background-color',
-    'rgb(38, 39, 43)',
-  );
-  await page.screenshot({
-    path: info.outputPath('admin-preview-dark.png'),
-    fullPage: true,
+  await spa(page, '/search');
+  await surface(page, 'default');
+  await choose(page, 'minimal');
+  expect(state.writes[0]?.site.appearance).toEqual({
+    ...appearance,
+    themeId: 'minimal',
   });
+  await spa(page, '/search');
+  await surface(page, 'minimal');
   await page.reload();
-  await expect(page.locator('html')).toHaveClass(/dark/);
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-site-theme',
-    'soft-preview',
-  );
+  await surface(page, 'minimal');
+  await expect(page.locator('body')).toHaveCSS('font-size', '24px');
   await expect(page.locator('html')).toHaveAttribute(
     'data-font',
     'bubble-candy',
   );
-  await expect(page.locator('html')).toHaveAttribute(
-    'style',
-    /--sakura-font-scale: 1.5/,
-  );
-  await expect(page.locator('.page-pattern')).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('.minimal-search-field')).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test('Admin color mode and public color mode have separate cookies and retain the same layout', async ({
+  page,
+}) => {
+  await themeFixture(page, { themeId: 'minimal' });
   await page.goto('/');
-  await expect(page.locator('html')).toHaveAttribute('data-surface', 'blog');
+  await surface(page, 'minimal');
+  await page.getByRole('button', { name: '切换深色', exact: true }).click();
   await expect(page.locator('body')).toHaveCSS(
     'background-color',
-    'rgb(27, 28, 31)',
+    'rgb(21, 28, 25)',
   );
-  await expect(page.locator('.story-title')).toContainText('合成文章');
-  await expect(page.locator('.story-cover img')).toHaveAttribute(
-    'src',
-    '/api/v1/media/fixture.webp',
-  );
-  await page.goto('/admin/settings');
-  await page.getByRole('tab', { name: '外观', exact: true }).click();
-  await page
-    .getByTestId('appearance-theme')
-    .getByText('默认主题', { exact: true })
-    .click();
-  await page.getByRole('button', { name: '保存配置', exact: true }).click();
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-site-theme',
-    'default',
-  );
-  await expect(page.locator('html')).not.toHaveAttribute(
-    'style',
-    /--sakura-page/,
-  );
-  expect(
-    await page.evaluate(() => Array.from(document.documentElement.style)),
-  ).toEqual(['--sakura-font-scale']);
-  await expect(page.locator('.panel')).toHaveCSS(
+  await expect(page.locator('.minimal-masthead')).toBeVisible();
+  await spa(page, '/admin/settings');
+  await expect(page.locator('body')).toHaveCSS(
     'background-color',
-    'rgb(34, 35, 39)',
+    'rgb(255, 255, 255)',
   );
-  expect(state.settings).toEqual(original);
+  await page.getByRole('button', { name: '切换深色', exact: true }).click();
+  await expect(page.locator('html')).toHaveClass('dark');
+  await spa(page, '/');
+  await surface(page, 'minimal');
+  await page.getByRole('button', { name: '切换浅色', exact: true }).click();
+  await spa(page, '/admin/settings');
+  await expect(page.locator('html')).toHaveClass('dark');
+  const cookies = await page.context().cookies();
+  expect(cookies.find((cookie) => cookie.name === 'cool_theme')?.value).toBe(
+    'light',
+  );
   expect(
-    (await page.context().cookies()).find(
-      (cookie) => cookie.name === 'cool_theme',
-    )?.value,
+    cookies.find((cookie) => cookie.name === 'cool_admin_theme')?.value,
   ).toBe('dark');
 });
 
-test('themes compose with light/dark, font, size, pattern and explicit English on narrow screens', async ({
+test('missing, unknown and retired IDs render actual Sakura components without writing settings', async ({
   page,
-}, info) => {
+}) => {
   const state = await themeFixture(page);
-  await page.setViewportSize({ width: 390, height: 844 });
-  for (const [index, themeId] of ['default', 'soft-preview'].entries()) {
-    for (const mode of ['light', 'dark']) {
-      state.settings.site.appearance = {
-        themeId,
-        font: index ? 'bubble-candy' : 'default',
-        fontSize: mode === 'dark' ? 150 : 80,
-        avatar: 'star',
-        cover: 'heart',
-        background: mode === 'dark' ? 'none' : 'star',
-      };
-      await page.context().addCookies([
-        { name: 'cool_theme', value: mode, url: 'http://127.0.0.1:43871' },
-        { name: 'cool_locale', value: 'en', url: 'http://127.0.0.1:43871' },
-      ]);
-      await page.goto('/search');
-      await expect(page.locator('html')).toHaveAttribute(
-        'data-site-theme',
-        themeId,
-      );
-      await expect(page.locator('html')).toHaveAttribute(
-        'data-font',
-        index ? 'bubble-candy' : 'default',
-      );
-      await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-      await expect(page.locator('.page-pattern')).toHaveCount(
-        mode === 'dark' ? 0 : 1,
-      );
-      expect(
-        await page.evaluate(
-          () => document.documentElement.scrollWidth <= innerWidth,
-        ),
-      ).toBe(true);
-      await page.screenshot({
-        path: info.outputPath(`reader-${themeId}-${mode}.png`),
-        fullPage: true,
-      });
-      await page.goto('/admin/settings');
-      await page.getByRole('tab', { name: 'Appearance', exact: true }).click();
-      await expect(page.getByTestId('appearance-theme')).toBeVisible();
-      await expect(page.locator('html')).toHaveAttribute(
-        'data-site-theme',
-        themeId,
-      );
-      const choices = await page.getByTestId('appearance-theme').boundingBox();
-      expect(choices!.x + choices!.width).toBeLessThanOrEqual(390);
-      await page.screenshot({
-        path: info.outputPath(`admin-${themeId}-${mode}-mobile.png`),
-        fullPage: true,
+  for (const id of [undefined, 'soft-preview', 'removed-theme', '', null]) {
+    state.settings.site.appearance.themeId = id as string;
+    await page.goto('/');
+    await surface(page, 'default');
+    await expect(page.locator('.story-card')).toBeVisible();
+  }
+  expect(state.writes).toEqual([]);
+});
+
+for (const themeId of ['default', 'minimal'] as const) {
+  for (const width of [1440, 390]) {
+    for (const language of ['zh', 'en']) {
+      test(`${themeId} all public routes, pagination and media at ${width} in ${language}`, async ({
+        page,
+      }, info) => {
+        const state = await themeFixture(page, { themeId });
+        state.showMoment = true;
+        await page.setViewportSize({ width, height: 900 });
+        await page.context().addCookies([
+          {
+            name: 'cool_locale',
+            value: language,
+            url: 'http://127.0.0.1:43871',
+          },
+        ]);
+        const errors: string[] = [];
+        page.on('pageerror', (error) => errors.push(error.message));
+        await page.goto('/');
+        await surface(page, themeId);
+        await expect(
+          page.locator(
+            themeId === 'default' ? '.timeline-update' : '.minimal-note',
+          ),
+        ).toContainText('Synthetic moment');
+        for (const [path, selector] of [
+          [
+            '/posts/fixture-post',
+            themeId === 'default' ? '.post-article' : '.minimal-document',
+          ],
+          [
+            '/pages/fixture-page',
+            themeId === 'default' ? '.entry-content' : '.minimal-document',
+          ],
+          [
+            '/about',
+            themeId === 'default' ? '.about-page' : '.minimal-document',
+          ],
+          [
+            '/search?q=fixture&page=1',
+            themeId === 'default' ? '.story-card' : '.minimal-story',
+          ],
+          [
+            '/tags',
+            themeId === 'default' ? '.taxonomy-terms' : '.minimal-tags',
+          ],
+          [
+            '/tags/spring?page=2',
+            themeId === 'default' ? '.story-card' : '.minimal-story',
+          ],
+        ]) {
+          await spa(page, path);
+          await surface(page, themeId);
+          await expect(page.locator(selector).first()).toBeVisible();
+          await expect(page.locator('html')).toHaveAttribute(
+            'lang',
+            language === 'zh' ? 'zh-CN' : 'en',
+          );
+          await expect(
+            page.locator(`${selector}[lang], ${selector} [lang]`).first(),
+          ).toHaveAttribute('lang', language === 'zh' ? 'zh-CN' : 'en');
+          expect(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= innerWidth,
+            ),
+          ).toBe(true);
+        }
+        await spa(page, '/search?q=fixture&page=1');
+        await page
+          .getByRole('link', {
+            name: language === 'zh' ? '下一页' : 'Next',
+            exact: true,
+          })
+          .click();
+        await expect(page).toHaveURL(/q=fixture.*page=2|page=2.*q=fixture/);
+        await spa(page, '/posts/fixture-post');
+        await expect(
+          page
+            .locator(themeId === 'default' ? '.post-article' : '.minimal-prose')
+            .first(),
+        ).toContainText('Synthetic heading');
+        await expect(
+          page.locator('.minimal-prose img, .post-article img').first(),
+        ).toBeVisible();
+        await page.screenshot({
+          path: info.outputPath(`${themeId}-${width}-${language}-post.png`),
+          fullPage: true,
+        });
+        expect(state.requests).toContain('/public/search');
+        expect(state.requests).toContain('/public/tags/spring/posts');
+        expect(errors).toEqual([]);
       });
     }
   }
+  test(`${themeId} direct 404, SPA 404, missing content and global errors recover`, async ({
+    page,
+  }) => {
+    await themeFixture(page, { themeId, fontSize: 125 });
+    const selector = themeId === 'default' ? '.error-card' : '.minimal-error';
+    await page.goto('/synthetic-direct-404');
+    await expect(page.locator(selector)).toBeVisible();
+    await page.getByRole('button', { name: '返回首页', exact: true }).click();
+    await surface(page, themeId);
+    await spa(page, '/synthetic-spa-404');
+    await expect(page.locator(selector)).toBeVisible();
+    await page.getByRole('button', { name: '返回首页', exact: true }).click();
+    await surface(page, themeId);
+    for (const path of ['/posts/missing', '/pages/missing', '/tags/missing']) {
+      await spa(page, path);
+      await expect(page.locator(selector)).toContainText('404');
+      await page.getByRole('button', { name: '返回首页', exact: true }).click();
+      await surface(page, themeId);
+    }
+    await page.evaluate(() => {
+      const root = document.getElementById('__nuxt') as HTMLElement & {
+        __vue_app__: {
+          config: {
+            globalProperties: { $nuxt: { payload: { error: unknown } } };
+          };
+        };
+      };
+      root.__vue_app__.config.globalProperties.$nuxt.payload.error = {
+        statusCode: 500,
+        message: 'Synthetic error',
+        fatal: true,
+      };
+    });
+    await expect(page.locator(selector)).toContainText('500');
+    await expect(page.locator('body')).toHaveCSS('font-size', '20px');
+    await page.getByRole('button', { name: '返回首页', exact: true }).click();
+    await surface(page, themeId);
+  });
+}
+
+test('first Minimal load fetches its visual resources without Sakura styles or images', async ({
+  page,
+}) => {
+  await themeFixture(page, { themeId: 'minimal' });
+  const urls: string[] = [];
+  page.on('request', (request) => urls.push(request.url()));
+  await page.goto('/');
+  await surface(page, 'minimal');
+  await expect(page.locator('.minimal-story')).toBeVisible();
+  expect(urls.some((url) => url.includes('/sakura/'))).toBe(false);
+  const css = await page.evaluate(() =>
+    [...document.styleSheets]
+      .flatMap((sheet) => [...sheet.cssRules].map((rule) => rule.cssText))
+      .join('\n'),
+  );
+  expect(css).not.toContain('data-site-theme=default');
+  expect(css).not.toContain("data-site-theme='default'");
+  expect(css).not.toContain('--sakura-page');
+});
+
+test('a failed site API does not repeatedly retry while recovering from an error', async ({
+  page,
+}) => {
+  const state = await themeFixture(page);
+  await page.route('**/api/v1/public/site', (route) =>
+    route.fulfill({ status: 503, json: { message: 'Synthetic unavailable' } }),
+  );
+  await page.goto('/synthetic-404');
+  await expect(page.locator('.error-card')).toBeVisible();
+  await page.getByRole('button', { name: '返回首页', exact: true }).click();
+  await surface(page, 'default');
+  await expect(page.locator('.site-error')).toBeVisible();
+  expect(
+    state.requests.filter((path) => path === '/public/config'),
+  ).toHaveLength(1);
+});
+
+for (const themeId of ['default', 'minimal'] as const) {
+  test(`${themeId} narrow content retains media and all font/size/palette choices`, async ({
+    page,
+  }, info) => {
+    const state = await themeFixture(page, { themeId });
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const font of ['default', 'bubble-candy'] as const) {
+      for (const fontSize of [80, 150]) {
+        for (const mode of ['light', 'dark']) {
+          state.settings.site.appearance.font = font;
+          state.settings.site.appearance.fontSize = fontSize;
+          await page.context().addCookies([
+            {
+              name: 'cool_theme',
+              value: mode,
+              url: 'http://127.0.0.1:43871',
+            },
+          ]);
+          await page.goto('/posts/fixture-post');
+          await surface(page, themeId);
+          await expect(
+            page.locator(
+              themeId === 'default' ? '.post-article' : '.minimal-document',
+            ),
+          ).toContainText('Synthetic heading');
+          await expect(page.locator('body')).toHaveCSS(
+            'font-size',
+            `${(16 * fontSize) / 100}px`,
+          );
+          const image = page
+            .locator('.minimal-prose img, .post-article img')
+            .first();
+          await expect(image).toBeVisible();
+          await expect
+            .poll(() =>
+              image.evaluate((node) => (node as HTMLImageElement).naturalWidth),
+            )
+            .toBeGreaterThan(0);
+          await image.scrollIntoViewIfNeeded();
+          await image.evaluate((node) => (node as HTMLImageElement).decode());
+          expect(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= innerWidth,
+            ),
+          ).toBe(true);
+        }
+      }
+    }
+    await page.evaluate(async () => {
+      window.scrollTo(0, 0);
+      await document.fonts.ready;
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve()),
+      );
+    });
+    await page.screenshot({
+      path: info.outputPath(`${themeId}-390-dark-150-bubble.png`),
+      fullPage: true,
+    });
+  });
+}
+
+test('direct Admin errors keep fixed Admin visuals even when Minimal is selected', async ({
+  page,
+}) => {
+  await themeFixture(page, { themeId: 'minimal' });
+  await page.goto('/admin/synthetic-missing');
+  await expect(page.locator('.error-card')).toBeVisible();
+  await expect(page.locator('.minimal-error')).toHaveCount(0);
+  await expect(page.locator('.error-card')).toHaveCSS(
+    'background-color',
+    'rgb(255, 255, 255)',
+  );
+  await expect(page.locator('html')).toHaveAttribute('data-surface', 'admin');
+  await expect(page.locator('html')).not.toHaveAttribute('data-site-theme');
+  await expect(
+    page.getByRole('button', { name: '返回工作空间', exact: true }),
+  ).toBeVisible();
 });

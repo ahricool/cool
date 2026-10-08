@@ -1,0 +1,113 @@
+/* Sakura owns its palette and font stack. */
+:root {
+  --sakura-font-scale: var(--site-font-scale, 1);
+  --sakura-default-font:
+    Ubuntu, 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
+  --sakura-font: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --navigation-blur-radius: 18px;
+  --navigation-header-height: 64px;
+  --admin-header-height: 72px;
+  --navigation-content-shadow: 0 0 0 #0000;
+  --sakura-accent: #ff6699;
+  --sakura-wordmark-shadow: #461a2a66;
+  --sakura-accent-strong: #b52e63;
+  --sakura-accent-light-3: #ff94b8;
+  --sakura-accent-light-5: #ffbad1;
+  --sakura-accent-light-7: #efcedc;
+  --sakura-accent-light-8: #f6e2eb;
+  --sakura-danger: #c23d5a;
+  --sakura-danger-solid: #b33b55;
+  --sakura-success: var(--sakura-accent-strong);
+  --sakura-warning: var(--sakura-text-regular);
+  --sakura-modal-mask: #0005;
+  --sakura-button-primary: #c7366b;
+  --sakura-button-hover: #b62d60;
+  --sakura-button-active: #a22454;
+  --sakura-button-disabled: #985b74;
+  --sakura-button-foreground: #fff;
+  --sakura-text: #303236;
+  --sakura-text-regular: #505258;
+  --sakura-muted: #686b72;
+  --sakura-heading: #303236;
+  --sakura-surface: #fff;
+  --sakura-soft: #fff1f6;
+  --sakura-border: #e7e7eb;
+  --sakura-control-border: #dcdde2;
+  --sakura-border-light: #ececf0;
+  --sakura-fill-light: #fff5f9;
+  --sakura-page: #fff;
+  --sakura-code-surface: #222327;
+  --sakura-code-text: #ededf0;
+  --sakura-pattern-opacity: 0.45;
+  --sakura-header-background: #fffafdef;
+  --sakura-shadow: 0 8px 32px #593b5808;
+  --sakura-button-shadow: 0 2px 7px #593b581c;
+  --sakura-button-hover-shadow: 0 4px 12px #b52e6333;
+  --sakura-tag-shadow: 0 1px 5px #b52e6320;
+  --sakura-toast-shadow: 0 5px 22px #593b5826;
+  --toast-left: 24px;
+}
+
+:root[data-surface='blog'] {
+  --sakura-page: #fff;
+  --reading-header-height: var(--navigation-header-height);
+}
+@media (max-width: 768px) {
+  :root {
+    --navigation-header-height: 56px;
+  }
+}
+
+:root.dark {
+  --sakura-button-primary: #b52e63;
+  --sakura-button-hover: #c7366b;
+  --sakura-button-active: #a22454;
+  --sakura-button-disabled: #744553;
+  --sakura-danger: #f09caf;
+  --sakura-danger-solid: #a7304d;
+  --sakura-success: var(--sakura-accent-strong);
+  --sakura-warning: var(--sakura-text-regular);
+  --sakura-modal-mask: #0008;
+  --sakura-accent-light-3: #c784a1;
+  --sakura-accent-light-7: #654258;
+  --sakura-accent-light-8: #4b3543;
+  --sakura-wordmark-shadow: #ff66994d;
+  --sakura-accent: #d34e7e;
+  --sakura-accent-strong: #f58bae;
+  --sakura-text: #ededf0;
+  --sakura-text-regular: #d2d3d8;
+  --sakura-muted: #a5a7af;
+  --sakura-heading: #f5f5f7;
+  --sakura-surface: #222327;
+  --sakura-soft: #2b252b;
+  --sakura-border: #3e3f45;
+  --sakura-control-border: #52535b;
+  --sakura-border-light: #323339;
+  --sakura-fill-light: #2b252b;
+  --sakura-accent-light-5: #88617b;
+  --sakura-accent-light-7: #654258;
+  --sakura-page: #17181a;
+  --sakura-pattern-opacity: 0.16;
+  --sakura-header-background: #222327f2;
+  --sakura-shadow: 0 5px 24px #0b070f20;
+  --sakura-button-shadow: 0 2px 9px #0006;
+  --sakura-button-hover-shadow: 0 4px 14px #d34e7e33;
+  --sakura-tag-shadow: 0 1px 6px #d34e7e26;
+  --sakura-toast-shadow: 0 5px 22px #0007;
+}
+
+@font-face {
+  font-family: 'Bubble Candy';
+  src: url('/fonts/bubble-candy.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+:root[data-font='bubble-candy'] {
+  --sakura-font: 'Bubble Candy', var(--sakura-default-font);
+}
+
+:root[data-font='default'] {
+  --sakura-font: var(--sakura-default-font);
+}

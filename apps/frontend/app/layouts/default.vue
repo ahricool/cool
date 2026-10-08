@@ -1,40 +1,12 @@
 <script setup lang="ts">
-import { readingShellKey } from '~/utils/reading-shell';
-const { t } = useCoolI18n();
+import { resolveSiteTheme } from '~/themes/registry';
+import { themeComponent } from '~/themes/components';
 const store = useSiteStore();
-const { dark, scrollProgress, hasBanner, hasIllustration, registerBanner } =
-  useReadingShell();
-provide(readingShellKey, { registerBanner });
-useHead(() => ({ title: store.site.title }));
+const theme = computed(() => resolveSiteTheme(store.site.appearance.themeId));
+const entry = computed(() => themeComponent(theme.value.entry));
 </script>
 <template>
-  <a class="skip-link" href="#content">{{ t('跳到正文') }}</a>
-  <section id="main-container" class="container">
-    <header
-      class="site-header navigation-surface navigation-surface--top"
-      :class="{
-        'over-banner': hasBanner && hasIllustration,
-        'header-readable': !hasIllustration || scrollProgress >= 1,
-        'header-solid': scrollProgress >= 1 / 3,
-      }"
-      :style="{ '--header-progress': scrollProgress }"
-    >
-      <div class="header-inner">
-        <ReadingBrand placement="header" class="header-brand" />
-        <nav class="header-actions" :aria-label="t('主导航')">
-          <NuxtLink to="/about" class="about-link">{{ t('我') }}</NuxtLink>
-          <ReadingControls />
-        </nav>
-      </div>
-    </header>
-    <main id="page" class="main site wrapper">
-      <div v-if="store.failed" class="site-error" role="alert">
-        {{ t('网站配置加载失败') }}
-        <button @click="store.load(true)">{{ t('重试') }}</button>
-      </div>
-      <slot />
-    </main>
-  </section>
-  <ThemeToggle floating :dark="dark" @toggle-theme="dark = !dark" />
-  <SiteFooter />
+  <component v-if="store.loaded || store.failed" :is="entry" :key="theme.id"
+    ><slot
+  /></component>
 </template>

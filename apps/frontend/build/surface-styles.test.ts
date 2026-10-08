@@ -116,9 +116,9 @@ test('uses each imported rule source rather than only the parent stylesheet sour
 
 test('owned public styles and Element Plus remain isolated', async () => {
   const files = [
-    ['../app/assets/blog/base.css', 'blog'],
-    ['../app/assets/blog/shell.css', 'blog'],
-    ['../app/assets/blog/content.css', 'blog'],
+    ['../app/themes/sakura/styles/base.css', 'default'],
+    ['../app/themes/sakura/styles/shell.css', 'default'],
+    ['../app/themes/sakura/styles/content.css', 'default'],
     ['../app/assets/admin/shell.css', 'admin'],
     ['../app/assets/admin/workspace.css', 'admin'],
     ['../app/assets/admin/editor.css', 'admin'],
@@ -136,7 +136,13 @@ test('owned public styles and Element Plus remain isolated', async () => {
       selectorParser((selectors) => {
         selectors.each((selector) => {
           assert.ok(
-            selector.toString().includes(`data-surface='${surface}'`),
+            selector
+              .toString()
+              .includes(
+                surface === 'default'
+                  ? "data-site-theme='default'"
+                  : `data-surface='${surface}'`,
+              ),
             selector.toString(),
           );
           scoped++;
@@ -144,5 +150,52 @@ test('owned public styles and Element Plus remain isolated', async () => {
       }).processSync(rule.selector);
     });
     assert.ok(scoped > 10, `Expected a complete stylesheet: ${relativePath}`);
+  }
+});
+
+test('complete theme styles constrain root selectors and resets to their own active theme', async () => {
+  for (const [theme, id] of [
+    ['sakura', 'default'],
+    ['minimal', 'minimal'],
+  ]) {
+    const result = await transform(
+      ':root.dark { --local: blue } html::selection, body, * { color: red }',
+      `/app/themes/${theme}/styles/test.css`,
+    );
+    result.root.walkRules((rule) => {
+      selectorParser((selectors) =>
+        selectors.each((selector) => {
+          assert.ok(selector.toString().includes("data-surface='blog'"));
+          assert.ok(selector.toString().includes(`data-site-theme='${id}'`));
+        }),
+      ).processSync(rule.selector);
+    });
+  }
+});
+
+test('imported vendor highlighting inherits the owning stylesheet boundary', async () => {
+  const root = postcss.parse('.hljs { color: red }', {
+    from: '/app/node_modules/highlight.js/styles/github.css',
+  });
+  const result = await postcss([surfaceStyles()]).process(root, {
+    from: '/app/themes/sakura/styles/index.css',
+  });
+  assert.match(result.css, /data-site-theme='default'/);
+});
+
+test('owned keyframes and shorthand references have independent theme namespaces', async () => {
+  const source =
+    '@keyframes enter { from { opacity: 0 } to { opacity: 1 } } .card { animation: enter 1s ease; animation-name: enter; }';
+  for (const [directory, id] of [
+    ['sakura', 'default'],
+    ['minimal', 'minimal'],
+  ]) {
+    const result = await transform(
+      source,
+      `/app/themes/${directory}/styles/animation.css`,
+    );
+    assert.match(result.css, new RegExp(`@keyframes cool-${id}-enter`));
+    assert.match(result.css, new RegExp(`animation: cool-${id}-enter 1s ease`));
+    assert.match(result.css, new RegExp(`animation-name: cool-${id}-enter`));
   }
 });
