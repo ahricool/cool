@@ -120,7 +120,7 @@ npm run test:themes
 
 浏览器测试只启动独立 loopback 静态 SPA，通过 Playwright 拦截全部 API，在内存中保存合成配置，不启动后端或连接数据库。后端配置测试使用真实 ValidationPipe/controller 与内存数据库替身。完整 HTTP/PostgreSQL E2E 不属于这些合成检查。
 
-视觉比较基线不提交到 Git。先构建待比较的旧版本并运行 `THEME_CAPTURE_BASELINE=1 npx playwright test --config playwright.theme.config.ts tests/theme/visual-compat.spec.ts --update-snapshots`；保留 `artifacts/theme-baseline/`，再构建新版本运行同一 spec。不含基线的干净 checkout 明确跳过截图比较，功能浏览器测试仍运行。`THEME_STATIC_ROOT` 可指定另一个隔离构建的 static public 目录。测试固定随机 seed、同一合成数据与字体，等待图片加载并关闭动画，允许像素差异为 0。
+视觉比较基线不提交到 Git。先构建待比较的旧版本并运行 `THEME_CAPTURE_BASELINE=1 npx playwright test --config playwright.theme.config.ts tests/theme/visual-compat.spec.ts --update-snapshots`；保留 `artifacts/theme-baseline/`，再构建新版本运行同一 spec。不含基线的干净 checkout 明确跳过截图比较，功能浏览器测试仍运行。`npm run test:themes` 的退出码 0 可以包含跳过项，不能据此声称视觉验收通过。配置中的 `visual-reporter.ts` 额外报告 passed / failed-or-blocked / skipped / unexecuted / baseline captures，缺基线、未选截图用例、未执行或生成/更新基线均不会算作已通过截图比较。`THEME_STATIC_ROOT` 可指定另一个隔离构建的 static public 目录。测试固定随机 seed、同一合成数据与字体，等待图片加载并关闭动画，允许像素差异为 0。
 
 2026-10-08 的实际结果与限制见本次 PR 描述。SSR 本次未开启、未进行 SSR 验证；入口/loader 和请求沿用 Nuxt API，视觉浏览器逻辑在挂载生命周期或用户事件执行。未来开启 SSR 时仍需审计既有全局 locale 状态并补充服务端隔离测试。
 
@@ -218,3 +218,11 @@ npm run test:themes
 - 本轮没有再次启动被拒绝的浏览器，也没有重复提权或更换机器绕过限制。沿用已确认的 blocker：Chromium 所需 `socket()` 被执行环境拒绝（EPERM），先前提权仍受限且一次诊断遇到 bubblewrap `/root/.codex` 挂载错误；云浏览器连不到本地隔离预览。没有新的受支持环境状态变化或修复通道。
 - 因此本轮 48 个功能浏览器用例与 32 个基线用例均未运行；24 张 Ury 截图没有生成或检查。旧基线当前也不在此云 checkout 中，不能宣称零差异。需要在允许 Chromium 的授权云环境执行 `npm run test:themes` 并补验后，才能消除此验收阻塞。
 - 只操作自己的云工作目录；没有连接 iMac，没有新 PR、生产操作、部署、数据库迁移、合并或标记 ready。
+
+## 配置对象、视觉状态与英文文案的定点修复（最新，基于 85cf60f）
+
+- 为 `SiteDto.appearance`、`SettingsDto.site`、`SettingsDto.homepage` 增加 `IsObject`。真实 ValidationPipe 会在进入 controller 前拒绝数组（含空数组与有效 DTO 元素数组）、null、字符串、数字和布尔值；必需的 site/homepage 省略仍拒绝。appearance/themeId/ury 的合法省略和 Ury 部分字段合并逻辑不变，没有数据库迁移或读取时重写。
+- 后端测试用真实 class-transformer/class-validator/ValidationPipe 与内存数据库，先验证合法保存，再对三个边界逐项提交非法形状并断言 400、零 upsert、原始存储 JSON 完全不变；已有历史请求、省略、Ury 部分更新与保存往返测试继续运行。
+- 旧截图用例仍按原策略 `test.skip` 缺失基线，没有把基线加入 Git，也不让非浏览器测试因缺基线失败。新增小型 Playwright reporter 明确区分“比较通过”“失败/受阻”“跳过”“未执行”“基线生成”。捕获/更新基线的成功执行不是截图比较通过；即使命令退出 0，只要缺失/跳过/未执行就输出视觉验收未完成。只选功能测试时会输出视觉未执行。
+- `public.ts` 补齐 Minimal/Ury 共用的“加载中…”、“加载失败”、“暂无内容”英文；中文键和界面行为不变。轻量单测检查这三种状态、既有重试翻译，以及两个主题源码内中文 literal `t()` 键的英文覆盖。该静态检查只针对 literal 界面键，不检查 API 作者内容或任意动态字符串。
+- **本轮明确不运行浏览器，不修复浏览器环境，不生成截图，不创建/提交基线。** Playwright 源码及历史基线策略保留；当前 HEAD 的浏览器/视觉验收仍为未执行/受阻，不能继承历史通过结论。非浏览器实际执行结果见 PR 最新摘要。

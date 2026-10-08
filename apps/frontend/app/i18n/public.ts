@@ -29,6 +29,9 @@ export const publicMessages: Record<string, string> = {
   网站配置加载失败: 'Unable to load site settings',
   重试: 'Try again',
   '正在加载…': 'Loading…',
+  '加载中…': 'Loading…',
+  加载失败: 'Unable to load content',
+  暂无内容: 'No content yet',
   '暂时无法加载内容。': 'Content could not be loaded right now.',
   重新加载: 'Reload',
   '这里还没有内容，慢慢来，故事总会发生。':

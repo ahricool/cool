@@ -190,3 +190,57 @@ test('Ury rejects arrays, malformed objects and invalid fields before saving', a
     await assert.rejects(transformSettings(body));
   }
 });
+
+test('settings object boundaries reject nonobjects before any database writes', async () => {
+  const initial = structuredClone(defaultSettings);
+  initial.site.appearance.themeId = 'ury';
+  initial.site.appearance.ury = { palette: 'sepia', fontSize: 125 };
+  const db = memoryDatabase(initial);
+  const controller = new SettingsController(db);
+  let writes = 0;
+  const upsert = db.siteSetting.upsert;
+  db.siteSetting.upsert = async (args) => {
+    writes++;
+    return upsert(args);
+  };
+  const saveRequest = async (body) =>
+    controller.save(await transformSettings(body));
+  await saveRequest(structuredClone(initial));
+  assert.equal(
+    writes,
+    2,
+    'a valid transformed request reaches the normal save path',
+  );
+  writes = 0;
+  const before = structuredClone(await db.siteSetting.findMany());
+  for (const path of ['site', 'homepage', 'site.appearance']) {
+    const valid =
+      path === 'site.appearance' ? initial.site.appearance : initial[path];
+    for (const value of [
+      [],
+      [structuredClone(valid)],
+      null,
+      'invalid',
+      42,
+      false,
+    ]) {
+      const body = structuredClone(initial);
+      if (path === 'site.appearance') body.site.appearance = value;
+      else body[path] = value;
+      await assert.rejects(saveRequest(body), { status: 400 });
+      assert.equal(writes, 0, `${path} must fail before the controller writes`);
+      assert.deepEqual(
+        await db.siteSetting.findMany(),
+        before,
+        `${path} rejection cannot rewrite existing JSON`,
+      );
+    }
+  }
+  for (const key of ['site', 'homepage']) {
+    const body = structuredClone(initial);
+    delete body[key];
+    await assert.rejects(saveRequest(body), { status: 400 });
+  }
+  assert.equal(writes, 0);
+  assert.deepEqual(await db.siteSetting.findMany(), before);
+});

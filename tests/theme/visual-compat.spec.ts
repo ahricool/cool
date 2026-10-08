@@ -21,7 +21,7 @@ for (const width of [1440, 390]) {
         test.skip(
           !existsSync(info.snapshotPath(snapshot)) &&
             env.THEME_CAPTURE_BASELINE !== '1',
-          'Capture the pre-refactor build baseline before visual comparison.',
+          'SKIPPED: missing pre-refactor baseline; no visual comparison executed.',
         );
         await page.setViewportSize({ width, height: 900 });
         await themeFixture(page);
@@ -61,7 +61,7 @@ for (const width of [1440, 390]) {
       const snapshot = `_admin_settings-${width}-${mode}.png`;
       test.skip(
         !existsSync(info.snapshotPath(snapshot)),
-        'Capture the pre-refactor Admin baseline first.',
+        'SKIPPED: missing Admin baseline; no visual comparison executed.',
       );
       await page.setViewportSize({ width, height: 900 });
       await themeFixture(page, { themeId: 'minimal' });

@@ -54,3 +54,38 @@ test('localized dates keep the Shanghai site date across UTC day and month bound
   assert.equal(formatCoolDate(null, 'en'), '');
   assert.equal(formatCoolDate('invalid', 'zh'), '');
 });
+
+test('Minimal and Ury loading, error and empty states have English and unchanged Chinese copy', () => {
+  for (const [zh, en] of [
+    ['加载中…', 'Loading…'],
+    ['加载失败', 'Unable to load content'],
+    ['暂无内容', 'No content yet'],
+    ['重试', 'Retry'],
+  ]) {
+    assert.equal(translate(zh!, {}, 'en'), en);
+    assert.equal(translate(zh!, {}, 'zh'), zh);
+  }
+});
+
+test('literal interface strings in Minimal and Ury have English translations', async () => {
+  const { readFile, readdir } = await import('node:fs/promises');
+  for (const theme of ['minimal', 'ury']) {
+    const root = new URL(
+      `../../apps/frontend/app/themes/${theme}/`,
+      import.meta.url,
+    );
+    for (const file of await readdir(root, { recursive: true })) {
+      if (!/\.(vue|ts)$/.test(file)) continue;
+      const source = await readFile(new URL(file, root), 'utf8');
+      for (const match of source.matchAll(/\bt\(\s*'([^']+)'/g)) {
+        const key = match[1]!;
+        if (!/[\u3400-\u9fff]/u.test(key)) continue;
+        assert.notEqual(
+          translate(key, {}, 'en'),
+          key,
+          `${theme}/${file}: ${key}`,
+        );
+      }
+    }
+  }
+});

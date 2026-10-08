@@ -101,6 +101,7 @@ class SiteDto {
   @ApiPropertyOptional({ type: AppearanceDto })
   @ValidateIf((_o, value) => value !== undefined)
   @IsDefined()
+  @IsObject()
   @ValidateNested()
   @Type(() => AppearanceDto)
   appearance?: AppearanceDto;
@@ -135,11 +136,13 @@ class HomepageDto {
 class SettingsDto {
   @ApiProperty({ type: SiteDto })
   @IsDefined()
+  @IsObject()
   @ValidateNested()
   @Type(() => SiteDto)
   site!: SiteDto;
   @ApiProperty({ type: HomepageDto })
   @IsDefined()
+  @IsObject()
   @ValidateNested()
   @Type(() => HomepageDto)
   homepage!: HomepageDto;
