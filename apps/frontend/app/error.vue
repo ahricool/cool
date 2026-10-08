@@ -1,77 +1,52 @@
 <script setup lang="ts">
-const { t, locale, routePath, contentLang } = useCoolI18n();
 import type { NuxtError } from '#app';
-defineProps<{ error: NuxtError }>();
-const route = useRoute();
-const dark = useCoolTheme();
-const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
-useHead(() => ({
-  title: `${t('暂时迷路了')} · 梦桜`,
-  htmlAttrs: {
-    lang: contentLang(locale.value),
-    'data-surface': isAdmin.value ? 'admin' : 'blog',
-    class: dark.value ? 'dark' : '',
-  },
-  bodyAttrs: { class: isAdmin.value ? 'admin-ui' : 'sakura-ui' },
-}));
+import { resolveSiteTheme } from '~/themes/registry';
+import { themeComponent } from '~/themes/components';
+import { leaveAdminUi } from '~/features/admin/install';
+const props = defineProps<{ error: NuxtError }>();
+const { t } = useCoolI18n();
+const installationFailed = computed(
+  () =>
+    !!props.error.data &&
+    typeof props.error.data === 'object' &&
+    'adminUi' in props.error.data &&
+    props.error.data.adminUi === true,
+);
+function reload() {
+  window.location.reload();
+}
+// Fatal errors mount a separate Nuxt root without running route middleware.
+leaveAdminUi();
+const { appearance, isAdmin, ready } = useSiteAppearanceHead();
+const theme = computed(() => resolveSiteTheme(appearance.value.themeId));
+const adminError = themeComponent(() => import('~/features/admin/Error.vue'));
+const component = computed(() =>
+  isAdmin.value ? adminError : themeComponent(theme.value.error),
+);
 </script>
 <template>
-  <main class="error-page">
-    <section class="error-card" aria-labelledby="error-title">
-      <SakuraFlower class="error-flower" />
-      <p class="eyebrow">{{ t('小小的绕路') }} · {{ error.statusCode }}</p>
-      <h1 id="error-title">{{ t('这个页面暂时不在这里。') }}</h1>
-      <p>{{ t('也许只是转错了一个路口，回去继续你的故事吧。') }}</p>
-      <button
-        class="primary-action"
-        @click="clearError({ redirect: isAdmin ? '/admin' : routePath('/') })"
-      >
-        {{ t(isAdmin ? '返回工作空间' : '返回首页') }}
-      </button>
-    </section>
+  <!-- This recovery UI must not depend on the Admin chunk that failed to load. -->
+  <main v-if="installationFailed" class="admin-resource-error" role="alert">
+    <h1>{{ t('工作空间资源加载失败，请重新加载页面后重试。') }}</h1>
+    <button @click="reload">{{ t('重新加载') }}</button>
+    <a href="/">{{ t('← 返回博客') }}</a>
   </main>
+  <component
+    v-else-if="ready"
+    :is="component"
+    :key="isAdmin ? 'admin' : theme.id"
+    :error="error"
+  />
 </template>
 <style scoped>
-.error-page {
+.admin-resource-error {
   display: grid;
   min-height: 100svh;
-  place-items: center;
+  align-content: center;
+  justify-items: center;
+  gap: 16px;
   padding: 24px;
   box-sizing: border-box;
-  background:
-    linear-gradient(
-      color-mix(in srgb, var(--sakura-page) 90%, transparent),
-      color-mix(in srgb, var(--sakura-page) 96%, transparent)
-    ),
-    url('/sakura/images/default/hd.webp') center / cover;
-  color: var(--sakura-text);
-  font-family: var(--sakura-font);
-}
-.error-card {
-  width: min(100%, 580px);
-  padding: clamp(24px, 5vw, 56px);
-  box-sizing: border-box;
-  text-align: center;
-  border: 0;
-  box-shadow: var(--sakura-shadow);
-  border-radius: 24px;
-  background: var(--sakura-surface);
-  box-shadow: var(--sakura-shadow);
-}
-.error-flower {
-  width: 72px;
-  height: 72px;
-}
-.eyebrow {
-  color: var(--sakura-muted);
-  font-size: calc(12px * var(--sakura-font-scale));
-  letter-spacing: 2px;
-}
-h1 {
-  color: var(--sakura-heading);
-  font-size: calc(clamp(22px, 4vw, 30px) * var(--sakura-font-scale));
-}
-button {
-  margin-top: 16px;
+  font-family: system-ui, sans-serif;
 }
 </style>

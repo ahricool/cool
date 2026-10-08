@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SakuraFlower from '~/features/admin/visuals/SakuraFlower.vue';
 import { useCoolI18n } from '~/composables/useCoolI18n';
 import { computed, onMounted, ref } from 'vue';
 import { api, session, errorText } from '../api';

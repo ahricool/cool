@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
-import { ElMessageBox } from 'element-plus';
+import { adminConfirm } from '../feedback';
 import { toast } from '~/utils/toast';
 import { api, errorText } from '../api';
 import type { AdminTag } from '@cool/content';
@@ -59,7 +59,7 @@ async function save() {
 }
 async function remove(item: AdminTag) {
   try {
-    await ElMessageBox.confirm(
+    await adminConfirm(
       t('删除后会解除文章关联，文章内容会保留。'),
       t('删除确认'),
       { confirmButtonText: t('删除'), cancelButtonText: t('取消') },

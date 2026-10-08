@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const { t } = useCoolI18n();
 import { onMounted, ref } from 'vue';
-import { ElMessageBox } from 'element-plus';
+import { adminConfirm } from '../feedback';
 import { toast } from '~/utils/toast';
 import { api, upload, errorText } from '../api';
 import type { Media, Pagination } from '@cool/content';
@@ -51,7 +51,7 @@ async function copy(url: string) {
 }
 async function remove(item: Media) {
   try {
-    await ElMessageBox.confirm(
+    await adminConfirm(
       t('删除这张图片？仍被内容引用的图片不能删除。'),
       t('删除媒体'),
       {

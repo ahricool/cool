@@ -1,1 +1,1 @@
-<template><TagPage /></template>
+<template><ThemePage page="tags" /></template>

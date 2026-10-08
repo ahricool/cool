@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import PatternSurface from '~/features/admin/visuals/PatternSurface.vue';
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessageBox } from 'element-plus';
+import { adminConfirm } from '../feedback';
 import type { Album, AlbumItem } from '@cool/content';
 import { api, upload, errorText } from '../api';
 import { toast } from '~/utils/toast';
@@ -107,7 +108,7 @@ async function move(index: number, offset: number) {
 async function removeAlbum() {
   if (!album.value || album.value.isDefault) return;
   try {
-    await ElMessageBox.confirm(
+    await adminConfirm(
       t('删除相册？素材文件会保留，被引用的相册不能删除。'),
       t('删除相册'),
       { confirmButtonText: t('删除'), cancelButtonText: t('取消') },
@@ -127,11 +128,10 @@ async function removeAlbum() {
 }
 async function removeItem(item: AlbumItem) {
   try {
-    await ElMessageBox.confirm(
-      t('删除素材？被引用的素材不能删除。'),
-      t('删除素材'),
-      { confirmButtonText: t('删除'), cancelButtonText: t('取消') },
-    );
+    await adminConfirm(t('删除素材？被引用的素材不能删除。'), t('删除素材'), {
+      confirmButtonText: t('删除'),
+      cancelButtonText: t('取消'),
+    });
   } catch {
     return;
   }

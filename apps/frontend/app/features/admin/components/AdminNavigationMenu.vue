@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type ReadingIcon from '~/components/ReadingIcon.vue';
+import ReadingBrand from '~/features/admin/visuals/ReadingBrand.vue';
+import ReadingIcon from '~/features/admin/visuals/ReadingIcon.vue';
 defineProps<{
   items: readonly {
     path: string;

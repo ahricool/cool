@@ -8,6 +8,7 @@ import {
 import {
   IsDefined,
   IsInt,
+  IsObject,
   Min,
   Max,
   ArrayMaxSize,
@@ -33,7 +34,48 @@ class SiteTranslationDto extends LocaleDto {
   @ApiProperty() @IsString() @MaxLength(300) description!: string;
   @ApiProperty() @IsString() @MaxLength(500) authorBio!: string;
 }
+class UryAppearanceDto {
+  @ApiPropertyOptional({ enum: ['light', 'sepia', 'dark'] })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsIn(['light', 'sepia', 'dark'])
+  palette?: 'light' | 'sepia' | 'dark';
+  @ApiPropertyOptional({ enum: ['serif', 'sans'] })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsIn(['serif', 'sans'])
+  font?: 'serif' | 'sans';
+  @ApiPropertyOptional({ minimum: 80, maximum: 150 })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsInt()
+  @Min(80)
+  @Max(150)
+  fontSize?: number;
+  @ApiPropertyOptional({ enum: ['comfortable', 'wide'] })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsIn(['comfortable', 'wide'])
+  readingWidth?: 'comfortable' | 'wide';
+  @ApiPropertyOptional()
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsBoolean()
+  showAvatar?: boolean;
+  @ApiPropertyOptional()
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsBoolean()
+  showCovers?: boolean;
+}
 class AppearanceDto {
+  @ApiPropertyOptional({ type: UryAppearanceDto })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsDefined()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => UryAppearanceDto)
+  ury?: UryAppearanceDto;
+  // Theme availability belongs to the frontend registry, not the database.
+  @ApiPropertyOptional({ default: 'default', maxLength: 48 })
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsString()
+  @Matches(/^[a-z][a-z0-9-]{0,47}$/)
+  themeId?: string;
   @ApiPropertyOptional({ minimum: 80, maximum: 150, default: 100 })
   @ValidateIf((_o, value) => value !== undefined)
   @IsInt()
@@ -59,6 +101,7 @@ class SiteDto {
   @ApiPropertyOptional({ type: AppearanceDto })
   @ValidateIf((_o, value) => value !== undefined)
   @IsDefined()
+  @IsObject()
   @ValidateNested()
   @Type(() => AppearanceDto)
   appearance?: AppearanceDto;
@@ -93,11 +136,13 @@ class HomepageDto {
 class SettingsDto {
   @ApiProperty({ type: SiteDto })
   @IsDefined()
+  @IsObject()
   @ValidateNested()
   @Type(() => SiteDto)
   site!: SiteDto;
   @ApiProperty({ type: HomepageDto })
   @IsDefined()
+  @IsObject()
   @ValidateNested()
   @Type(() => HomepageDto)
   homepage!: HomepageDto;
@@ -105,6 +150,7 @@ class SettingsDto {
 export const defaultSettings = {
   site: {
     appearance: {
+      themeId: 'default',
       font: 'default' as const,
       fontSize: 100,
       avatar: 'heart' as const,
@@ -191,7 +237,21 @@ export class SettingsController {
   }
   @Put() async save(@Body() d: SettingsDto) {
     const currentAppearance = (await readSettings(this.db)).site.appearance;
-    d.site.appearance = { ...currentAppearance, ...d.site.appearance };
+    // Native DTO fields are enumerable even when the client omitted them.
+    const suppliedAppearance = Object.fromEntries(
+      Object.entries(d.site.appearance ?? {}).filter(
+        ([, value]) => value !== undefined,
+      ),
+    );
+    d.site.appearance = { ...currentAppearance, ...suppliedAppearance };
+    if (suppliedAppearance.ury) {
+      const suppliedUry = Object.fromEntries(
+        Object.entries(suppliedAppearance.ury).filter(
+          ([, value]) => value !== undefined,
+        ),
+      );
+      d.site.appearance.ury = { ...currentAppearance.ury, ...suppliedUry };
+    }
     await this.db.$transaction(
       Object.entries(d).map(([key, value]) =>
         this.db.siteSetting.upsert({

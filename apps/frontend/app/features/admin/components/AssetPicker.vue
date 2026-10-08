@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PatternAvatar from '~/features/admin/visuals/PatternAvatar.vue';
 const { t } = useCoolI18n();
 import { computed, ref } from 'vue';
 import { resolveCustomImage } from '~/utils/custom-image';

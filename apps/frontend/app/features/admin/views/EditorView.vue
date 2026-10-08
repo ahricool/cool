@@ -15,7 +15,7 @@ import {
   useRouter,
   type RouteLocationNormalized,
 } from 'vue-router';
-import { ElMessageBox } from 'element-plus';
+import { adminConfirm } from '../feedback';
 import { toast } from '~/utils/toast';
 import type { AdminPost, AdminPage, AdminTag, Status } from '@cool/content';
 import { api, errorText } from '../api';
@@ -229,7 +229,7 @@ async function switchLanguage(value: CoolLocale) {
   try {
     if (dirty.value) {
       try {
-        await ElMessageBox.confirm(
+        await adminConfirm(
           t('当前语言有未保存修改，草稿已保留。切换语言？'),
           t('切换内容语言'),
           { confirmButtonText: t('切换'), cancelButtonText: t('继续编辑') },
@@ -428,7 +428,7 @@ async function confirmNavigation(to: RouteLocationNormalized) {
   }
   if (!dirty.value) return true;
   try {
-    await ElMessageBox.confirm(
+    await adminConfirm(
       t('有未保存的修改。草稿已保留，确定离开？'),
       t('离开编辑器'),
       { confirmButtonText: t('离开'), cancelButtonText: t('继续编辑') },

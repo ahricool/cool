@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, reactive } from 'vue';
-import { ElMessageBox } from 'element-plus';
+import { adminConfirm } from '../feedback';
 import { toast } from '~/utils/toast';
 import { api, errorText } from '../api';
 import type {
@@ -152,7 +152,7 @@ function published(item: AdminMoment) {
 }
 async function remove(item: Item) {
   try {
-    await ElMessageBox.confirm(t('此操作无法撤销，确定删除？'), t('删除确认'), {
+    await adminConfirm(t('此操作无法撤销，确定删除？'), t('删除确认'), {
       confirmButtonText: t('删除'),
       cancelButtonText: t('取消'),
     });

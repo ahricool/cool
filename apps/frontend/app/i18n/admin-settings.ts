@@ -1,4 +1,32 @@
 export const adminSettingsMessages: Record<string, string> = {
+  '以阅读为中心的侧栏布局、衬线文字与留白。':
+    'Reading-first sidebar layout, editorial type and generous space.',
+  '以下设置属于 Sakura，切换主题不会清除。':
+    'These settings belong to Sakura and remain saved when switching themes.',
+  'Ury 独立保存以下设置，不使用 Sakura 的背景、图案或首页横幅。':
+    'Ury saves its own settings and does not use Sakura backgrounds, patterns or homepage banners.',
+  默认配色: 'Default palette',
+  浅色: 'Light',
+  暖纸色: 'Sepia',
+  深色: 'Dark',
+  正文字体: 'Body font',
+  衬线: 'Serif',
+  无衬线: 'Sans serif',
+  阅读宽度: 'Reading width',
+  舒适: 'Comfortable',
+  宽幅: 'Wide',
+  显示作者头像: 'Show author avatar',
+  显示文章封面: 'Show article covers',
+
+  'Sakura 首页': 'Sakura homepage',
+  网站主题: 'Site theme',
+  默认主题: 'Default theme',
+  '保留现有梦桜风格。': 'Keep the current 梦桜 appearance.',
+  Minimal: 'Minimal',
+  '独立的极简布局与内容展示。':
+    'An independent minimal layout and content presentation.',
+  '保存后应用到公共博客；管理后台保持独立，其他外观设置由各主题按需使用。':
+    'Save to apply to the public blog. Admin remains independent; each theme opts into other appearance settings.',
   字体大小: 'Font size',
   恢复默认: 'Reset to default',
   全站字体: 'Site font',
@@ -55,6 +83,10 @@ export const adminSettingsMessages: Record<string, string> = {
   登录工作空间: 'Sign in to your workspace',
   '← 返回博客': '← Back to the blog',
   配置已保存: 'Settings saved',
+  '配置已保存，但当前页面更新失败':
+    'Settings saved, but this page could not be updated',
+  '工作空间资源加载失败，请重新加载页面后重试。':
+    'Workspace resources could not be loaded. Reload the page to try again.',
   网站配置: 'Site settings',
   保存配置: 'Save settings',
   基本信息: 'General',
