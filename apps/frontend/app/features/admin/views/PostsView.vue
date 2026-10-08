@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { ElMessageBox } from 'element-plus';
+import { adminConfirm } from '../feedback';
 import { toast } from '~/utils/toast';
 import { api, errorText } from '../api';
 import type { AdminPost, AdminPage, Pagination } from '@cool/content';
@@ -34,7 +34,7 @@ async function load() {
 }
 async function remove(item: AdminPost | AdminPage) {
   try {
-    await ElMessageBox.confirm(
+    await adminConfirm(
       t('永久删除「{title}」？此操作无法撤销。', {
         title: displayTranslation(item)?.title ?? item.slug,
       }),

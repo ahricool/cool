@@ -1,4 +1,4 @@
-import type { Ref } from 'vue';
+import { watch, type Ref } from 'vue';
 
 /** Missing content is a real Nuxt 404; transient API failures retain local retry UI. */
 export function usePublicNotFound(error: Ref<unknown>) {

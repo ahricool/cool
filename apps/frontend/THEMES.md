@@ -65,7 +65,7 @@ Sakura 原页面主要是移动并补上显式本地组件 import，没有重新
 
 不复制 Nuxt 路由，不添加隐藏业务入口。后续完整主题只实现这些页面，不需要修改公共路由。新增全站业务 URL 才需要增加一份公共路由和对应页面契约；本次没有主题特有路由或插件机制。
 
-`usePublicDocument` / `usePublicNotFound` 只加载内容和处理 HTTP 404；网络/其他 API 错误保留主题自己的重试 UI。`useTimeline`、API client、数据类型、Markdown/媒体解析、语言/日期及公共状态可共享；文章卡片、正文 DOM、导航、布局和视觉反馈由主题拥有。
+`usePublicDocument` / `usePublicNotFound` 只加载内容和处理 HTTP 404；请求 thenable 在组件作用域内同步注册 watcher，再由页面 await，卸载页面不会保留旧 404 监听。网络/其他 API 错误保留主题自己的重试 UI。`useTimeline`、API client、数据类型、Markdown/媒体解析、语言/日期及公共状态可共享；文章卡片、正文 DOM、导航、布局和视觉反馈由主题拥有。
 
 ## CSS、资源与 SPA 隔离
 
@@ -73,7 +73,7 @@ Sakura 原页面主要是移动并补上显式本地组件 import，没有重新
 
 - Sakura 的每个选择器都受零 specificity 的 `:where(html[data-surface='blog'][data-site-theme='default'])` 边界约束；Minimal 使用自己的 ID。所有主题目录内的 CSS 和 Vue 样式都适用。
 - `html`、`:root`、根 `.dark` 和伪元素约束在原复合选择器上；普通选择器加根祖先约束。媒体查询内规则也隔离。
-- Admin、Element Plus 与 Teleport 到 body 的菜单、弹窗和 Toast 受 `data-surface='admin'` 约束。
+- Admin、Element Plus 与 Teleport 到 body 的菜单、弹窗和 Toast 受 `data-surface='admin'` 约束。命令式 Toast/确认框放在 Admin 专用容器；离开后台或挂载 Nuxt 错误根时取消 pending 确认、立即 detach 容器并恢复 body 的滚动锁/宽度。导航代号防止被取消的异步安装重新激活反馈。
 - 引入的第三方高亮样式继承导入入口的边界；keyframes 与 animation 引用增加主题/表面命名空间。
 - Vue scoped CSS 仍可使用。SPA 已载入的样式可留在 document，但在其他主题/Admin 上不匹配；不靠覆盖、不靠移除 link 标签。双向 SPA 测试检查真实 DOM、计算样式与非活动主题变量。
 - 字体面使用不同的主题专属 family 名，资源放在主题 `assets/` 或 `public/themes/<id>/`。图片/字体仅在对应组件/CSS 使用时加载。Sakura 既有 `/sakura/` 路径保留，用户上传素材仍使用 API 媒体 URL。
@@ -129,11 +129,12 @@ npm run test:themes
 隔离 clone 在 PR 原分支上从 `2164bb3bc92ca43f9ec75fe0de074af1de2232b1` 接手，base main 为 `7501d14730ced16995634db870f0f83ee65325a1`。检查未发现仓库 `AGENTS.md` 或 `.agents/skills`。在 iMac 上使用本地无界面 Chromium 和合成数据；未操作生产服务、数据库、部署或 PR 合并，未修改 macOS UI 权限。
 
 - 前后端 `npm run build`、前端 `npm run typecheck`、全仓 ESLint、变更文件 Prettier 和 `git diff --check` 通过。
-- 29 项主题注册/单配色模式、Sakura 图案、CSS 作用域/动画/高亮继承和 Admin API 单测通过；4 项后端真实 DTO/内存配置测试、4 项 Markdown/媒体内容测试通过。
-- 51 项浏览器检查全部通过，无跳过：19 项功能测试 + 32 项零容差截图比较。功能包含同 document 内双向完整组件树切换、Admin 保存/未保存/刷新、Back/Forward、独立明暗 cookie、菜单 Teleport/Toast、全部公共 URL、分页、真实契约合成媒体、zh/en、1440/390px、80/150%字号、两种字体、直达/SPA/内容 404、500 与恢复、配置失败无循环。
+- 30 项主题注册/单配色模式、Sakura 图案、CSS 作用域/动画/高亮继承、404 watcher 随组件作用域卸载和 Admin API 单测通过；4 项后端真实 DTO/内存配置测试、4 项 Markdown/媒体内容测试通过。
+- 54 项浏览器检查全部通过，无跳过：22 项功能测试 + 32 项零容差截图比较。功能包含同 document 内双向完整组件树切换、Admin 保存/未保存/刷新、Back/Forward、独立明暗 cookie、菜单 Teleport/Toast、离开后台前确认取消/提示框及滚动锁的首帧清理、Admin 全局 500 下弹窗清理与恢复、两主题已离开页面的延迟 404、全部公共 URL、分页、真实契约合成媒体、zh/en、1440/390px、80/150%字号、两种字体、直达/SPA/内容 404、500 与恢复、配置失败无循环。
 - 截图基线来自保存的改造前构建，使用相同数据、随机 seed、字体/图片和视口：Sakura 的首页、搜索、文章、独立页面、关于我、标签和 Admin 基本配置 × 两种宽度 × light/dark，28 组像素差异为 0；另 4 组已保存 Minimal 的 Admin 基本配置与原 Admin 基线完全一致。截图比较覆盖相同视口可见区域；另人工查看两主题全页文章截图及窄屏最大字号暗色媒体截图。
 - Minimal 首次载入没有请求 Sakura 图片或加载 Sakura 样式；双向 SPA 切换后的 DOM 与计算样式断言确认已载入 CSS 不影响另一个主题。
-- 全量 unit：82 通过、13 失败。失败为未改动的运维脚本在 macOS 上不支持 GNU `mktemp --suffix=.partial` 或 `/var` 符号链接路径检查；没有扩展到运维兼容修复。
+- 独立只读复核发现的异步 404 watcher 作用域、Admin 命令式浮层跨表面残留及全局错误边界均已修复；复核最终代码没有剩余阻塞发现。
+- 全量 unit：83 通过、13 失败。失败为未改动的运维脚本在 macOS 上不支持 GNU `mktemp --suffix=.partial` 或 `/var` 符号链接路径检查；没有扩展到运维兼容修复。
 - 全量 Prettier 仍被原有未改动的 `tests/e2e/album-busy.spec.ts` 阻挡；本次所有变更文件通过。
 
 未运行真实 PostgreSQL/后端 HTTP 全量集成、完整媒体上传/PR38 忙碌回归、可见原生浏览器操作、SSR、Safari/Firefox 或真实触屏测试。以上合成检查不代表这些检查已通过。证据保留在本地忽略目录 `artifacts/theme-system/` 与 `artifacts/theme-baseline/`。

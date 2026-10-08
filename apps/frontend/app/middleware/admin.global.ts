@@ -1,8 +1,11 @@
 import { restoreSession, safeAdminNext } from '~/features/admin/api';
-import { installAdminUi } from '~/features/admin/install';
+import { installAdminUi, leaveAdminUi } from '~/features/admin/install';
 
 export default defineNuxtRouteMiddleware(async (to) => {
-  if (!/^\/admin(?:\/|$)/.test(to.path)) return;
+  if (!/^\/admin(?:\/|$)/.test(to.path)) {
+    leaveAdminUi();
+    return;
+  }
   if (to.path.endsWith('/'))
     return navigateTo(
       { path: to.path.replace(/\/+$/, ''), query: to.query, hash: to.hash },

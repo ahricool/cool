@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useCoolI18n } from '~/composables/useCoolI18n';
 import { onMounted, reactive, ref } from 'vue';
-import { ElMessageBox } from 'element-plus';
+import { adminConfirm } from '../feedback';
 import { toast } from '~/utils/toast';
 import { api, clearSession, errorText, session } from '../api';
 import ViewHeader from '../components/ViewHeader.vue';
@@ -82,7 +82,7 @@ async function revokeAll() {
   error.value = '';
   try {
     try {
-      await ElMessageBox.confirm(
+      await adminConfirm(
         t('所有设备（包括当前设备）都需要重新登录。'),
         t('退出所有设备'),
         { confirmButtonText: t('退出所有设备'), cancelButtonText: t('取消') },

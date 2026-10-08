@@ -1,9 +1,13 @@
 import { ElMessage } from 'element-plus';
+import { adminFeedbackTarget } from '~/features/admin/feedback';
 type ToastKind = 'success' | 'error' | 'warning' | 'info' | 'danger';
 /** Keep Element Plus alert semantics, stacking, hover pause and existing timeout. */
 function notify(kind: ToastKind, message: string) {
+  const appendTo = adminFeedbackTarget();
+  if (!appendTo) return { close: () => {} };
   const header = document.querySelector('.topbar, .site-header');
   return ElMessage({
+    appendTo,
     message,
     type: kind === 'danger' ? 'error' : kind,
     placement: 'top-left',

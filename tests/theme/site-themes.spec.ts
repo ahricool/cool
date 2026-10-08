@@ -47,6 +47,20 @@ test('SPA switches complete trees in both directions; Admin, Teleports and histo
   page,
 }) => {
   const state = await themeFixture(page);
+  await page.addInitScript(() => {
+    const state = window as Window & { adminOverlayLeaks?: number[] };
+    state.adminOverlayLeaks = [];
+    new MutationObserver(() => {
+      if (document.documentElement.dataset.surface === 'blog') {
+        state.adminOverlayLeaks!.push(
+          document.querySelectorAll('.sakura-toast, .el-message-box').length,
+        );
+      }
+    }).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-surface'],
+    });
+  });
   await page.goto('/');
   await surface(page, 'default');
   await expect(page.locator('.story-card')).toBeVisible();
@@ -64,6 +78,7 @@ test('SPA switches complete trees in both directions; Admin, Teleports and histo
   await page.keyboard.press('Escape');
   await spa(page, '/');
   await surface(page, 'minimal');
+  await expect(page.locator('[data-admin-feedback]')).toHaveCount(0);
   await expect(page.locator('.minimal-story')).toBeVisible();
   await expect(page.locator('.story-card')).toHaveCount(0);
   await expect(page.locator('body')).toHaveCSS(
@@ -111,6 +126,13 @@ test('SPA switches complete trees in both directions; Admin, Teleports and histo
     'minimal',
     'default',
   ]);
+  expect(
+    await page.evaluate(() =>
+      (
+        window as Window & { adminOverlayLeaks: number[] }
+      ).adminOverlayLeaks.every((count) => count === 0),
+    ),
+  ).toBe(true);
   await page.reload();
   await surface(page, 'default');
 });
