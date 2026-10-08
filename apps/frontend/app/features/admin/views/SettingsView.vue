@@ -224,7 +224,7 @@ onMounted(load);
           /></el-form-item>
         </el-form>
       </el-tab-pane>
-      <el-tab-pane :label="t('梦桜 首页')" name="homepage">
+      <el-tab-pane :label="t('Sakura 首页')" name="homepage">
         <el-form label-position="top">
           <el-form-item :label="t('首屏文字')"
             ><el-input

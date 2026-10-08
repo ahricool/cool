@@ -1,4 +1,24 @@
 export const adminSettingsMessages: Record<string, string> = {
+  '以阅读为中心的侧栏布局、衬线文字与留白。':
+    'Reading-first sidebar layout, editorial type and generous space.',
+  '以下设置属于 Sakura，切换主题不会清除。':
+    'These settings belong to Sakura and remain saved when switching themes.',
+  'Ury 独立保存以下设置，不使用 Sakura 的背景、图案或首页横幅。':
+    'Ury saves its own settings and does not use Sakura backgrounds, patterns or homepage banners.',
+  默认配色: 'Default palette',
+  浅色: 'Light',
+  暖纸色: 'Sepia',
+  深色: 'Dark',
+  正文字体: 'Body font',
+  衬线: 'Serif',
+  无衬线: 'Sans serif',
+  阅读宽度: 'Reading width',
+  舒适: 'Comfortable',
+  宽幅: 'Wide',
+  显示作者头像: 'Show author avatar',
+  显示文章封面: 'Show article covers',
+
+  'Sakura 首页': 'Sakura homepage',
   网站主题: 'Site theme',
   默认主题: 'Default theme',
   '保留现有梦桜风格。': 'Keep the current 梦桜 appearance.',

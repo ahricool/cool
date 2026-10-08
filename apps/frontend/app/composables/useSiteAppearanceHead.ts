@@ -1,3 +1,4 @@
+import { useUryAppearance } from '~/themes/ury/composables/useUryAppearance';
 import { defaultAppearance } from '@cool/content';
 import { resolveSiteTheme } from '~/themes/registry';
 
@@ -13,9 +14,15 @@ export function useSiteAppearanceHead() {
   const { locale, contentLang } = useCoolI18n();
   const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
   const theme = computed(() => resolveSiteTheme(appearance.value.themeId));
+  const { settings: ury, palette: uryPalette } = useUryAppearance();
+  const isUry = computed(() => !isAdmin.value && theme.value.id === 'ury');
   const { dark: blogDark } = usePublicColorMode(theme);
   const dark = computed(() =>
-    isAdmin.value ? adminDark.value : blogDark.value,
+    isAdmin.value
+      ? adminDark.value
+      : isUry.value
+        ? uryPalette.value === 'dark'
+        : blogDark.value,
   );
   onMounted(() => {
     if (store && !store.loaded && !store.failed) void store.load();
@@ -25,9 +32,15 @@ export function useSiteAppearanceHead() {
       class: dark.value ? 'dark' : '',
       lang: contentLang(locale.value),
       'data-surface': isAdmin.value ? 'admin' : 'blog',
-      'data-font': store?.loaded ? appearance.value.font : undefined,
+      'data-font': isUry.value
+        ? ury.value.font
+        : store?.loaded
+          ? appearance.value.font
+          : undefined,
+      'data-ury-palette': isUry.value ? uryPalette.value : undefined,
+      'data-ury-width': isUry.value ? ury.value.readingWidth : undefined,
       'data-site-theme': isAdmin.value ? undefined : theme.value.id,
-      style: `--site-font-scale: ${appearance.value.fontSize / 100}`,
+      style: `--site-font-scale: ${(isUry.value ? ury.value.fontSize : appearance.value.fontSize) / 100}`,
     },
     bodyAttrs: {
       class: isAdmin.value ? 'admin-ui' : `${theme.value.directory}-ui`,

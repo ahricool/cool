@@ -19,7 +19,7 @@ async function choose(page: Page, id: 'default' | 'minimal') {
   await spa(page, '/admin/settings');
   await page.getByRole('tab', { name: '外观', exact: true }).click();
   const choice = page.getByRole('radio', {
-    name: id === 'default' ? '默认主题' : 'Minimal',
+    name: id === 'default' ? 'sakura' : 'Minimal',
     exact: true,
   });
   await choice.focus();

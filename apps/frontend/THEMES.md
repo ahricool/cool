@@ -167,3 +167,25 @@ npm run test:themes
 独立只读复核没有剩余阻塞发现。已知保守范围：Admin 安装期间遇到任意 CSS 预加载失败都要求整页刷新；极低频的同期公共主题 CSS 失败也可能触发该恢复路径。没有为此扩大构建机制。真实数据库/完整 HTTP、SSR、Safari/Firefox、完整上传与可见原生 UI 仍未运行，不代表已通过。
 
 本轮日志与最终截图保留在本地忽略目录 `artifacts/theme-followup/`；没有上传 Library、修改 macOS 权限、数据库结构或部署流程，未部署或合并。
+
+## Ury 主题（2026-10-08）
+
+- 当前主题显示名称为 `sakura`；存储 ID `default` 保持稳定，`sakura` 是可读别名，均解析为同一个 Sakura 入口。没有自动重写历史配置。Minimal 保留。
+- `ury` 是第三套独立页面、布局、样式、资源和错误入口。设计参考 [WordPress Ury](https://wordpress.com/theme/ury)，已在 dot 自己的云端浏览器查看官方演示：桌面固定侧栏，移动端头部置顶，衬线排版、大留白、细分隔线、宽幅图片。没有复制 WordPress 模板、远程字体或图片。
+- 原有 `appearance.font/fontSize/avatar/cover/background` 和 `homepage` 配置继续保存并服务 Sakura；Admin 现有字体行为和独立明暗 cookie 保留。Minimal 维持已有字体兼容行为。Ury 不读取这些背景、图案、字体或首页横幅设置。
+- Ury 单独保存到 `site.appearance.ury`：`palette`（light/sepia/dark）、`font`（serif/sans）、`fontSize`（80–150）、`readingWidth`（comfortable/wide）、`showAvatar`、`showCovers`。外观面板的 Sakura/Ury 子标签可独立编辑，与当前选中的网站主题无关。切换只改主题 ID，不重置任一配置。
+- Ury 缺省值为 light/serif/100/comfortable/true/true。旧数据按读取时缺省值展示，无数据库迁移。DTO 校验可选嵌套字段；保存部分 Ury 配置时合并已有字段，老客户端省略 Ury 或整个 appearance 时保留已有设置。
+- 阅读者的 Ury 配色只写 `cool_ury_palette`，不会更改 `cool_theme` 或 `cool_admin_theme`；选“网站默认”可恢复跟随保存的 Ury 默认色。字号、字体和阅读宽度只作用于 Ury 的公共页面和错误页。
+- 主页沿用 `/public/timeline` 的摘要契约，不额外逐篇请求全文，保留混合文章/瞬间、加载更多和重试。搜索和标签采用紧凑标题/日期列表。正文、目录、Markdown 媒体、分享、关于页、独立页和错误恢复复用原业务契约，各自独立渲染。
+- 系统字体栈包含 Georgia/Times New Roman 及可用的中日韩衬线回退，没有新增字体请求。用户上传的正文媒体始终可见；关闭封面仅影响 Ury 展示封面。未新增测试文件或测试用例。
+
+### Ury 本轮验收状态
+
+**浏览器/视觉验收被云端运行环境阻挡，本轮不应标记为可合并或已完成截图验证。** 以下状态仅对应新增 Ury，不继承上方历史轮次的浏览器通过结论。
+
+- 已通过：前后端 production build、前端 typecheck、全仓 ESLint、96 项现有 unit、4 项现有后端配置测试、4 项现有内容测试、变更文件 Prettier、`git diff --check`。
+- 一次性实际 `ValidationPipe` / `SettingsController` 内存数据库验证：旧客户端省略 Ury/appearance 均保留配置；嵌套部分更新保留其他字段；保存后可再次提交；12 类非法值（含数组、null、非法枚举/类型/字号）拒绝。独立代码审查发现并修复 `ValidateNested` 允许数组的问题，新增 `IsObject` 约束。读取归一化和 `sakura` 别名另经一次性验证。
+- 没有新增测试用例或测试文件。仅把一个现有浏览器选择器中的旧显示名称“默认主题”改为用户要求的 `sakura`，断言和覆盖范围不变。
+- 22 项现有浏览器功能测试在 Chromium 启动阶段全部被环境阻挡，未进入用例正文，不属于应用测试失败或通过。系统 Chromium 在 `process_singleton_posix.cc:297` 因 `socket() failed: Operation not permitted` 中止；授权的提权执行仍遇到相同限制。后续诊断还遇到 bubblewrap `/root/.codex: Not a directory`。Playwright 官方 Chromium 下载返回损坏/截断的 ZIP；可用系统浏览器也无法启动。
+- 自己的云端浏览器已查看 WordPress 官方 Ury 演示，但无法连接隔离执行环境的本地预览。尚未验证 Ury 实际渲染截图、桌面/移动端交互、SPA/刷新设置往返、配色/语言切换或截图兼容性。需在支持本地浏览器进程的授权云环境补验；没有改用用户 iMac，也没有部署临时远程预览。
+- 未操作生产、数据库迁移、部署或合并。PR 保持 draft。

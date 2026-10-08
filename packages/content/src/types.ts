@@ -172,7 +172,43 @@ export interface Comment {
 }
 export type PatternShape = 'heart' | 'star' | 'dot';
 export type SiteFont = 'default' | 'bubble-candy';
+export interface UryAppearance {
+  palette: 'light' | 'sepia' | 'dark';
+  font: 'serif' | 'sans';
+  fontSize: number;
+  readingWidth: 'comfortable' | 'wide';
+  showAvatar: boolean;
+  showCovers: boolean;
+}
+export const defaultUryAppearance: UryAppearance = {
+  palette: 'light',
+  font: 'serif',
+  fontSize: 100,
+  readingWidth: 'comfortable',
+  showAvatar: true,
+  showCovers: true,
+};
+/** Normalize optional/older JSON without rewriting stored Sakura settings. */
+export function normalizeUryAppearance(
+  value?: Partial<UryAppearance> | null,
+): UryAppearance {
+  return {
+    palette:
+      value?.palette === 'sepia' || value?.palette === 'dark'
+        ? value.palette
+        : 'light',
+    font: value?.font === 'sans' ? 'sans' : 'serif',
+    fontSize: normalizeFontSize(value?.fontSize),
+    readingWidth: value?.readingWidth === 'wide' ? 'wide' : 'comfortable',
+    showAvatar:
+      typeof value?.showAvatar === 'boolean' ? value.showAvatar : true,
+    showCovers:
+      typeof value?.showCovers === 'boolean' ? value.showCovers : true,
+  };
+}
 export interface SiteAppearance {
+  /** Independent Ury configuration. Flat legacy fields below remain Sakura-owned. */
+  ury?: UryAppearance;
   /** Public site's complete frontend theme, independent of Admin and reader palettes. */
   themeId: string;
   font: SiteFont;
