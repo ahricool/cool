@@ -83,7 +83,7 @@ h3 {
   margin: 0 auto 16px;
 }
 .site-error {
-  padding: 24px;
+  padding: calc(var(--reading-header-height) + 24px) 24px 24px;
   text-align: center;
   background: var(--sakura-soft);
 }

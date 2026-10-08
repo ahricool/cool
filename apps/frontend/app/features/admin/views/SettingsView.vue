@@ -57,6 +57,7 @@ const homepageTranslation = computed(() =>
 const error = ref('');
 const busy = ref(false);
 const loaded = ref(false);
+const reloadFailed = ref(false);
 const tab = ref('site');
 async function load() {
   try {
@@ -97,6 +98,7 @@ async function save() {
   if (busy.value || !loaded.value) return;
   busy.value = true;
   error.value = '';
+  reloadFailed.value = false;
   try {
     // Empty editor placeholders are not authored translations. Keep every
     // partially or fully authored row, including the currently hidden locale.
@@ -142,13 +144,31 @@ async function save() {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
-    await store.load(true);
-    toast.success(t('配置已保存'));
+    await reloadSavedSettings();
   } catch (e) {
     error.value = errorText(e);
   } finally {
     busy.value = false;
   }
+}
+async function reloadSavedSettings() {
+  busy.value = true;
+  error.value = '';
+  try {
+    reloadFailed.value = !(await store.load(true));
+    if (reloadFailed.value) {
+      error.value = '配置已保存，但当前页面更新失败';
+      toast.warning(t(error.value));
+    } else toast.success(t('配置已保存'));
+  } finally {
+    busy.value = false;
+  }
+}
+async function retry() {
+  if (busy.value) return;
+  if (reloadFailed.value) await reloadSavedSettings();
+  else if (loaded.value) await save();
+  else await load();
 }
 onMounted(load);
 </script>
@@ -162,7 +182,7 @@ onMounted(load);
       >{{ t('保存配置') }}</el-button
     >
   </ViewHeader>
-  <ErrorNotice :error="error" @retry="loaded ? save() : load()" />
+  <ErrorNotice :error="error" @retry="retry" />
   <section v-if="loaded" class="panel settings-panel">
     <div class="content-language-picker">
       <span id="settings-content-language-label">{{ t('内容语言') }}</span>

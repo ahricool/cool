@@ -63,6 +63,10 @@ export const adminSettingsMessages: Record<string, string> = {
   登录工作空间: 'Sign in to your workspace',
   '← 返回博客': '← Back to the blog',
   配置已保存: 'Settings saved',
+  '配置已保存，但当前页面更新失败':
+    'Settings saved, but this page could not be updated',
+  '工作空间资源加载失败，请重新加载页面后重试。':
+    'Workspace resources could not be loaded. Reload the page to try again.',
   网站配置: 'Site settings',
   保存配置: 'Save settings',
   基本信息: 'General',

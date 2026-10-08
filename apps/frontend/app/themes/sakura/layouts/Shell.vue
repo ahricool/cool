@@ -7,8 +7,14 @@ import ReadingControls from '~/themes/sakura/components/ReadingControls.vue';
 import { readingShellKey } from '~/themes/sakura/utils/reading-shell';
 const { t } = useCoolI18n();
 const store = useSiteStore();
-const { dark, scrollProgress, hasBanner, hasIllustration, registerBanner } =
-  useReadingShell();
+const {
+  dark,
+  canToggle,
+  scrollProgress,
+  hasBanner,
+  hasIllustration,
+  registerBanner,
+} = useReadingShell();
 provide(readingShellKey, { registerBanner });
 useHead(() => ({ title: store.site.title }));
 </script>
@@ -40,6 +46,11 @@ useHead(() => ({ title: store.site.title }));
       <slot />
     </main>
   </section>
-  <ThemeToggle floating :dark="dark" @toggle-theme="dark = !dark" />
+  <ThemeToggle
+    v-if="canToggle"
+    floating
+    :dark="dark"
+    @toggle-theme="dark = !dark"
+  />
   <SiteFooter />
 </template>

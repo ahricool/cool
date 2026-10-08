@@ -50,21 +50,31 @@ function scopeSelector(selector: string, surface: Surface): string {
         if (node.type === 'combinator') break;
         firstCompound.push(node);
       }
-      const targetsRoot = firstCompound.some(
-        (node) =>
-          (node.type === 'tag' && node.value.toLowerCase() === 'html') ||
-          (node.type === 'pseudo' && node.value === ':root') ||
-          (node.type === 'class' && node.value === 'dark'),
-      );
+      const isPseudoElement = (node: selectorParser.Node) =>
+        node.type === 'pseudo' &&
+        (/^::/.test(node.value) ||
+          /^:(before|after|first-line|first-letter)$/.test(node.value));
+      const rootDark =
+        firstCompound.some(
+          (node) => node.type === 'class' && node.value === 'dark',
+        ) &&
+        firstCompound.every(
+          (node) =>
+            (node.type === 'class' && node.value === 'dark') ||
+            node.type === 'comment' ||
+            isPseudoElement(node),
+        );
+      const targetsRoot =
+        rootDark ||
+        firstCompound.some(
+          (node) =>
+            (node.type === 'tag' && node.value.toLowerCase() === 'html') ||
+            (node.type === 'pseudo' && node.value === ':root'),
+        );
 
       if (targetsRoot) {
         // A pseudo-element must remain last within its compound selector.
-        const pseudoElement = firstCompound.find(
-          (node) =>
-            node.type === 'pseudo' &&
-            (/^::/.test(node.value) ||
-              /^:(before|after|first-line|first-letter)$/.test(node.value)),
-        );
+        const pseudoElement = firstCompound.find(isPseudoElement);
         if (pseudoElement) {
           entry.insertBefore(pseudoElement, rootConstraint.clone());
         } else {

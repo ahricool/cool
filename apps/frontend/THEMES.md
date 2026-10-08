@@ -51,7 +51,7 @@ Sakura 原页面主要是移动并补上显式本地组件 import，没有重新
 
 `Admin 草稿 → 保存 PUT /admin/settings → JSONB site.appearance.themeId → GET /public/site → site store → 主题入口 + 对应页面组件`
 
-注册表使用 `satisfies SiteTheme` 保证每套主题实现完整页面表，动态 import 路径均为源码中的字面量。`ThemePage` 接受 `PublicPage`，从当前主题解析异步 Vue 页面；默认 layout 分发主题 `Entry.vue`，入口拥有自己的布局、样式及静态资源。缓存保存组件定义，不保存页面实例；切换 ID 会卸载旧入口和页面树，同一 URL 保持可访问。首次配置读取完成或明确失败后才挂载公共主题，避免 Minimal 首屏加载 Sakura 的资源。
+注册表使用 `satisfies SiteTheme` 保证每套主题实现完整页面表，动态 import 路径均为源码中的字面量。`ThemePage` 接受 `PublicPage`，从当前主题解析异步 Vue 页面；默认 layout 分发主题 `Entry.vue`，入口拥有自己的布局、样式及静态资源。缓存保存组件定义，不保存页面实例；切换 ID 会卸载旧入口和页面树，同一 URL 保持可访问。首次配置读取完成或明确失败后才挂载公共主题，避免 Minimal 首屏加载 Sakura 的资源。`initialized` 此后保持为 true；`loaded` 表示已有有效数据，`loading` 仅表示当前刷新。语言刷新保留现有入口与数据，仅主题 ID 改变时替换入口。
 
 | 原有 URL                         | 页面键            | 共享数据契约                                    |
 | -------------------------------- | ----------------- | ----------------------------------------------- |
@@ -82,15 +82,15 @@ Sakura 原页面主要是移动并补上显式本地组件 import，没有重新
 
 `default` 稳定映射 Sakura；`minimal` 为第二套完整主题。旧 `soft-preview`、未知/删除/损坏 ID 安全回退 Sakura，不写数据库。Admin 显式保存时保存当前有效选择。后端仍只验证 ID 格式，原 API 路径、DTO 省略字段兼容、内容模型、JSONB 与数据库结构均保留；没有 migration。
 
-选择仅修改 Admin 表单草稿，保存成功并重新读取公共配置后生效；其他浏览器标签页刷新/重新读取后生效，不增加实时广播。主题代码在构建时注册，切换已注册主题不用重新部署或重启；添加新的主题源码需要正常构建发布。
+选择仅修改 Admin 表单草稿，保存成功并重新读取公共配置后生效；PUT 成功但读取失败时提示“配置已保存，但当前页面更新失败”，重试仅重新 GET，不重放 PUT。`store.load()` 返回最新有效请求是否已应用的 boolean；旧调用方可以继续忽略结果。其他浏览器标签页刷新/重新读取后生效，不增加实时广播。主题代码在构建时注册，切换已注册主题不用重新部署或重启；添加新的主题源码需要正常构建发布。
 
-| 配置                             | 行为                                                                                                                                                                                 |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| light/dark                       | 公共 `cool_theme` 与 Admin `cool_admin_theme` 分开；Admin 第一次从旧 cookie 继承原偏好，之后独立。`colorModes` 声明主题支持的模式。                                                  |
-| font/fontSize                    | 原数据保留。根提供 `data-font` 和可选 `--site-font-scale`；主题选择是否使用，无强制视觉 token。Sakura/Admin 保持原字体及 80–150%字号；Minimal 默认 system 字体，可选泡泡字体及字号。 |
-| avatar/cover/background 图案     | 数据保留，Sakura/Admin 沿用原效果；Minimal 使用自己的默认标识与无图案背景。                                                                                                          |
-| 首页背景/账户头像/文章和媒体图片 | 原值保留。Sakura 原行为；Minimal 展示内容、封面和账户上传图片，首页采用文字介绍，不继承 Sakura hero 背景或动画。                                                                     |
-| 语言                             | 保留 `cool_locale`、zh/en UI、内容译文及后端回退，无语言 URL。                                                                                                                       |
+| 配置                             | 行为                                                                                                                                                                                                                           |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| light/dark                       | 公共 `cool_theme` 与 Admin `cool_admin_theme` 分开；Admin 第一次从旧 cookie 继承原偏好，之后独立。`colorModes` 声明主题支持的模式；`usePublicColorMode` 提供实际 `dark` 与 `canToggle`，单配色不显示切换按钮，也不改写原偏好。 |
+| font/fontSize                    | 原数据保留。根提供 `data-font` 和可选 `--site-font-scale`；主题选择是否使用，无强制视觉 token。Sakura/Admin 保持原字体及 80–150%字号；Minimal 默认 system 字体，可选泡泡字体及字号。                                           |
+| avatar/cover/background 图案     | 数据保留，Sakura/Admin 沿用原效果；Minimal 使用自己的默认标识与无图案背景。                                                                                                                                                    |
+| 首页背景/账户头像/文章和媒体图片 | 原值保留。Sakura 原行为；Minimal 展示内容、封面和账户上传图片，首页采用文字介绍，不继承 Sakura hero 背景或动画。                                                                                                               |
+| 语言                             | 保留 `cool_locale`、zh/en UI、内容译文及后端回退，无语言 URL。                                                                                                                                                                 |
 
 Sakura 保留导航、搜索、关于我、Footer、文章列表/详情、时间线瞬间、明暗、响应式、品牌/图案、字号、双语与媒体展示。Minimal 使用水平可换行文本导航、无 hero 图片的介绍、横排文字/缩略图卡片、单栏正文和内嵌目录；这是一套功能完整的简单演示主题，不是 Sakura 改颜色。
 
@@ -138,3 +138,32 @@ npm run test:themes
 - 全量 Prettier 仍被原有未改动的 `tests/e2e/album-busy.spec.ts` 阻挡；本次所有变更文件通过。
 
 未运行真实 PostgreSQL/后端 HTTP 全量集成、完整媒体上传/PR38 忙碌回归、可见原生浏览器操作、SSR、Safari/Firefox 或真实触屏测试。以上合成检查不代表这些检查已通过。证据保留在本地忽略目录 `artifacts/theme-system/` 与 `artifacts/theme-baseline/`。
+
+### 2026-10-08 遗留问题收敛（基线 5ce8f168）
+
+本轮核对远端 HEAD 为 `5ce8f168c469be294caaaf003d31ac743a9b9863`，仅修复五项问题，保留完整主题架构与部署方式。依照用户最新限制，没有新增测试文件、测试用例或扩展原用例；下面的故障场景只做 stdin 一次性验证，不持久化到测试套件。
+
+1. 初始化状态与加载状态分离，语言刷新不卸载主题，不清空有效配置；失败仍可重试。请求序号防止过期响应写入，过期调用跟随最新请求结果。Sakura 错误条增加导航高度留白，使失败重试按钮不会被固定 Header 遮住；正常外观不变。
+2. 保存与应用结果分开。PUT 失败提示保存错误；PUT 成功、GET 失败提示部分成功；重试仅 GET。快速刷新竞态中的反馈以最新实际应用结果为准。
+3. Admin 失败安装清除 rejected Promise，成功插件不重复注册，并保留导航失效机制。安装期间检测 CSS 预加载失败，避免 Nuxt 吞掉错误后出现无样式后台。资源失败使用 `app/error.vue` 的轻量恢复分支，不依赖 Admin JS/CSS；整页刷新是模块/CSS 下载缓存失败的可靠重试路径。
+4. 公共控件与 HTML 统一用 `resolveThemeColorMode` 计算实际配色；只支持一种配色时隐藏控件、保留用户原偏好。Sakura/Minimal 的双配色与 Admin 独立状态不变。
+5. PostCSS 只对 `html`、`:root` 或独立根 `.dark` 追加根约束；`.card.dark`、`.panel.dark:hover` 与嵌套 `:is()` 保留组件状态语义，仍受主题作用域约束。
+
+| 已执行命令                                                                                                                                                                                                          | 本轮结果                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `npm run build`                                                                                                                                                                                                     | 前后端通过                                                                       |
+| `npm run typecheck`                                                                                                                                                                                                 | 通过                                                                             |
+| `npm run lint`                                                                                                                                                                                                      | 全仓通过                                                                         |
+| 变更文件 `npx prettier --check ...`、`git diff --check`                                                                                                                                                             | 通过                                                                             |
+| `node --import tsx --test tests/unit/public-document.test.ts tests/unit/site-themes.test.ts tests/unit/blog-layout.test.ts apps/frontend/build/surface-styles.test.ts apps/frontend/app/features/admin/api.test.ts` | 现有 30 项通过                                                                   |
+| `node --test apps/backend/test/settings-theme.test.cjs`                                                                                                                                                             | 现有 4 项通过                                                                    |
+| `npm run test:content`                                                                                                                                                                                              | 现有 4 项通过                                                                    |
+| `npm run test:themes`                                                                                                                                                                                               | 现有 54/54 通过，无跳过；22 项功能 + 32 项零差异截图                             |
+| `npm run test:unit`                                                                                                                                                                                                 | 现有 96 项：83 通过、13 失败；仍为未改动运维脚本的 macOS mktemp 与 /var 路径问题 |
+| `npm run format:check`                                                                                                                                                                                              | 仍仅原有未修改 `tests/e2e/album-busy.spec.ts` 不通过                             |
+
+一次性核实：两主题根/导航 DOM 实例在语言请求期间、成功和失败后保持相同；保留旧数据、可点击重试、快速语言切换及强制请求竞态正常。Admin 未保存草稿、PUT/GET 成功或失败、GET-only 重试和陈旧 GET 失败后的最新主题反馈正常。依赖边界核实安装缓存失败重试、并发共享、插件注册一次及取消；独立复核者用 iMac 无界面 Chromium 实际拦截 Admin JS/CSS，确认轻量恢复与整页刷新可用。单配色合成配置核实实际状态、禁用写入和偏好恢复；八类 CSS 选择器在三种表面的真实 DOM 上保持匹配语义，非活动表面无匹配。初轮一次性脚本遇到 Toast/错误条的定位歧义和空元素 hover，修正验证脚本定位/合成尺寸后检查通过，没有改动套件。
+
+独立只读复核没有剩余阻塞发现。已知保守范围：Admin 安装期间遇到任意 CSS 预加载失败都要求整页刷新；极低频的同期公共主题 CSS 失败也可能触发该恢复路径。没有为此扩大构建机制。真实数据库/完整 HTTP、SSR、Safari/Firefox、完整上传与可见原生 UI 仍未运行，不代表已通过。
+
+本轮日志与最终截图保留在本地忽略目录 `artifacts/theme-followup/`；没有上传 Library、修改 macOS 权限、数据库结构或部署流程，未部署或合并。

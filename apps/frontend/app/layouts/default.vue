@@ -6,7 +6,7 @@ const theme = computed(() => resolveSiteTheme(store.site.appearance.themeId));
 const entry = computed(() => themeComponent(theme.value.entry));
 </script>
 <template>
-  <component v-if="store.loaded || store.failed" :is="entry" :key="theme.id"
+  <component v-if="store.initialized" :is="entry" :key="theme.id"
     ><slot
   /></component>
 </template>

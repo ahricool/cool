@@ -16,3 +16,25 @@ export function useCoolTheme(surface: 'blog' | 'admin' = 'blog') {
   });
   return dark;
 }
+import type { ComputedRef } from 'vue';
+import type { SiteTheme } from '~/themes/types';
+import { resolveSiteTheme, resolveThemeColorMode } from '~/themes/registry';
+
+/** Preserve the reader's preference while exposing only the active theme's supported mode. */
+export function usePublicColorMode(
+  theme: ComputedRef<Pick<SiteTheme, 'colorModes'>> = computed(() =>
+    resolveSiteTheme(useSiteStore().site.appearance.themeId),
+  ),
+) {
+  const preferred = useCoolTheme();
+  const canToggle = computed(() => theme.value.colorModes.length > 1);
+  const dark = computed({
+    get: () =>
+      resolveThemeColorMode(theme.value, preferred.value ? 'dark' : 'light') ===
+      'dark',
+    set: (value: boolean) => {
+      if (canToggle.value) preferred.value = value;
+    },
+  });
+  return { dark, canToggle };
+}

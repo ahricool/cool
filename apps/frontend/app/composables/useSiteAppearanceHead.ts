@@ -1,10 +1,9 @@
 import { defaultAppearance } from '@cool/content';
-import { resolveSiteTheme, resolveThemeColorMode } from '~/themes/registry';
+import { resolveSiteTheme } from '~/themes/registry';
 
 /** Both Nuxt roots establish the active surface; CSS remains isolated after SPA navigation. */
 export function useSiteAppearanceHead() {
   const route = useRoute();
-  const blogDark = useCoolTheme('blog');
   const adminDark = useCoolTheme('admin');
   const pinia = useNuxtApp().$pinia;
   const store = pinia ? useSiteStore(pinia) : undefined;
@@ -14,13 +13,10 @@ export function useSiteAppearanceHead() {
   const { locale, contentLang } = useCoolI18n();
   const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
   const theme = computed(() => resolveSiteTheme(appearance.value.themeId));
-  const dark = computed(() => {
-    const preferred = isAdmin.value ? adminDark.value : blogDark.value;
-    return isAdmin.value
-      ? preferred
-      : resolveThemeColorMode(theme.value, preferred ? 'dark' : 'light') ===
-          'dark';
-  });
+  const { dark: blogDark } = usePublicColorMode(theme);
+  const dark = computed(() =>
+    isAdmin.value ? adminDark.value : blogDark.value,
+  );
   onMounted(() => {
     if (store && !store.loaded && !store.failed) void store.load();
   });
@@ -57,6 +53,6 @@ export function useSiteAppearanceHead() {
         : []),
     ],
   }));
-  const ready = computed(() => !store || store.loaded || store.failed);
+  const ready = computed(() => !store || store.initialized);
   return { appearance, dark, isAdmin, ready };
 }

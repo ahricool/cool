@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import mark from '../assets/mark.svg';
 const store = useSiteStore();
-const dark = useCoolTheme();
+const { dark, canToggle } = usePublicColorMode();
 const { t, locale, setLocale, contentLang } = useCoolI18n();
 useHead(() => ({ title: store.site.title }));
 </script>
@@ -28,6 +28,7 @@ useHead(() => ({ title: store.site.title }));
         </select>
       </label>
       <button
+        v-if="canToggle"
         type="button"
         :aria-pressed="dark"
         :aria-label="t(dark ? '切换浅色' : '切换深色')"

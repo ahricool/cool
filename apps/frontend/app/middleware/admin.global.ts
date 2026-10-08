@@ -11,7 +11,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
       { path: to.path.replace(/\/+$/, ''), query: to.query, hash: to.hash },
       { replace: true },
     );
-  await installAdminUi(useNuxtApp().vueApp);
+  try {
+    if (!(await installAdminUi(useNuxtApp().vueApp))) return;
+  } catch {
+    leaveAdminUi();
+    throw createError({
+      statusCode: 503,
+      statusMessage: 'Admin UI failed to load',
+      data: { adminUi: true },
+      fatal: true,
+    });
+  }
   const authenticated = await restoreSession();
   if (to.path === '/admin/login') {
     if (authenticated) return navigateTo(safeAdminNext(to.query.next));

@@ -1,6 +1,6 @@
 /** Keeps the reading header in sync with the active page banner. */
 export function useReadingShell() {
-  const dark = useCoolTheme();
+  const { dark, canToggle } = usePublicColorMode();
   const banner = shallowRef<HTMLElement>();
   const illustration = shallowRef<Readonly<Ref<boolean>>>();
   const hasIllustration = computed(() => illustration.value?.value ?? false);
@@ -57,6 +57,7 @@ export function useReadingShell() {
   });
   return {
     dark,
+    canToggle,
     scrollProgress,
     hasBanner,
     hasIllustration,
