@@ -1,24 +1,21 @@
 /** Palette is a preference within a theme, independent from the site's theme ID. */
 export function useCoolTheme(surface: 'blog' | 'admin' = 'blog') {
   const legacy = useCookie<string>('cool_theme');
-  const cookie = useCookie<string>(
+  const preference = useReaderPalette(
     surface === 'admin' ? 'cool_admin_theme' : 'cool_theme',
-    {
-      default: () => legacy.value ?? 'light',
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 365 * 24 * 60 * 60,
-    },
+    legacy.value ?? 'light',
   );
-  const dark = useState(`cool-${surface}-dark`, () => cookie.value === 'dark');
-  watch(dark, (value) => {
-    cookie.value = value ? 'dark' : 'light';
+  const dark = computed({
+    get: () => preference.value === 'dark',
+    set: (value: boolean) => {
+      preference.value = value ? 'dark' : 'light';
+    },
   });
   return dark;
 }
 import type { ComputedRef } from 'vue';
-import type { SiteTheme } from '~/themes/types';
-import { resolveSiteTheme, resolveThemeColorMode } from '~/themes/registry';
+import type { SiteTheme } from '../themes/types';
+import { resolveSiteTheme, resolveThemeColorMode } from '../themes/registry';
 
 /** Preserve the reader's preference while exposing only the active theme's supported mode. */
 export function usePublicColorMode(

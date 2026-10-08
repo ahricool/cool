@@ -1,3 +1,4 @@
+import { serializeMediaGroup } from '../../packages/content/src/index';
 import { readFile } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
 import {
@@ -53,6 +54,12 @@ export async function themeFixture(
     },
     writes: [] as AdminSettings[],
     showMoment: false,
+    richContent: false,
+    avatarUrl: '/api/v1/media/fixture.webp' as string | null,
+    timelinePages: 1,
+    timelineFailures: new Set<string>(),
+    timelineRepeatCursor: false,
+    timelineQueries: [] as { cursor: string | null; language: string }[],
     requests: [] as string[],
   };
   await page.route('**/api/v1/**', async (route) => {
@@ -83,7 +90,7 @@ export async function themeFixture(
       author: {
         id: 'synthetic-owner',
         displayName: '合成作者',
-        avatarUrl: '/api/v1/media/fixture.webp',
+        avatarUrl: state.avatarUrl,
       },
       contentLocale: language,
       content:
@@ -101,6 +108,26 @@ export async function themeFixture(
       viewCount: 1,
       commentCount: 0,
     };
+    if (state.richContent) {
+      post.content +=
+        '\n\n## Media and table\n\n| Item | Value |\n| --- | --- |\n| Width | Safe |\n\n' +
+        serializeMediaGroup({
+          layout: 'grid',
+          assets: [
+            {
+              id: '00000000-0000-0000-0000-000000000001',
+              url: '/api/v1/media/00000000-0000-0000-0000-000000000001.mp4',
+              name: 'Synthetic video',
+              mimeType: 'video/mp4',
+            },
+          ],
+        });
+    }
+    if (path === '/media/00000000-0000-0000-0000-000000000001.mp4') {
+      // Verify safe video markup/controls without fetching any external media.
+      await route.fulfill({ status: 204, contentType: 'video/mp4', body: '' });
+      return;
+    }
     if (
       path === '/media/fixture.webp' ||
       path === '/media/00000000-0000-0000-0000-000000000000.webp'
@@ -120,7 +147,7 @@ export async function themeFixture(
           id: 'synthetic-owner',
           email: 'whoreahri@gmail.com',
           displayName: '合成作者',
-          avatarUrl: '/api/v1/media/fixture.webp',
+          avatarUrl: state.avatarUrl,
         },
         csrfToken: 'synthetic-csrf',
       };
@@ -137,7 +164,7 @@ export async function themeFixture(
         ...localized(state.settings.site.translations),
         author: {
           displayName: '合成作者',
-          avatarUrl: '/api/v1/media/fixture.webp',
+          avatarUrl: state.avatarUrl,
         },
         appearance: state.settings.site.appearance,
       };
@@ -150,14 +177,28 @@ export async function themeFixture(
         },
       };
     } else if (path === '/public/timeline') {
+      const cursor = new URL(request.url()).searchParams.get('cursor');
+      state.timelineQueries.push({ cursor, language });
+      if (state.timelineFailures.has(cursor ?? 'first')) {
+        await route.fulfill({
+          status: 503,
+          json: { message: 'Synthetic timeline failure' },
+        });
+        return;
+      }
+      const pageIndex = cursor ? Number(cursor) : 0;
       json = {
         items: [
-          post,
+          {
+            ...post,
+            id: pageIndex ? `${post.id}-${pageIndex}` : post.id,
+            title: pageIndex ? `${post.title} ${pageIndex + 1}` : post.title,
+          },
           ...(state.showMoment
             ? [
                 {
                   kind: 'moment',
-                  id: 'fixture-moment',
+                  id: `fixture-moment-${pageIndex}`,
                   content: 'Synthetic moment 中文',
                   publishedAt: post.publishedAt,
                   author: null,
@@ -166,7 +207,14 @@ export async function themeFixture(
               ]
             : []),
         ],
-        nextCursor: null,
+        nextCursor:
+          pageIndex + 1 < state.timelinePages
+            ? String(
+                state.timelineRepeatCursor && cursor
+                  ? pageIndex
+                  : pageIndex + 1,
+              )
+            : null,
       };
     } else if (path === '/public/posts/fixture-post') {
       json = post;

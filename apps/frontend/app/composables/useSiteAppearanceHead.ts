@@ -1,6 +1,9 @@
-import { useUryAppearance } from '~/themes/ury/composables/useUryAppearance';
 import { defaultAppearance } from '@cool/content';
-import { resolveSiteTheme } from '~/themes/registry';
+import {
+  resolveSiteTheme,
+  resolveThemeColorMode,
+  siteThemes,
+} from '~/themes/registry';
 
 /** Both Nuxt roots establish the active surface; CSS remains isolated after SPA navigation. */
 export function useSiteAppearanceHead() {
@@ -14,15 +17,24 @@ export function useSiteAppearanceHead() {
   const { locale, contentLang } = useCoolI18n();
   const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
   const theme = computed(() => resolveSiteTheme(appearance.value.themeId));
-  const { settings: ury, palette: uryPalette } = useUryAppearance();
-  const isUry = computed(() => !isAdmin.value && theme.value.id === 'ury');
-  const { dark: blogDark } = usePublicColorMode(theme);
+  const preferences = Object.fromEntries(
+    [...new Set(siteThemes.map((entry) => entry.appearance.readerCookie))].map(
+      (cookie) => [cookie, useReaderPalette(cookie)],
+    ),
+  );
+  const publicAppearance = computed(() =>
+    theme.value.appearance.resolve(
+      appearance.value,
+      preferences[theme.value.appearance.readerCookie]!.value,
+    ),
+  );
   const dark = computed(() =>
     isAdmin.value
       ? adminDark.value
-      : isUry.value
-        ? uryPalette.value === 'dark'
-        : blogDark.value,
+      : resolveThemeColorMode(
+          theme.value,
+          publicAppearance.value.palette === 'dark' ? 'dark' : 'light',
+        ) === 'dark',
   );
   onMounted(() => {
     if (store && !store.loaded && !store.failed) void store.load();
@@ -32,15 +44,14 @@ export function useSiteAppearanceHead() {
       class: dark.value ? 'dark' : '',
       lang: contentLang(locale.value),
       'data-surface': isAdmin.value ? 'admin' : 'blog',
-      'data-font': isUry.value
-        ? ury.value.font
-        : store?.loaded
+      'data-font': isAdmin.value
+        ? store?.loaded
           ? appearance.value.font
-          : undefined,
-      'data-ury-palette': isUry.value ? uryPalette.value : undefined,
-      'data-ury-width': isUry.value ? ury.value.readingWidth : undefined,
+          : undefined
+        : publicAppearance.value.font,
+      ...(!isAdmin.value ? publicAppearance.value.attributes : {}),
       'data-site-theme': isAdmin.value ? undefined : theme.value.id,
-      style: `--site-font-scale: ${(isUry.value ? ury.value.fontSize : appearance.value.fontSize) / 100}`,
+      style: `--site-font-scale: ${(isAdmin.value ? appearance.value.fontSize : publicAppearance.value.fontSize) / 100}`,
     },
     bodyAttrs: {
       class: isAdmin.value ? 'admin-ui' : `${theme.value.directory}-ui`,

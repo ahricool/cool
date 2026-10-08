@@ -77,3 +77,63 @@ test('a theme may support just one palette without changing the saved reader pre
     'dark',
   );
 });
+
+test('themes resolve only their owned settings without mutating saved profiles', () => {
+  const saved = structuredClone(defaultAppearance);
+  saved.font = 'bubble-candy';
+  saved.fontSize = 150;
+  saved.ury = {
+    palette: 'sepia',
+    font: 'serif',
+    fontSize: 80,
+    readingWidth: 'wide',
+    showAvatar: true,
+    showCovers: false,
+  };
+  const before = structuredClone(saved);
+  assert.deepEqual(resolveSiteTheme('sakura').appearance.resolve(saved, null), {
+    font: 'bubble-candy',
+    fontSize: 150,
+    palette: 'light',
+  });
+  assert.deepEqual(
+    resolveSiteTheme('minimal').appearance.resolve(saved, 'dark'),
+    { font: 'system', fontSize: 100, palette: 'dark' },
+  );
+  const ury = resolveSiteTheme('ury').appearance;
+  assert.deepEqual(ury.resolve(saved, null), {
+    font: 'serif',
+    fontSize: 80,
+    palette: 'sepia',
+    attributes: { 'data-ury-palette': 'sepia', 'data-ury-width': 'wide' },
+  });
+  for (const palette of ['light', 'sepia', 'dark'])
+    assert.equal(ury.resolve(saved, palette).palette, palette);
+  assert.equal(ury.resolve(saved, 'invalid').palette, 'sepia');
+  assert.notEqual(
+    ury.readerCookie,
+    resolveSiteTheme('sakura').appearance.readerCookie,
+  );
+  assert.deepEqual(saved, before);
+});
+
+test('Ury owns visuals and shared head delegates appearance without theme-ID branches', async () => {
+  const root = new URL('../../apps/frontend/app/themes/ury/', import.meta.url);
+  for (const file of await readdir(root, { recursive: true })) {
+    if (!/\.(vue|css)$/.test(file)) continue;
+    assert.doesNotMatch(
+      await readFile(new URL(file, root), 'utf8'),
+      /sakura|themes\/minimal|features\/admin|~\/components|--sakura/iu,
+      file,
+    );
+  }
+  const head = await readFile(
+    new URL(
+      '../../apps/frontend/app/composables/useSiteAppearanceHead.ts',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  assert.doesNotMatch(head, /useUryAppearance|id\s*===|theme\.value\.id\s*===/);
+  assert.match(head, /theme\.value\.appearance\.resolve/);
+});

@@ -19,14 +19,6 @@
   --minimal-accent: #98d9b5;
   color-scheme: dark;
 }
-@font-face {
-  font-family: 'Minimal Bubble Candy';
-  src: url('/fonts/bubble-candy.woff2') format('woff2');
-  font-display: swap;
-}
-:root[data-font='bubble-candy'] {
-  --minimal-font: 'Minimal Bubble Candy', ui-sans-serif, system-ui, sans-serif;
-}
 html {
   scroll-padding-top: 24px;
 }

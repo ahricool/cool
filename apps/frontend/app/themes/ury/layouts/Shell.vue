@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import mark from '../assets/mark.svg';
 import { resolveCustomImage } from '~/utils/custom-image';
 import { useUryAppearance } from '../composables/useUryAppearance';
 const store = useSiteStore();
@@ -11,11 +12,9 @@ useHead(() => ({ title: store.site.title }));
   <header class="ury-masthead">
     <div :lang="contentLang(store.site.contentLocale)">
       <img
-        v-if="
-          settings.showAvatar && resolveCustomImage(store.site.author.avatarUrl)
-        "
+        v-if="settings.showAvatar"
         class="ury-avatar"
-        :src="resolveCustomImage(store.site.author.avatarUrl)!"
+        :src="resolveCustomImage(store.site.author.avatarUrl) ?? mark"
         width="64"
         height="64"
         :alt="store.site.author.displayName"
@@ -30,9 +29,10 @@ useHead(() => ({ title: store.site.title }));
       <NuxtLink to="/about">{{ t('我') }}</NuxtLink>
     </nav>
     <div class="ury-preferences">
-      <label
-        >Language / 语言
+      <label>
+        <span id="ury-language-label">Language / 语言</span>
         <select
+          aria-labelledby="ury-language-label"
           :value="locale"
           @change="setLocale(($event.target as HTMLSelectElement).value)"
         >
@@ -40,9 +40,10 @@ useHead(() => ({ title: store.site.title }));
           <option value="en">English</option>
         </select>
       </label>
-      <label
-        >{{ t('配色') }}
+      <label>
+        <span id="ury-palette-label">{{ t('配色') }}</span>
         <select
+          aria-labelledby="ury-palette-label"
           :value="preference ?? ''"
           @change="
             preference = ($event.target as HTMLSelectElement).value || null

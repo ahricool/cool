@@ -87,7 +87,7 @@ Sakura 原页面主要是移动并补上显式本地组件 import，没有重新
 | 配置                             | 行为                                                                                                                                                                                                                           |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | light/dark                       | 公共 `cool_theme` 与 Admin `cool_admin_theme` 分开；Admin 第一次从旧 cookie 继承原偏好，之后独立。`colorModes` 声明主题支持的模式；`usePublicColorMode` 提供实际 `dark` 与 `canToggle`，单配色不显示切换按钮，也不改写原偏好。 |
-| font/fontSize                    | 原数据保留。根提供 `data-font` 和可选 `--site-font-scale`；主题选择是否使用，无强制视觉 token。Sakura/Admin 保持原字体及 80–150%字号；Minimal 默认 system 字体，可选泡泡字体及字号。                                           |
+| font/fontSize                    | 原数据保留。根提供 `data-font` 和可选 `--site-font-scale`；主题选择是否使用，无强制视觉 token。Sakura/Admin 保持原字体及 80–150%字号；Minimal 固定使用自己的 system 字体与 100% 字号，不读取 Sakura 字段。                     |
 | avatar/cover/background 图案     | 数据保留，Sakura/Admin 沿用原效果；Minimal 使用自己的默认标识与无图案背景。                                                                                                                                                    |
 | 首页背景/账户头像/文章和媒体图片 | 原值保留。Sakura 原行为；Minimal 展示内容、封面和账户上传图片，首页采用文字介绍，不继承 Sakura hero 背景或动画。                                                                                                               |
 | 语言                             | 保留 `cool_locale`、zh/en UI、内容译文及后端回退，无语言 URL。                                                                                                                                                                 |
@@ -98,7 +98,7 @@ Sakura 保留导航、搜索、关于我、Footer、文章列表/详情、时间
 
 1. 创建 `app/themes/wordpress/`，自行编写 `Entry.vue`、布局、组件、所有页面、错误入口、样式和资源。无需继承其他主题。
 2. 入口和错误组件各自导入本主题样式；本地视觉组件显式 import，不用全局同名自动注册。样式放在该目录，字体 family 名使用自己的前缀；使用 `html`/`:root` 写根规则，所有 owned 选择器会自动限制作用域。
-3. 在注册表增加一个满足 `SiteTheme` 的静态对象，例如 `id: 'wordpress'`、`directory: 'wordpress'`、`entry: () => import('./wordpress/Entry.vue')`、`error: () => import('./wordpress/pages/Error.vue')`；为 `home/post/page/search/about/tags` 分别声明字面量 loader。声明 label/description、colorModes、独立 icon 和可选 touchIcon。
+3. 在注册表增加一个满足 `SiteTheme` 的静态对象，例如 `id: 'wordpress'`、`directory: 'wordpress'`、`entry: () => import('./wordpress/Entry.vue')`、`error: () => import('./wordpress/pages/Error.vue')`；为 `home/post/page/search/about/tags` 分别声明字面量 loader。声明 label/description、colorModes、独立 icon 和可选 touchIcon，以及本主题 `appearance.ts` 中的 `ThemeAppearanceDefinition`（readerCookie 与纯 resolve 函数）。
 4. 通过共享 API/composables 取得数据；自行渲染 DOM，不需要修改 Sakura、Admin、后端或公共路由。需要 English 的选择说明时添加翻译文案。
 5. 用合成数据验证全部 URL、保存/刷新、两个方向的同 document 切换、404/错误、语言、字体/字号、手机/桌面及资源隔离。移除主题只移出注册表，历史 ID 自动回退。
 
@@ -172,14 +172,14 @@ npm run test:themes
 
 - 当前主题显示名称为 `sakura`；存储 ID `default` 保持稳定，`sakura` 是可读别名，均解析为同一个 Sakura 入口。没有自动重写历史配置。Minimal 保留。
 - `ury` 是第三套独立页面、布局、样式、资源和错误入口。设计参考 [WordPress Ury](https://wordpress.com/theme/ury)，已在 dot 自己的云端浏览器查看官方演示：桌面固定侧栏，移动端头部置顶，衬线排版、大留白、细分隔线、宽幅图片。没有复制 WordPress 模板、远程字体或图片。
-- 原有 `appearance.font/fontSize/avatar/cover/background` 和 `homepage` 配置继续保存并服务 Sakura；Admin 现有字体行为和独立明暗 cookie 保留。Minimal 维持已有字体兼容行为。Ury 不读取这些背景、图案、字体或首页横幅设置。
+- 原有 `appearance.font/fontSize/avatar/cover/background` 和 `homepage` 配置继续保存并服务 Sakura；Admin 现有字体行为和独立明暗 cookie 保留。Minimal 固定使用独立的 system / 100% 缺省值，不再消费 Sakura 的字体/字号。Ury 不读取这些背景、图案、字体或首页横幅设置。
 - Ury 单独保存到 `site.appearance.ury`：`palette`（light/sepia/dark）、`font`（serif/sans）、`fontSize`（80–150）、`readingWidth`（comfortable/wide）、`showAvatar`、`showCovers`。外观面板的 Sakura/Ury 子标签可独立编辑，与当前选中的网站主题无关。切换只改主题 ID，不重置任一配置。
 - Ury 缺省值为 light/serif/100/comfortable/true/true。旧数据按读取时缺省值展示，无数据库迁移。DTO 校验可选嵌套字段；保存部分 Ury 配置时合并已有字段，老客户端省略 Ury 或整个 appearance 时保留已有设置。
 - 阅读者的 Ury 配色只写 `cool_ury_palette`，不会更改 `cool_theme` 或 `cool_admin_theme`；选“网站默认”可恢复跟随保存的 Ury 默认色。字号、字体和阅读宽度只作用于 Ury 的公共页面和错误页。
 - 主页沿用 `/public/timeline` 的摘要契约，不额外逐篇请求全文，保留混合文章/瞬间、加载更多和重试。搜索和标签采用紧凑标题/日期列表。正文、目录、Markdown 媒体、分享、关于页、独立页和错误恢复复用原业务契约，各自独立渲染。
-- 系统字体栈包含 Georgia/Times New Roman 及可用的中日韩衬线回退，没有新增字体请求。用户上传的正文媒体始终可见；关闭封面仅影响 Ury 展示封面。未新增测试文件或测试用例。
+- 系统字体栈包含 Georgia/Times New Roman 及可用的中日韩衬线回退，没有新增字体请求。用户上传的正文媒体始终可见；关闭封面仅影响 Ury 展示封面。测试扩展见下方最新记录。
 
-### Ury 本轮验收状态
+### Ury 首次提交验收记录（历史，基线 0cac6b4）
 
 **浏览器/视觉验收被云端运行环境阻挡，本轮不应标记为可合并或已完成截图验证。** 以下状态仅对应新增 Ury，不继承上方历史轮次的浏览器通过结论。
 
@@ -189,3 +189,32 @@ npm run test:themes
 - 22 项现有浏览器功能测试在 Chromium 启动阶段全部被环境阻挡，未进入用例正文，不属于应用测试失败或通过。系统 Chromium 在 `process_singleton_posix.cc:297` 因 `socket() failed: Operation not permitted` 中止；授权的提权执行仍遇到相同限制。后续诊断还遇到 bubblewrap `/root/.codex: Not a directory`。Playwright 官方 Chromium 下载返回损坏/截断的 ZIP；可用系统浏览器也无法启动。
 - 自己的云端浏览器已查看 WordPress 官方 Ury 演示，但无法连接隔离执行环境的本地预览。尚未验证 Ury 实际渲染截图、桌面/移动端交互、SPA/刷新设置往返、配色/语言切换或截图兼容性。需在支持本地浏览器进程的授权云环境补验；没有改用用户 iMac，也没有部署临时远程预览。
 - 未操作生产、数据库迁移、部署或合并。PR 保持 draft。
+
+## Ury 最终审查修复（最新，基于 0cac6b4）
+
+**浏览器与截图验收仍为 BLOCKED，PR 保持 draft，不宣称可合并。** 用户已在本轮明确授权新增/扩展测试；此前“不新增测试”的限制只属于历史轮次。
+
+### 本轮实现
+
+- 每个主题在自己的 `appearance.ts` 声明字体、字号、配色读取规则及阅读者 cookie 名称。共享 `useSiteAppearanceHead` 只分发表面/文档状态与当前定义的输出，不导入 Ury composable、不增加 theme ID 条件分支。定义只包含非视觉配置函数，不加载其他主题 CSS/组件/资源。
+- Sakura 原有字体、字号、图案、背景、首页和存储值保持。Minimal 的默认行为明确为 system / 100%，移除其泡泡字体声明；不会随 Sakura 专属设置改变，也不重写或删除历史数据。Ury 只读自己嵌套配置。Admin 保留既有字体行为与独立 cookie。
+- `useReaderPalette` 提供按 cookie 命名的共享响应状态：Sakura/Minimal 沿用 `cool_theme`，Ury 使用 `cool_ury_palette`，Admin 使用 `cool_admin_theme`；Admin 初次继承旧偏好后仍独立保存。它不负责渲染或主题 ID 判断。
+- Ury 主页使用 `useTimelineAutoload` 观察底部 sentinel，接近视口时加载下一页。它遵守 pending、error、started、cursor 状态，对同一 cursor 只自动请求一次，失败后不会自动重试；保留“加载更多”和显式“重试”。无 IntersectionObserver 时只有手动加载。语言重置会重置 cursor 防重复记录，卸载会停止观察并忽略已排队回调；原 `useTimeline` 继续拒绝旧语言/已卸载请求结果并防止并发请求。
+- Ury 侧栏与文章作者头像统一：开启时优先上传图，无上传图使用 Ury 自己的 SVG 标识；关闭则不显示图片。64×64 / 48×48 容器保持正方形，使用 object-fit；不加载 Sakura 默认头像资源。
+
+### 持久化测试覆盖
+
+- `tests/theme/site-themes.spec.ts` 和 `race-review.spec.ts` 扩展到三主题：公共路由、zh/en、1440/390、分页/媒体、直接/SPA/内容 404、全局错误恢复、延迟 404、Admin 确认弹层和滚动锁清理。Minimal 字号断言改为独立 100%，原 Sakura 断言保留。
+- `tests/theme/ury.spec.ts` 增加六个有向主题对的 SPA 往返与 CSS 隔离、Ury 配置保存/刷新/草稿隔离、三配色的阅读者覆盖/恢复网站默认、serif/sans×80/150%×两种宽度×三配色×zh/en×1440/390 的溢出检查。覆盖文章/瞬间、分页、正文/搜索/标签/关于页由扩展的公共路由套件执行。
+- Ury 正文验证图片解码、视频 controls/无 autoplay、代码文本、表格、目录；视频采用无内容的合成响应，仅验证安全 DOM 与布局，不能代替真实视频播放/编解码验证。头像测试覆盖上传/缺省/关闭及比例和资源隔离。自动加载测试覆盖耗尽、失败/显式重试、无观察器、重复 cursor、语言重置与延迟结果在主题切换后的失效。
+- Ury 视觉用例会为桌面/移动、zh/en、light/sepia/dark 的首页和正文生成 24 张全页截图。截图必须实际生成并人工检查后才能声称视觉通过；当前没有任何新截图或对比通过结果。旧 32 项基线用例保持独立，不自动更新基线；缺少基线时按原行为显式跳过。
+- `tests/unit/theme-runtime.test.ts` 用真实 Vue scheduler 验证自动加载的并发/失败/重复 cursor/语言重置/卸载边界、`useTimeline` 的旧语言和卸载完成保护，以及 cookie 状态隔离。主题单测验证配置读取边界、不改写保存数据、Ury 视觉资源独立和共享 head 不含主题 ID 分支。
+- 后端配置套件增加真实 DTO/controller 的 Ury 省略/部分更新/往返与 12 类非法配置拒绝，避免只用浏览器模拟保存证明后端兼容。
+
+### 本轮执行状态与环境边界
+
+- 前后端 build、frontend typecheck、全仓 ESLint、变更文件 Prettier、diff check 和现有内容测试已执行。单测/DTO 的最终数量见 PR 当轮报告。
+- Playwright 测试发现/加载完成：`npx playwright test --config playwright.theme.config.ts --list` 列出 **80 项**（48 功能 + 32 旧截图基线）。这些脚本另外用 TypeScript 对全部 `tests/theme/*.ts` 静态检查通过；发现和静态检查不等于浏览器执行通过。
+- 本轮没有再次启动被拒绝的浏览器，也没有重复提权或更换机器绕过限制。沿用已确认的 blocker：Chromium 所需 `socket()` 被执行环境拒绝（EPERM），先前提权仍受限且一次诊断遇到 bubblewrap `/root/.codex` 挂载错误；云浏览器连不到本地隔离预览。没有新的受支持环境状态变化或修复通道。
+- 因此本轮 48 个功能浏览器用例与 32 个基线用例均未运行；24 张 Ury 截图没有生成或检查。旧基线当前也不在此云 checkout 中，不能宣称零差异。需要在允许 Chromium 的授权云环境执行 `npm run test:themes` 并补验后，才能消除此验收阻塞。
+- 只操作自己的云工作目录；没有连接 iMac，没有新 PR、生产操作、部署、数据库迁移、合并或标记 ready。

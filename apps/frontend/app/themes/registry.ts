@@ -1,8 +1,12 @@
+import { sakuraAppearance } from './sakura/appearance';
+import { minimalAppearance } from './minimal/appearance';
+import { uryAppearance } from './ury/appearance';
 import type { ColorMode, SiteTheme } from './types';
 
 // Literal import paths are build-time declarations. No runtime theme code or paths.
 const defaultTheme = {
   id: 'default',
+  appearance: sakuraAppearance,
   directory: 'sakura',
   label: 'sakura',
   description: '保留现有梦桜风格。',
@@ -23,6 +27,7 @@ export const siteThemes = [
   defaultTheme,
   {
     id: 'minimal',
+    appearance: minimalAppearance,
     directory: 'minimal',
     label: 'Minimal',
     description: '独立的极简布局与内容展示。',
@@ -41,6 +46,7 @@ export const siteThemes = [
   },
   {
     id: 'ury',
+    appearance: uryAppearance,
     directory: 'ury',
     label: 'ury',
     description: '以阅读为中心的侧栏布局、衬线文字与留白。',

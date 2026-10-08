@@ -1,4 +1,6 @@
-import { normalizeUryAppearance, type UryAppearance } from '@cool/content';
+import { normalizeUryAppearance } from '@cool/content';
+import { uryAppearance } from '../appearance';
+import { defaultAppearance } from '@cool/content';
 
 /** Ury never consumes or changes Sakura/Admin preferences. */
 export function useUryAppearance() {
@@ -7,24 +9,13 @@ export function useUryAppearance() {
   const settings = computed(() =>
     normalizeUryAppearance(store?.site.appearance.ury),
   );
-  const cookie = useCookie<string | null>('cool_ury_palette', {
-    path: '/',
-    sameSite: 'lax',
-    maxAge: 365 * 24 * 60 * 60,
-  });
-  const preference = useState<string | null>(
-    'ury-reader-palette',
-    () => cookie.value ?? null,
-  );
-  watch(preference, (value) => {
-    cookie.value = value;
-  });
-  const palette = computed<UryAppearance['palette']>(() =>
-    preference.value === 'light' ||
-    preference.value === 'sepia' ||
-    preference.value === 'dark'
-      ? preference.value
-      : settings.value.palette,
+  const preference = useReaderPalette(uryAppearance.readerCookie);
+  const palette = computed(
+    () =>
+      uryAppearance.resolve(
+        store?.site.appearance ?? defaultAppearance,
+        preference.value,
+      ).palette,
   );
   return { settings, palette, preference };
 }

@@ -15,11 +15,11 @@ async function spa(page: Page, path: string) {
     await root.__vue_app__.config.globalProperties.$router.push(value);
   }, path);
 }
-async function choose(page: Page, id: 'default' | 'minimal') {
+async function choose(page: Page, id: 'default' | 'minimal' | 'ury') {
   await spa(page, '/admin/settings');
   await page.getByRole('tab', { name: '外观', exact: true }).click();
   const choice = page.getByRole('radio', {
-    name: id === 'default' ? 'sakura' : 'Minimal',
+    name: id === 'default' ? 'sakura' : id === 'minimal' ? 'Minimal' : 'ury',
     exact: true,
   });
   await choice.focus();
@@ -32,13 +32,17 @@ async function choose(page: Page, id: 'default' | 'minimal') {
     'rgb(255, 255, 255)',
   );
 }
-async function surface(page: Page, id: 'default' | 'minimal') {
+async function surface(page: Page, id: 'default' | 'minimal' | 'ury') {
   await expect(page.locator(`[data-theme-root="${id}"]`)).toBeVisible();
   await expect(
-    page.locator(id === 'default' ? '.site-header' : '.minimal-masthead'),
+    page.locator(id === 'default' ? '.site-header' : `.${id}-masthead`),
   ).toBeVisible();
   await expect(
-    page.locator(id === 'default' ? '.minimal-masthead' : '.site-header'),
+    page.locator(
+      id === 'default'
+        ? '.minimal-masthead, .ury-masthead'
+        : `.site-header, .${id === 'ury' ? 'minimal' : 'ury'}-masthead`,
+    ),
   ).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('data-site-theme', id);
 }
@@ -129,7 +133,7 @@ test('SPA switches complete trees in both directions; Admin, Teleports and histo
   expect(
     await page.evaluate(() =>
       (
-        window as Window & { adminOverlayLeaks: number[] }
+        window as unknown as Window & { adminOverlayLeaks: number[] }
       ).adminOverlayLeaks.every((count) => count === 0),
     ),
   ).toBe(true);
@@ -165,11 +169,8 @@ test('an unsaved Admin choice does not affect public content; save persists with
   await surface(page, 'minimal');
   await page.reload();
   await surface(page, 'minimal');
-  await expect(page.locator('body')).toHaveCSS('font-size', '24px');
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-font',
-    'bubble-candy',
-  );
+  await expect(page.locator('body')).toHaveCSS('font-size', '16px');
+  await expect(page.locator('html')).toHaveAttribute('data-font', 'system');
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator('.minimal-search-field')).toBeVisible();
   expect(
@@ -225,7 +226,7 @@ test('missing, unknown and retired IDs render actual Sakura components without w
   expect(state.writes).toEqual([]);
 });
 
-for (const themeId of ['default', 'minimal'] as const) {
+for (const themeId of ['default', 'minimal', 'ury'] as const) {
   for (const width of [1440, 390]) {
     for (const language of ['zh', 'en']) {
       test(`${themeId} all public routes, pagination and media at ${width} in ${language}`, async ({
@@ -247,33 +248,33 @@ for (const themeId of ['default', 'minimal'] as const) {
         await surface(page, themeId);
         await expect(
           page.locator(
-            themeId === 'default' ? '.timeline-update' : '.minimal-note',
+            themeId === 'default' ? '.timeline-update' : `.${themeId}-note`,
           ),
         ).toContainText('Synthetic moment');
         for (const [path, selector] of [
           [
             '/posts/fixture-post',
-            themeId === 'default' ? '.post-article' : '.minimal-document',
+            themeId === 'default' ? '.post-article' : `.${themeId}-document`,
           ],
           [
             '/pages/fixture-page',
-            themeId === 'default' ? '.entry-content' : '.minimal-document',
+            themeId === 'default' ? '.entry-content' : `.${themeId}-document`,
           ],
           [
             '/about',
-            themeId === 'default' ? '.about-page' : '.minimal-document',
+            themeId === 'default' ? '.about-page' : `.${themeId}-document`,
           ],
           [
             '/search?q=fixture&page=1',
-            themeId === 'default' ? '.story-card' : '.minimal-story',
+            themeId === 'default' ? '.story-card' : `.${themeId}-story`,
           ],
           [
             '/tags',
-            themeId === 'default' ? '.taxonomy-terms' : '.minimal-tags',
+            themeId === 'default' ? '.taxonomy-terms' : `.${themeId}-tags`,
           ],
           [
             '/tags/spring?page=2',
-            themeId === 'default' ? '.story-card' : '.minimal-story',
+            themeId === 'default' ? '.story-card' : `.${themeId}-story`,
           ],
         ]) {
           await spa(page, path);
@@ -303,11 +304,15 @@ for (const themeId of ['default', 'minimal'] as const) {
         await spa(page, '/posts/fixture-post');
         await expect(
           page
-            .locator(themeId === 'default' ? '.post-article' : '.minimal-prose')
+            .locator(
+              themeId === 'default' ? '.post-article' : `.${themeId}-prose`,
+            )
             .first(),
         ).toContainText('Synthetic heading');
         await expect(
-          page.locator('.minimal-prose img, .post-article img').first(),
+          page
+            .locator('.minimal-prose img, .ury-prose img, .post-article img')
+            .first(),
         ).toBeVisible();
         await page.screenshot({
           path: info.outputPath(`${themeId}-${width}-${language}-post.png`),
@@ -323,7 +328,8 @@ for (const themeId of ['default', 'minimal'] as const) {
     page,
   }) => {
     await themeFixture(page, { themeId, fontSize: 125 });
-    const selector = themeId === 'default' ? '.error-card' : '.minimal-error';
+    const selector =
+      themeId === 'default' ? '.error-card' : `.${themeId}-error`;
     await page.goto('/synthetic-direct-404');
     await expect(page.locator(selector)).toBeVisible();
     await page.getByRole('button', { name: '返回首页', exact: true }).click();
@@ -353,7 +359,10 @@ for (const themeId of ['default', 'minimal'] as const) {
       };
     });
     await expect(page.locator(selector)).toContainText('500');
-    await expect(page.locator('body')).toHaveCSS('font-size', '20px');
+    await expect(page.locator('body')).toHaveCSS(
+      'font-size',
+      themeId === 'default' ? '20px' : themeId === 'ury' ? '18px' : '16px',
+    );
     await page.getByRole('button', { name: '返回首页', exact: true }).click();
     await surface(page, themeId);
   });
@@ -418,12 +427,12 @@ for (const themeId of ['default', 'minimal'] as const) {
           await surface(page, themeId);
           await expect(
             page.locator(
-              themeId === 'default' ? '.post-article' : '.minimal-document',
+              themeId === 'default' ? '.post-article' : `.${themeId}-document`,
             ),
           ).toContainText('Synthetic heading');
           await expect(page.locator('body')).toHaveCSS(
             'font-size',
-            `${(16 * fontSize) / 100}px`,
+            `${themeId === 'default' ? (16 * fontSize) / 100 : 16}px`,
           );
           const image = page
             .locator('.minimal-prose img, .post-article img')

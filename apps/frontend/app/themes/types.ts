@@ -1,4 +1,18 @@
 import type { Component } from 'vue';
+import type { SiteAppearance } from '@cool/content';
+
+export interface ThemeAppearanceDefinition {
+  readonly readerCookie: string;
+  readonly resolve: (
+    saved: SiteAppearance,
+    preference: string | null,
+  ) => {
+    font: string;
+    fontSize: number;
+    palette: 'light' | 'sepia' | 'dark';
+    attributes?: Readonly<Record<`data-${string}`, string>>;
+  };
+}
 export const publicPages = [
   'home',
   'post',
@@ -19,6 +33,7 @@ export interface SiteTheme {
   readonly entry: ThemeLoader;
   readonly pages: Readonly<Record<PublicPage, ThemeLoader>>;
   readonly error: ThemeLoader;
+  readonly appearance: ThemeAppearanceDefinition;
   readonly colorModes: readonly [ColorMode, ...ColorMode[]];
   readonly assets: { readonly icon: string; readonly touchIcon?: string };
 }

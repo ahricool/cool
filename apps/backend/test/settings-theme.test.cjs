@@ -135,3 +135,58 @@ test('actual settings DTO accepts safe IDs and rejects invalid values', async ()
     await assert.rejects(pipe.transform(body, { type: 'body', metatype }));
   }
 });
+
+test('Ury nested saves preserve omitted profiles and partial fields across real DTO roundtrips', async () => {
+  const initial = structuredClone(defaultSettings);
+  initial.site.appearance.ury = {
+    palette: 'sepia',
+    font: 'serif',
+    fontSize: 125,
+    readingWidth: 'wide',
+    showAvatar: false,
+    showCovers: true,
+  };
+  const db = memoryDatabase(initial);
+  const controller = new SettingsController(db);
+  for (const omitted of ['ury', 'appearance']) {
+    const body = structuredClone(initial);
+    if (omitted === 'ury') delete body.site.appearance.ury;
+    else delete body.site.appearance;
+    await controller.save(await transformSettings(body));
+    assert.deepEqual(
+      (await readSettings(db)).site.appearance,
+      initial.site.appearance,
+    );
+  }
+  const partial = structuredClone(initial);
+  partial.site.appearance.ury = { palette: 'dark' };
+  await controller.save(await transformSettings(partial));
+  const saved = await readSettings(db);
+  assert.deepEqual(saved.site.appearance, {
+    ...initial.site.appearance,
+    ury: { ...initial.site.appearance.ury, palette: 'dark' },
+  });
+  await controller.save(await transformSettings(saved));
+  assert.deepEqual(await readSettings(db), saved);
+});
+
+test('Ury rejects arrays, malformed objects and invalid fields before saving', async () => {
+  for (const ury of [
+    null,
+    [],
+    [{ palette: 'sepia' }],
+    { palette: 'pink' },
+    { font: 'remote' },
+    { fontSize: 79 },
+    { fontSize: 151 },
+    { fontSize: 100.5 },
+    { showAvatar: 'true' },
+    { showCovers: null },
+    { readingWidth: 'other' },
+    { url: 'bad' },
+  ]) {
+    const body = structuredClone(defaultSettings);
+    body.site.appearance.ury = ury;
+    await assert.rejects(transformSettings(body));
+  }
+});
