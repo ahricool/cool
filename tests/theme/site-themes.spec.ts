@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { themeFixture } from './fixture';
+import { defaultUryAppearance } from '../../packages/content/src/types';
 
 async function spa(page: Page, path: string) {
   await page.evaluate(async (value) => {
@@ -15,11 +16,11 @@ async function spa(page: Page, path: string) {
     await root.__vue_app__.config.globalProperties.$router.push(value);
   }, path);
 }
-async function choose(page: Page, id: 'default' | 'minimal' | 'ury') {
+async function choose(page: Page, id: 'default' | 'ury') {
   await spa(page, '/admin/settings');
   await page.getByRole('tab', { name: '外观', exact: true }).click();
   const choice = page.getByRole('radio', {
-    name: id === 'default' ? 'sakura' : id === 'minimal' ? 'Minimal' : 'ury',
+    name: id === 'default' ? 'sakura' : 'ury',
     exact: true,
   });
   await choice.focus();
@@ -32,17 +33,13 @@ async function choose(page: Page, id: 'default' | 'minimal' | 'ury') {
     'rgb(255, 255, 255)',
   );
 }
-async function surface(page: Page, id: 'default' | 'minimal' | 'ury') {
+async function surface(page: Page, id: 'default' | 'ury') {
   await expect(page.locator(`[data-theme-root="${id}"]`)).toBeVisible();
   await expect(
     page.locator(id === 'default' ? '.site-header' : `.${id}-masthead`),
   ).toBeVisible();
   await expect(
-    page.locator(
-      id === 'default'
-        ? '.minimal-masthead, .ury-masthead'
-        : `.site-header, .${id === 'ury' ? 'minimal' : 'ury'}-masthead`,
-    ),
+    page.locator(id === 'default' ? '.ury-masthead' : '.site-header'),
   ).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('data-site-theme', id);
 }
@@ -71,7 +68,7 @@ test('SPA switches complete trees in both directions; Admin, Teleports and histo
   await page.evaluate(() => {
     (window as Window & { themeDocument?: boolean }).themeDocument = true;
   });
-  await choose(page, 'minimal');
+  await choose(page, 'ury');
   await expect(page.locator('html')).not.toHaveAttribute('data-site-theme');
   await page.getByRole('button', { name: '我的账户', exact: true }).click();
   await expect(page.locator('#admin-account-menu')).toBeVisible();
@@ -81,13 +78,13 @@ test('SPA switches complete trees in both directions; Admin, Teleports and histo
   );
   await page.keyboard.press('Escape');
   await spa(page, '/');
-  await surface(page, 'minimal');
+  await surface(page, 'ury');
   await expect(page.locator('[data-admin-feedback]')).toHaveCount(0);
-  await expect(page.locator('.minimal-story')).toBeVisible();
+  await expect(page.locator('.ury-story')).toBeVisible();
   await expect(page.locator('.story-card')).toHaveCount(0);
   await expect(page.locator('body')).toHaveCSS(
     'background-color',
-    'rgb(250, 249, 246)',
+    'rgb(253, 252, 249)',
   );
   expect(
     await page
@@ -97,19 +94,19 @@ test('SPA switches complete trees in both directions; Admin, Teleports and histo
       ),
   ).toBe('');
   await spa(page, '/posts/fixture-post');
-  await expect(page.locator('.minimal-document-header h1')).toContainText(
+  await expect(page.locator('.ury-document-header h1')).toContainText(
     '合成文章',
   );
   await expect(page.locator('.post-header')).toHaveCount(0);
   await page.goBack();
-  await surface(page, 'minimal');
+  await surface(page, 'ury');
   await page.goForward();
-  await expect(page.locator('.minimal-document')).toBeVisible();
+  await expect(page.locator('.ury-document')).toBeVisible();
   await choose(page, 'default');
   await spa(page, '/posts/fixture-post');
   await surface(page, 'default');
   await expect(page.locator('.post-header')).toBeVisible();
-  await expect(page.locator('.minimal-document')).toHaveCount(0);
+  await expect(page.locator('.ury-document')).toHaveCount(0);
   await expect(page.locator('body')).toHaveCSS(
     'background-color',
     'rgb(255, 255, 255)',
@@ -117,9 +114,7 @@ test('SPA switches complete trees in both directions; Admin, Teleports and histo
   expect(
     await page
       .locator('html')
-      .evaluate((el) =>
-        getComputedStyle(el).getPropertyValue('--minimal-page'),
-      ),
+      .evaluate((el) => getComputedStyle(el).getPropertyValue('--ury-page')),
   ).toBe('');
   expect(
     await page.evaluate(
@@ -127,7 +122,7 @@ test('SPA switches complete trees in both directions; Admin, Teleports and histo
     ),
   ).toBe(true);
   expect(state.writes.map((write) => write.site.appearance.themeId)).toEqual([
-    'minimal',
+    'ury',
     'default',
   ]);
   expect(
@@ -154,25 +149,25 @@ test('an unsaved Admin choice does not affect public content; save persists with
   const appearance = structuredClone(state.settings.site.appearance);
   await page.goto('/admin/settings');
   await page.getByRole('tab', { name: '外观', exact: true }).click();
-  const unsaved = page.getByRole('radio', { name: 'Minimal', exact: true });
+  const unsaved = page.getByRole('radio', { name: 'ury', exact: true });
   await unsaved.focus();
   await unsaved.press('Space');
   expect(state.writes).toEqual([]);
   await spa(page, '/search');
   await surface(page, 'default');
-  await choose(page, 'minimal');
+  await choose(page, 'ury');
   expect(state.writes[0]?.site.appearance).toEqual({
     ...appearance,
-    themeId: 'minimal',
+    themeId: 'ury',
   });
   await spa(page, '/search');
-  await surface(page, 'minimal');
+  await surface(page, 'ury');
   await page.reload();
-  await surface(page, 'minimal');
-  await expect(page.locator('body')).toHaveCSS('font-size', '16px');
-  await expect(page.locator('html')).toHaveAttribute('data-font', 'system');
+  await surface(page, 'ury');
+  await expect(page.locator('body')).toHaveCSS('font-size', '18px');
+  await expect(page.locator('html')).toHaveAttribute('data-font', 'serif');
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('.minimal-search-field')).toBeVisible();
+  await expect(page.locator('.ury-search-field')).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -183,15 +178,15 @@ test('an unsaved Admin choice does not affect public content; save persists with
 test('Admin color mode and public color mode have separate cookies and retain the same layout', async ({
   page,
 }) => {
-  await themeFixture(page, { themeId: 'minimal' });
+  await themeFixture(page, { themeId: 'ury' });
   await page.goto('/');
-  await surface(page, 'minimal');
-  await page.getByRole('button', { name: '切换深色', exact: true }).click();
+  await surface(page, 'ury');
+  await page.getByLabel('配色', { exact: true }).selectOption('dark');
   await expect(page.locator('body')).toHaveCSS(
     'background-color',
-    'rgb(21, 28, 25)',
+    'rgb(34, 35, 31)',
   );
-  await expect(page.locator('.minimal-masthead')).toBeVisible();
+  await expect(page.locator('.ury-masthead')).toBeVisible();
   await spa(page, '/admin/settings');
   await expect(page.locator('body')).toHaveCSS(
     'background-color',
@@ -200,33 +195,81 @@ test('Admin color mode and public color mode have separate cookies and retain th
   await page.getByRole('button', { name: '切换深色', exact: true }).click();
   await expect(page.locator('html')).toHaveClass('dark');
   await spa(page, '/');
-  await surface(page, 'minimal');
-  await page.getByRole('button', { name: '切换浅色', exact: true }).click();
+  await surface(page, 'ury');
+  await page.getByLabel('配色', { exact: true }).selectOption('light');
   await spa(page, '/admin/settings');
   await expect(page.locator('html')).toHaveClass('dark');
   const cookies = await page.context().cookies();
-  expect(cookies.find((cookie) => cookie.name === 'cool_theme')?.value).toBe(
-    'light',
-  );
+  expect(
+    cookies.find((cookie) => cookie.name === 'cool_ury_palette')?.value,
+  ).toBe('light');
   expect(
     cookies.find((cookie) => cookie.name === 'cool_admin_theme')?.value,
   ).toBe('dark');
 });
 
-test('missing, unknown and retired IDs render actual Sakura components without writing settings', async ({
+test('missing, unknown and retired IDs fall back without writes; Admin offers only supported themes', async ({
   page,
 }) => {
-  const state = await themeFixture(page);
-  for (const id of [undefined, 'soft-preview', 'removed-theme', '', null]) {
+  const state = await themeFixture(page, {
+    font: 'bubble-candy',
+    fontSize: 150,
+    avatar: 'star',
+    cover: 'heart',
+    background: 'none',
+    ury: {
+      ...defaultUryAppearance,
+      palette: 'sepia',
+      font: 'sans',
+      fontSize: 125,
+    },
+  });
+  for (const id of [
+    undefined,
+    'soft-preview',
+    'removed-theme',
+    '',
+    null,
+    'minimal',
+  ]) {
     state.settings.site.appearance.themeId = id as string;
+    const saved = structuredClone(state.settings);
     await page.goto('/');
     await surface(page, 'default');
     await expect(page.locator('.story-card')).toBeVisible();
+    await page.reload();
+    await surface(page, 'default');
+    await spa(page, '/admin/settings');
+    await page.getByRole('tab', { name: '外观', exact: true }).click();
+    const options = page.getByTestId('appearance-theme');
+    await expect(options.getByRole('radio')).toHaveCount(2);
+    await expect(
+      options.getByRole('radio', { name: 'sakura', exact: true }),
+    ).toBeChecked();
+    await expect(
+      options.getByRole('radio', { name: 'ury', exact: true }),
+    ).not.toBeChecked();
+    expect(state.settings).toEqual(saved);
+    expect(state.writes).toEqual([]);
   }
-  expect(state.writes).toEqual([]);
+  const saved = structuredClone(state.settings);
+  // Only an explicit Admin save replaces the retired ID; both appearance profiles survive.
+  await choose(page, 'default');
+  expect(state.writes).toHaveLength(1);
+  expect(state.settings).toEqual({
+    ...saved,
+    site: {
+      ...saved.site,
+      appearance: { ...saved.site.appearance, themeId: 'default' },
+    },
+  });
+  await spa(page, '/');
+  await surface(page, 'default');
+  await page.reload();
+  await surface(page, 'default');
 });
 
-for (const themeId of ['default', 'minimal', 'ury'] as const) {
+for (const themeId of ['default', 'ury'] as const) {
   for (const width of [1440, 390]) {
     for (const language of ['zh', 'en']) {
       test(`${themeId} all public routes, pagination and media at ${width} in ${language}`, async ({
@@ -310,9 +353,7 @@ for (const themeId of ['default', 'minimal', 'ury'] as const) {
             .first(),
         ).toContainText('Synthetic heading');
         await expect(
-          page
-            .locator('.minimal-prose img, .ury-prose img, .post-article img')
-            .first(),
+          page.locator('.ury-prose img, .post-article img').first(),
         ).toBeVisible();
         await page.screenshot({
           path: info.outputPath(`${themeId}-${width}-${language}-post.png`),
@@ -361,22 +402,22 @@ for (const themeId of ['default', 'minimal', 'ury'] as const) {
     await expect(page.locator(selector)).toContainText('500');
     await expect(page.locator('body')).toHaveCSS(
       'font-size',
-      themeId === 'default' ? '20px' : themeId === 'ury' ? '18px' : '16px',
+      themeId === 'default' ? '20px' : '18px',
     );
     await page.getByRole('button', { name: '返回首页', exact: true }).click();
     await surface(page, themeId);
   });
 }
 
-test('first Minimal load fetches its visual resources without Sakura styles or images', async ({
+test('first Ury load fetches its visual resources without Sakura styles or images', async ({
   page,
 }) => {
-  await themeFixture(page, { themeId: 'minimal' });
+  await themeFixture(page, { themeId: 'ury' });
   const urls: string[] = [];
   page.on('request', (request) => urls.push(request.url()));
   await page.goto('/');
-  await surface(page, 'minimal');
-  await expect(page.locator('.minimal-story')).toBeVisible();
+  await surface(page, 'ury');
+  await expect(page.locator('.ury-story')).toBeVisible();
   expect(urls.some((url) => url.includes('/sakura/'))).toBe(false);
   const css = await page.evaluate(() =>
     [...document.styleSheets]
@@ -405,20 +446,32 @@ test('a failed site API does not repeatedly retry while recovering from an error
   ).toHaveLength(1);
 });
 
-for (const themeId of ['default', 'minimal'] as const) {
+for (const themeId of ['default', 'ury'] as const) {
   test(`${themeId} narrow content retains media and all font/size/palette choices`, async ({
     page,
   }, info) => {
     const state = await themeFixture(page, { themeId });
     await page.setViewportSize({ width: 390, height: 844 });
-    for (const font of ['default', 'bubble-candy'] as const) {
+    for (const font of themeId === 'default'
+      ? (['default', 'bubble-candy'] as const)
+      : (['serif', 'sans'] as const)) {
       for (const fontSize of [80, 150]) {
         for (const mode of ['light', 'dark']) {
-          state.settings.site.appearance.font = font;
-          state.settings.site.appearance.fontSize = fontSize;
+          if (themeId === 'default') {
+            state.settings.site.appearance.font = font as
+              'default' | 'bubble-candy';
+            state.settings.site.appearance.fontSize = fontSize;
+          } else {
+            state.settings.site.appearance.ury = {
+              ...defaultUryAppearance,
+              ...state.settings.site.appearance.ury,
+              font: font as 'serif' | 'sans',
+              fontSize,
+            };
+          }
           await page.context().addCookies([
             {
-              name: 'cool_theme',
+              name: themeId === 'default' ? 'cool_theme' : 'cool_ury_palette',
               value: mode,
               url: 'http://127.0.0.1:43871',
             },
@@ -432,10 +485,10 @@ for (const themeId of ['default', 'minimal'] as const) {
           ).toContainText('Synthetic heading');
           await expect(page.locator('body')).toHaveCSS(
             'font-size',
-            `${themeId === 'default' ? (16 * fontSize) / 100 : 16}px`,
+            `${((themeId === 'default' ? 16 : 18) * fontSize) / 100}px`,
           );
           const image = page
-            .locator('.minimal-prose img, .post-article img')
+            .locator('.ury-prose img, .post-article img')
             .first();
           await expect(image).toBeVisible();
           await expect
@@ -461,19 +514,19 @@ for (const themeId of ['default', 'minimal'] as const) {
       );
     });
     await page.screenshot({
-      path: info.outputPath(`${themeId}-390-dark-150-bubble.png`),
+      path: info.outputPath(`${themeId}-390-dark-150.png`),
       fullPage: true,
     });
   });
 }
 
-test('direct Admin errors keep fixed Admin visuals even when Minimal is selected', async ({
+test('direct Admin errors keep fixed Admin visuals even when Ury is selected', async ({
   page,
 }) => {
-  await themeFixture(page, { themeId: 'minimal' });
+  await themeFixture(page, { themeId: 'ury' });
   await page.goto('/admin/synthetic-missing');
   await expect(page.locator('.error-card')).toBeVisible();
-  await expect(page.locator('.minimal-error')).toHaveCount(0);
+  await expect(page.locator('.ury-error')).toHaveCount(0);
   await expect(page.locator('.error-card')).toHaveCSS(
     'background-color',
     'rgb(255, 255, 255)',

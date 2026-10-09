@@ -38,7 +38,7 @@ async function transformSettings(body) {
   }).transform(body, { type: 'body', metatype });
 }
 
-test('theme selection roundtrips and old clients preserve independent appearance and images', async () => {
+test('retired theme IDs roundtrip and old clients preserve independent appearance and images', async () => {
   const initial = structuredClone(defaultSettings);
   initial.site.appearance = {
     themeId: 'minimal',
@@ -47,21 +47,35 @@ test('theme selection roundtrips and old clients preserve independent appearance
     avatar: 'star',
     cover: 'heart',
     background: 'none',
+    ury: {
+      palette: 'sepia',
+      font: 'sans',
+      fontSize: 125,
+      readingWidth: 'wide',
+      showAvatar: false,
+      showCovers: true,
+    },
   };
-  initial.homepage.coverUrl = '/api/v1/media/fixture.webp';
+  initial.homepage.coverUrl =
+    '/api/v1/media/00000000-0000-0000-0000-000000000000.webp';
   const db = memoryDatabase(initial);
   const controller = new SettingsController(db);
+  const before = structuredClone(await db.siteSetting.findMany());
+  assert.deepEqual(await readSettings(db), initial);
+  assert.deepEqual(await db.siteSetting.findMany(), before);
+  await controller.save(await transformSettings(structuredClone(initial)));
+  assert.deepEqual(await readSettings(db), initial);
   const legacy = structuredClone(initial);
   delete legacy.site.appearance.themeId;
-  await controller.save(legacy);
+  await controller.save(await transformSettings(legacy));
   assert.deepEqual(await readSettings(db), initial);
   const next = structuredClone(initial);
   next.site.appearance.themeId = 'default';
-  await controller.save(next);
+  await controller.save(await transformSettings(next));
   assert.deepEqual(await readSettings(db), next);
   const savedAppearance = structuredClone(next.site.appearance);
   delete next.site.appearance;
-  await controller.save(next);
+  await controller.save(await transformSettings(next));
   assert.deepEqual((await readSettings(db)).site.appearance, savedAppearance);
 });
 
@@ -112,6 +126,8 @@ test('actual settings DTO accepts safe IDs and rejects invalid values', async ()
   });
   for (const id of [
     'default',
+    'sakura',
+    'ury',
     'minimal',
     'soft-preview',
     'removed-theme',

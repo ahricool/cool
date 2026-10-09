@@ -55,7 +55,7 @@ for (const width of [1440, 390]) {
 
 for (const width of [1440, 390]) {
   for (const mode of ['light', 'dark']) {
-    test(`Admin appearance remains identical with saved Minimal ${width} ${mode}`, async ({
+    test(`Admin appearance remains identical with saved Ury ${width} ${mode}`, async ({
       page,
     }, info) => {
       const snapshot = `_admin_settings-${width}-${mode}.png`;
@@ -64,7 +64,7 @@ for (const width of [1440, 390]) {
         'SKIPPED: missing Admin baseline; no visual comparison executed.',
       );
       await page.setViewportSize({ width, height: 900 });
-      await themeFixture(page, { themeId: 'minimal' });
+      await themeFixture(page, { themeId: 'ury' });
       await page.context().addCookies([
         { name: 'cool_theme', value: mode, url: 'http://127.0.0.1:43871' },
         {

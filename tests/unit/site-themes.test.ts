@@ -15,6 +15,7 @@ test('missing, retired and invalid IDs safely resolve to the stable Sakura ID', 
     undefined,
     null,
     '',
+    'minimal',
     'soft-preview',
     'removed-theme',
     '<style>',
@@ -22,7 +23,12 @@ test('missing, retired and invalid IDs safely resolve to the stable Sakura ID', 
   ]) {
     assert.equal(resolveSiteTheme(id).id, 'default');
   }
-  assert.equal(resolveSiteTheme('minimal').id, 'minimal');
+  assert.deepEqual(
+    siteThemes.map((theme) => theme.id),
+    ['default', 'ury'],
+  );
+  assert.equal(resolveSiteTheme('sakura'), resolveSiteTheme('default'));
+  assert.equal(resolveSiteTheme('ury').id, 'ury');
 });
 
 test('every theme declares independent entries, errors, assets and all public pages', () => {
@@ -47,19 +53,25 @@ test('every theme declares independent entries, errors, assets and all public pa
   assert.notEqual(siteThemes[0].assets.icon, siteThemes[1].assets.icon);
 });
 
-test('Minimal owns its visual tree and does not import Sakura, Admin or shared visual components', async () => {
-  const root = new URL(
-    '../../apps/frontend/app/themes/minimal/',
-    import.meta.url,
-  );
-  for (const file of await readdir(root, { recursive: true })) {
-    if (!/\.(vue|css)$/.test(file)) continue;
-    const source = await readFile(new URL(file, root), 'utf8');
-    assert.doesNotMatch(
-      source,
-      /sakura|features\/admin|~\/components|--sakura/iu,
-      file,
+test('both themes own their visual trees without importing another theme or Admin visuals', async () => {
+  for (const theme of siteThemes) {
+    const root = new URL(
+      `../../apps/frontend/app/themes/${theme.directory}/`,
+      import.meta.url,
     );
+    const other = siteThemes.find((entry) => entry.id !== theme.id)!;
+    for (const file of await readdir(root, { recursive: true })) {
+      if (!/\.(vue|css|ts)$/.test(file)) continue;
+      const source = await readFile(new URL(file, root), 'utf8');
+      assert.doesNotMatch(
+        source,
+        new RegExp(
+          `themes/${other.directory}|\\.\\./${other.directory}/|features/admin|~/components|--${other.directory}`,
+          'iu',
+        ),
+        `${theme.directory}/${file}`,
+      );
+    }
   }
 });
 
@@ -80,6 +92,7 @@ test('a theme may support just one palette without changing the saved reader pre
 
 test('themes resolve only their owned settings without mutating saved profiles', () => {
   const saved = structuredClone(defaultAppearance);
+  saved.themeId = 'minimal';
   saved.font = 'bubble-candy';
   saved.fontSize = 150;
   saved.ury = {
@@ -98,7 +111,7 @@ test('themes resolve only their owned settings without mutating saved profiles',
   });
   assert.deepEqual(
     resolveSiteTheme('minimal').appearance.resolve(saved, 'dark'),
-    { font: 'system', fontSize: 100, palette: 'dark' },
+    { font: 'bubble-candy', fontSize: 150, palette: 'dark' },
   );
   const ury = resolveSiteTheme('ury').appearance;
   assert.deepEqual(ury.resolve(saved, null), {
@@ -123,7 +136,7 @@ test('Ury owns visuals and shared head delegates appearance without theme-ID bra
     if (!/\.(vue|css)$/.test(file)) continue;
     assert.doesNotMatch(
       await readFile(new URL(file, root), 'utf8'),
-      /sakura|themes\/minimal|features\/admin|~\/components|--sakura/iu,
+      /sakura|features\/admin|~\/components|--sakura/iu,
       file,
     );
   }
