@@ -22,9 +22,6 @@ export const adminSettingsMessages: Record<string, string> = {
   网站主题: 'Site theme',
   默认主题: 'Default theme',
   '保留现有梦桜风格。': 'Keep the current 梦桜 appearance.',
-  Minimal: 'Minimal',
-  '独立的极简布局与内容展示。':
-    'An independent minimal layout and content presentation.',
   '保存后应用到公共博客；管理后台保持独立，其他外观设置由各主题按需使用。':
     'Save to apply to the public blog. Admin remains independent; each theme opts into other appearance settings.',
   字体大小: 'Font size',

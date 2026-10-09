@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { themeFixture } from './fixture';
 
-for (const id of ['default', 'minimal', 'ury'] as const) {
+for (const id of ['default', 'ury'] as const) {
   test(`${id}: a late 404 from an abandoned async themed page cannot replace the current route`, async ({
     page,
   }) => {
@@ -51,13 +51,11 @@ for (const id of ['default', 'minimal', 'ury'] as const) {
     await expect(
       page.locator(id === 'default' ? '.cool-search' : `.${id}-search-field`),
     ).toBeVisible();
-    await expect(
-      page.locator('.error-card, .minimal-error, .ury-error'),
-    ).toHaveCount(0);
+    await expect(page.locator('.error-card, .ury-error')).toHaveCount(0);
   });
 }
 
-for (const id of ['default', 'minimal', 'ury'] as const) {
+for (const id of ['default', 'ury'] as const) {
   test(`${id}: leaving Admin cancels its pending confirmation before the public surface renders`, async ({
     page,
   }) => {

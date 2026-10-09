@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { defaultUryAppearance } from '../../packages/content/src/types';
 import { themeFixture } from './fixture';
 
-type ThemeId = 'default' | 'minimal' | 'ury';
+type ThemeId = 'default' | 'ury';
 const origin = 'http://127.0.0.1:43871';
 async function spa(page: Page, path: string) {
   await page.evaluate(async (value) => {
@@ -24,7 +24,7 @@ async function selectTheme(page: Page, id: ThemeId) {
   await spa(page, '/admin/settings');
   await page.getByRole('tab', { name: '外观', exact: true }).click();
   const radio = page.getByTestId('appearance-theme').getByRole('radio', {
-    name: id === 'default' ? 'sakura' : id === 'minimal' ? 'Minimal' : 'ury',
+    name: id === 'default' ? 'sakura' : 'ury',
     exact: true,
   });
   await radio.focus();
@@ -40,8 +40,8 @@ async function noOverflow(page: Page) {
   ).toBe(true);
 }
 
-for (const from of ['default', 'minimal', 'ury'] as const) {
-  for (const to of ['default', 'minimal', 'ury'] as const) {
+for (const from of ['default', 'ury'] as const) {
+  for (const to of ['default', 'ury'] as const) {
     if (from === to) continue;
     test(`SPA ${from} → ${to} → ${from} keeps settings, CSS and Admin isolated`, async ({
       page,
@@ -90,7 +90,6 @@ for (const from of ['default', 'minimal', 'ury'] as const) {
         );
         for (const [owner, variable] of [
           ['default', '--sakura-accent'],
-          ['minimal', '--minimal-page'],
           ['ury', '--ury-page'],
         ]) {
           if (owner !== id)
@@ -105,7 +104,7 @@ for (const from of ['default', 'minimal', 'ury'] as const) {
         }
         await expect(page.locator('body')).toHaveCSS(
           'font-size',
-          id === 'default' ? '24px' : id === 'minimal' ? '16px' : '18px',
+          id === 'default' ? '24px' : '18px',
         );
         expect(state.settings.site.appearance).toEqual({
           ...saved,
@@ -490,6 +489,9 @@ test('Ury delayed page cannot overwrite a newer language or survive a theme swit
   page,
 }) => {
   await page.addInitScript(() => {
+    (
+      window as Window & { themeObserver?: typeof IntersectionObserver }
+    ).themeObserver = window.IntersectionObserver;
     Object.defineProperty(window, 'IntersectionObserver', {
       value: undefined,
       configurable: true,
@@ -539,9 +541,22 @@ test('Ury delayed page cannot overwrite a newer language or survive a theme swit
   await expect.poll(() => entered.has('en')).toBe(true);
   // Change UI language before navigating so the shared Admin helper uses Chinese labels.
   await page.getByLabel('Language / 语言').selectOption('zh');
-  await selectTheme(page, 'minimal');
+  // Sakura requires the native observer; the no-observer case above is Ury-only.
+  await page.evaluate(() => {
+    const state = window as Window & {
+      themeObserver?: typeof IntersectionObserver;
+    };
+    Object.defineProperty(window, 'IntersectionObserver', {
+      value: state.themeObserver,
+      configurable: true,
+    });
+    delete state.themeObserver;
+  });
+  // Keep the new tree at one item so only an abandoned response could add another.
+  state.timelinePages = 1;
+  await selectTheme(page, 'default');
   await spa(page, '/');
-  await expect(page.locator('.minimal-story')).toHaveCount(1);
+  await expect(page.locator('.story-card')).toHaveCount(1);
   const abandonedResponse = page.waitForResponse(
     (response) => new URL(response.url()).searchParams.get('cursor') === '1',
   );
@@ -549,5 +564,5 @@ test('Ury delayed page cannot overwrite a newer language or survive a theme swit
   await abandonedResponse;
   await page.waitForLoadState('networkidle');
   await expect(page.locator('.ury-story-featured')).toHaveCount(0);
-  await expect(page.locator('.minimal-story')).toHaveCount(1);
+  await expect(page.locator('.story-card')).toHaveCount(1);
 });

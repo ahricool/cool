@@ -1,5 +1,4 @@
 import { sakuraAppearance } from './sakura/appearance';
-import { minimalAppearance } from './minimal/appearance';
 import { uryAppearance } from './ury/appearance';
 import type { ColorMode, SiteTheme } from './types';
 
@@ -25,25 +24,6 @@ const defaultTheme = {
 } as const satisfies SiteTheme;
 export const siteThemes = [
   defaultTheme,
-  {
-    id: 'minimal',
-    appearance: minimalAppearance,
-    directory: 'minimal',
-    label: 'Minimal',
-    description: '独立的极简布局与内容展示。',
-    entry: () => import('./minimal/Entry.vue'),
-    pages: {
-      home: () => import('./minimal/pages/Home.vue'),
-      post: () => import('./minimal/pages/Post.vue'),
-      page: () => import('./minimal/pages/Page.vue'),
-      search: () => import('./minimal/pages/Search.vue'),
-      about: () => import('./minimal/pages/About.vue'),
-      tags: () => import('./minimal/pages/Tags.vue'),
-    },
-    error: () => import('./minimal/pages/Error.vue'),
-    colorModes: ['light', 'dark'],
-    assets: { icon: '/themes/minimal/mark.svg' },
-  },
   {
     id: 'ury',
     appearance: uryAppearance,

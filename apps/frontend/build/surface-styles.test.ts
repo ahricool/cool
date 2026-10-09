@@ -156,7 +156,7 @@ test('owned public styles and Element Plus remain isolated', async () => {
 test('complete theme styles constrain root selectors and resets to their own active theme', async () => {
   for (const [theme, id] of [
     ['sakura', 'default'],
-    ['minimal', 'minimal'],
+    ['ury', 'ury'],
   ]) {
     const result = await transform(
       ':root.dark { --local: blue } html::selection, body, * { color: red }',
@@ -188,7 +188,7 @@ test('owned keyframes and shorthand references have independent theme namespaces
     '@keyframes enter { from { opacity: 0 } to { opacity: 1 } } .card { animation: enter 1s ease; animation-name: enter; }';
   for (const [directory, id] of [
     ['sakura', 'default'],
-    ['minimal', 'minimal'],
+    ['ury', 'ury'],
   ]) {
     const result = await transform(
       source,

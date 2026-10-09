@@ -55,7 +55,7 @@ test('localized dates keep the Shanghai site date across UTC day and month bound
   assert.equal(formatCoolDate('invalid', 'zh'), '');
 });
 
-test('Minimal and Ury loading, error and empty states have English and unchanged Chinese copy', () => {
+test('Sakura and Ury loading, error and empty states have English and unchanged Chinese copy', () => {
   for (const [zh, en] of [
     ['加载中…', 'Loading…'],
     ['加载失败', 'Unable to load content'],
@@ -67,9 +67,9 @@ test('Minimal and Ury loading, error and empty states have English and unchanged
   }
 });
 
-test('literal interface strings in Minimal and Ury have English translations', async () => {
+test('literal interface strings in Sakura and Ury have English translations', async () => {
   const { readFile, readdir } = await import('node:fs/promises');
-  for (const theme of ['minimal', 'ury']) {
+  for (const theme of ['sakura', 'ury']) {
     const root = new URL(
       `../../apps/frontend/app/themes/${theme}/`,
       import.meta.url,
