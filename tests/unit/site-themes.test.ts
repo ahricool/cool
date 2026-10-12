@@ -150,3 +150,41 @@ test('Ury owns visuals and shared head delegates appearance without theme-ID bra
   assert.doesNotMatch(head, /useUryAppearance|id\s*===|theme\.value\.id\s*===/);
   assert.match(head, /theme\.value\.appearance\.resolve/);
 });
+
+test('Sakura navigation keeps blur regardless of the OS transparency preference', async () => {
+  const styles = new URL(
+    '../../apps/frontend/app/themes/sakura/styles/',
+    import.meta.url,
+  );
+  const navigation = await readFile(new URL('navigation.css', styles), 'utf8');
+  const shell = await readFile(new URL('shell.css', styles), 'utf8');
+  const tokens = await readFile(new URL('tokens.css', styles), 'utf8');
+
+  // The solid surface and its companion banner text override must stay removed.
+  assert.doesNotMatch(navigation + shell, /prefers-reduced-transparency/);
+  assert.match(tokens, /--navigation-blur-radius:\s*18px/);
+  assert.match(
+    navigation,
+    /-webkit-backdrop-filter:\s*blur\(var\(--navigation-blur-radius\)\)/,
+  );
+  assert.match(
+    navigation,
+    /\sbackdrop-filter:\s*blur\(var\(--navigation-blur-radius\)\)/,
+  );
+  assert.match(navigation, /background:\s*#00000014/);
+  assert.match(
+    navigation,
+    /@supports\s*\(\s*\(backdrop-filter: blur\(1px\)\) or \(-webkit-backdrop-filter: blur\(1px\)\)\s*\)\s*\{\s*\.navigation-surface::before\s*\{\s*background: transparent;/,
+  );
+  assert.match(navigation, /prefers-reduced-motion:\s*reduce/);
+  assert.match(shell, /prefers-reduced-motion:\s*reduce/);
+
+  const admin = await readFile(
+    new URL(
+      '../../apps/frontend/app/assets/admin/navigation.css',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  assert.match(admin, /prefers-reduced-transparency:\s*reduce/);
+});
