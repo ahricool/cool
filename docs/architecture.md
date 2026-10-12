@@ -108,7 +108,7 @@ JSON 请求体限制1MB，ValidationPipe 拒绝未知字段。媒体上传最大
 
 页面背景配色的 seed 只在每次 SPA 打开/刷新时创建，当前页面运行周期内保持稳定，不跨刷新持久化。头像与封面保留稳定身份 seed；显式传入 seed 仍可复现。
 
-公共与 Admin 导航共用 navigation.css 的独立非交互背景层使用 18px backdrop blur（不叠加白色/深灰 tint），底部 48px 延伸、64px 渐隐用 mask 自然渐隐；header 点击区域和高度不变。顶部仍按滚动透明，reduced transparency 使用不透明底色并停止模糊，旧浏览器使用轻微黑色半透明 fallback。
+Sakura 公共导航与 Admin 导航各自拥有 navigation.css，独立非交互背景层使用 18px backdrop blur（不叠加白色/深灰 tint），底部 48px 延伸、64px 渐隐用 mask 自然渐隐；header 点击区域和高度不变。Sakura 顶部仍按滚动透明，不再根据系统 reduced transparency 偏好关闭模糊或切换横幅文字样式；Admin 保留该偏好下的不透明底色与无模糊处理。不支持 backdrop-filter 的旧浏览器仍使用轻微黑色半透明 fallback，reduced motion 行为保持不变。
 
 梦桜 wordmark 的 SVG 字形阴影在共享组件内应用一次，小导航用 1.5px/2px，大首页用 3px/8px；SVG overflow visible 避免裁切，原始路径和主题粉色保持。公开移动顶栏复用同一可点击 wordmark。
 

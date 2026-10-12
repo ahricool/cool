@@ -43,17 +43,6 @@
 .navigation-icon--shadow {
   filter: drop-shadow(var(--navigation-content-shadow));
 }
-@media (prefers-reduced-transparency: reduce) {
-  .navigation-surface::before {
-    background: var(--sakura-page);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  .navigation-icon--shadow {
-    filter: none;
-  }
-}
-
 .reading-control {
   display: grid;
   place-items: center;

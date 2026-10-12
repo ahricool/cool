@@ -10,14 +10,6 @@
 .site-header::before {
   opacity: min(1, calc(var(--header-progress) * 4));
 }
-@media (prefers-reduced-transparency: reduce) {
-  .site-header.over-banner {
-    color: var(--sakura-text-regular);
-    --reading-interaction: var(--sakura-accent-strong);
-    text-shadow: none;
-  }
-}
-
 .header-inner {
   max-width: 1440px;
   min-height: var(--reading-header-height);
