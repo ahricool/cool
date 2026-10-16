@@ -19,11 +19,11 @@ useHead(() => ({ title: store.site.title }));
         height="64"
         :alt="store.site.author.displayName"
       />
-      <NuxtLink class="ury-brand" to="/">{{ store.site.title }}</NuxtLink>
+      <NuxtLink class="ury-brand" to="/home">{{ store.site.title }}</NuxtLink>
       <p class="ury-tagline">{{ store.site.description }}</p>
     </div>
     <nav class="ury-nav" :aria-label="t('主导航')">
-      <NuxtLink to="/">{{ t('首页') }}</NuxtLink>
+      <NuxtLink to="/home">{{ t('首页') }}</NuxtLink>
       <NuxtLink to="/tags">{{ t('标签') }}</NuxtLink>
       <NuxtLink to="/search">{{ t('搜索') }}</NuxtLink>
       <NuxtLink to="/about">{{ t('我') }}</NuxtLink>

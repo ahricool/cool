@@ -29,7 +29,7 @@ const component = computed(() =>
   <main v-if="installationFailed" class="admin-resource-error" role="alert">
     <h1>{{ t('工作空间资源加载失败，请重新加载页面后重试。') }}</h1>
     <button @click="reload">{{ t('重新加载') }}</button>
-    <a href="/">{{ t('← 返回博客') }}</a>
+    <a href="/home">{{ t('← 返回博客') }}</a>
   </main>
   <component
     v-else-if="ready"

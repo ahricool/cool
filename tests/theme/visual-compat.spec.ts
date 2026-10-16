@@ -6,7 +6,7 @@ import { themeFixture } from './fixture';
 for (const width of [1440, 390]) {
   for (const mode of ['light', 'dark']) {
     for (const [route, selector] of [
-      ['/', '.story-title'],
+      ['/home', '.story-title'],
       ['/search', '.cool-search'],
       ['/admin/settings', '.settings-panel'],
       ['/posts/fixture-post', '.post-article'],
@@ -17,7 +17,7 @@ for (const width of [1440, 390]) {
       test(`Sakura compatibility ${route} ${width} ${mode}`, async ({
         page,
       }, info) => {
-        const snapshot = `${route.replaceAll('/', '_') || 'home'}-${width}-${mode}.png`;
+        const snapshot = `${(route === '/home' ? '_' : route.replaceAll('/', '_')) || 'home'}-${width}-${mode}.png`;
         test.skip(
           !existsSync(info.snapshotPath(snapshot)) &&
             env.THEME_CAPTURE_BASELINE !== '1',

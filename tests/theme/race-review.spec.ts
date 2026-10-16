@@ -32,7 +32,7 @@ for (const id of ['default', 'ury'] as const) {
         };
         await root.__vue_app__.config.globalProperties.$router.push(value);
       }, path);
-    await page.goto('/');
+    await page.goto('/home');
     await expect(
       page.locator(id === 'default' ? '.story-title' : `.${id}-story h2`),
     ).toBeVisible();
@@ -88,7 +88,7 @@ for (const id of ['default', 'ury'] as const) {
         },
       });
     });
-    await page.goto('/');
+    await page.goto('/home');
     await expect(
       page.locator(id === 'default' ? '.story-card' : `.${id}-story`),
     ).toBeVisible();

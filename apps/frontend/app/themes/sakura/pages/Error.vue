@@ -18,7 +18,9 @@ useHead(() => ({
       <p>{{ t('也许只是转错了一个路口，回去继续你的故事吧。') }}</p>
       <button
         class="primary-action"
-        @click="clearError({ redirect: isAdmin ? '/admin' : routePath('/') })"
+        @click="
+          clearError({ redirect: isAdmin ? '/admin' : routePath('/home') })
+        "
       >
         {{ t(isAdmin ? '返回工作空间' : '返回首页') }}
       </button>

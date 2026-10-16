@@ -54,7 +54,7 @@ for (const from of ['default', 'ury'] as const) {
         ury: { ...defaultUryAppearance, palette: 'sepia' },
       });
       const saved = structuredClone(state.settings.site.appearance);
-      await page.goto('/');
+      await page.goto('/home');
       await page.evaluate(() => {
         (window as Window & { sameDocument?: boolean }).sameDocument = true;
       });
@@ -75,7 +75,7 @@ for (const from of ['default', 'ury'] as const) {
           'rgb(255, 255, 255)',
         );
         await page.keyboard.press('Escape');
-        await spa(page, '/');
+        await spa(page, '/home');
         await expect(page.locator('html')).toHaveAttribute(
           'data-site-theme',
           id,
@@ -171,7 +171,7 @@ test('Ury settings save/reload independently, while an unsaved choice never appl
     .getByRole('radio', { name: 'ury', exact: true });
   await choice.focus();
   await choice.press('Space');
-  await spa(page, '/');
+  await spa(page, '/home');
   await expect(page.locator('[data-theme-root="default"]')).toBeVisible();
   await selectTheme(page, 'ury');
   await spa(page, '/posts/fixture-post');
@@ -189,7 +189,7 @@ test('Ury settings save/reload independently, while an unsaved choice never appl
   ).toHaveCount(0);
   await expect(page.locator('.ury-prose img')).toBeVisible();
   await selectTheme(page, 'default');
-  await spa(page, '/');
+  await spa(page, '/home');
   await expect(page.locator('html')).toHaveAttribute(
     'data-font',
     'bubble-candy',
@@ -208,7 +208,7 @@ test('Ury palettes persist per reader, restore site default and never change oth
     { name: 'cool_theme', value: 'light', url: origin },
     { name: 'cool_admin_theme', value: 'dark', url: origin },
   ]);
-  await page.goto('/');
+  await page.goto('/home');
   await expect(page.locator('html')).toHaveAttribute(
     'data-ury-palette',
     'sepia',
@@ -329,10 +329,12 @@ for (const width of [1440, 390])
           ...defaultUryAppearance,
           palette,
         };
-        for (const route of ['/', '/posts/fixture-post']) {
+        for (const route of ['/home', '/posts/fixture-post']) {
           await page.goto(route);
           await expect(
-            page.locator(route === '/' ? '.ury-story-featured' : '.ury-prose'),
+            page.locator(
+              route === '/home' ? '.ury-story-featured' : '.ury-prose',
+            ),
           ).toBeVisible();
           await page.evaluate(async () => {
             await document.fonts.ready;
@@ -340,7 +342,7 @@ for (const width of [1440, 390])
           });
           await page.screenshot({
             path: info.outputPath(
-              `ury-${width}-${language}-${palette}-${route === '/' ? 'home' : 'post'}.png`,
+              `ury-${width}-${language}-${palette}-${route === '/home' ? 'home' : 'post'}.png`,
             ),
             fullPage: true,
           });
@@ -388,7 +390,7 @@ test('Ury near-bottom loading stops at exhaustion and failure; explicit retry re
   });
   state.timelinePages = 3;
   state.timelineFailures.add('1');
-  await page.goto('/');
+  await page.goto('/home');
   await page.locator('.ury-feed-sentinel').scrollIntoViewIfNeeded();
   await expect(page.locator('.ury-feed [role="alert"]')).toBeVisible();
   const attempts = state.timelineQueries.length;
@@ -422,7 +424,7 @@ test('Ury manual loading works without IntersectionObserver', async ({
   });
   const state = await themeFixture(page, { themeId: 'ury' });
   state.timelinePages = 2;
-  await page.goto('/');
+  await page.goto('/home');
   await expect(page.locator('.ury-story-featured')).toHaveCount(1);
   await page.getByRole('button', { name: '加载更多', exact: true }).click();
   await expect(page.locator('.ury-story-featured')).toHaveCount(2);
@@ -438,7 +440,7 @@ test('Ury repeated cursor cannot auto-loop and abandoned feed cannot append stal
   });
   state.timelinePages = 4;
   state.timelineRepeatCursor = true;
-  await page.goto('/');
+  await page.goto('/home');
   await page.locator('.ury-feed-sentinel').scrollIntoViewIfNeeded();
   await expect(page.locator('.ury-story-featured')).toHaveCount(2);
   await page.waitForTimeout(300);
@@ -462,7 +464,7 @@ test('Ury API failures retain a retry path for document and timeline', async ({
 }) => {
   const state = await themeFixture(page, { themeId: 'ury' });
   state.timelineFailures.add('first');
-  await page.goto('/');
+  await page.goto('/home');
   await expect(page.locator('.ury-feed [role="alert"]')).toBeVisible();
   state.timelineFailures.clear();
   await page.getByRole('button', { name: '重试', exact: true }).click();
@@ -518,7 +520,7 @@ test('Ury delayed page cannot overwrite a newer language or survive a theme swit
     }
     await route.fallback();
   });
-  await page.goto('/');
+  await page.goto('/home');
   await expect(page.locator('.ury-story-featured')).toHaveCount(1);
   await page.getByRole('button', { name: '加载更多', exact: true }).click();
   await expect.poll(() => entered.has('zh')).toBe(true);
@@ -555,7 +557,7 @@ test('Ury delayed page cannot overwrite a newer language or survive a theme swit
   // Keep the new tree at one item so only an abandoned response could add another.
   state.timelinePages = 1;
   await selectTheme(page, 'default');
-  await spa(page, '/');
+  await spa(page, '/home');
   await expect(page.locator('.story-card')).toHaveCount(1);
   const abandonedResponse = page.waitForResponse(
     (response) => new URL(response.url()).searchParams.get('cursor') === '1',

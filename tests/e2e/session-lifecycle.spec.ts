@@ -124,7 +124,7 @@ test('cookie session survives reload and all-device logout revokes browser and s
       ).status(),
     ).toBe(401);
   }
-  await page.goto(blog);
+  await page.goto(blog + '/home');
   await expect(page.locator('#content')).toBeVisible();
   await page.screenshot({
     path: info.outputPath('public-after-signout.png'),
@@ -198,7 +198,7 @@ test('first-password screen confirms input and remains in the same Nuxt app acro
   await page.getByRole('button', { name: '设置密码并进入' }).click();
   await expect(page.getByRole('alert')).toContainText('两次输入的密码不一致');
   expect(initialized).toBe(false);
-  await page.goto(blog);
+  await page.goto(blog + '/home');
   await expect(page.locator('html')).toHaveAttribute('data-surface', 'blog');
   await expect(page.locator('#content')).toBeVisible();
   await page.getByRole('button', { name: '切换深色' }).click();
