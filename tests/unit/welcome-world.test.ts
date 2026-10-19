@@ -1,26 +1,32 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
+import { daylightAt } from '../../apps/frontend/app/features/welcome/daylight';
 import {
   createWelcomeCamera,
   createWelcomeGarden,
 } from '../../apps/frontend/app/features/welcome/world';
 
 function release(world: THREE.Group) {
+  const textures = new Set<THREE.Texture>();
   for (const object of world.children) {
     const mesh = object as THREE.Mesh;
     mesh.geometry.dispose();
     for (const material of Array.isArray(mesh.material)
       ? mesh.material
-      : [mesh.material])
+      : [mesh.material]) {
+      if (material instanceof THREE.MeshToonMaterial && material.gradientMap)
+        textures.add(material.gradientMap);
       material.dispose();
+    }
   }
+  textures.forEach((texture) => texture.dispose());
 }
 
 test('welcome garden has finite, normalized geometry in bounded material batches', () => {
   const world = createWelcomeGarden();
   try {
-    assert.ok(world.children.length > 0 && world.children.length <= 14);
+    assert.ok(world.children.length > 0 && world.children.length <= 20);
     let vertices = 0;
     const plinthBounds = new THREE.Box3();
     const point = new THREE.Vector3();
@@ -63,7 +69,7 @@ test('welcome garden has finite, normalized geometry in bounded material batches
   }
 });
 
-test('procedural blossoms and garden details are reproducible between visits', () => {
+test('procedural foliage and garden details are reproducible between visits', () => {
   const first = createWelcomeGarden();
   const second = createWelcomeGarden();
   try {
@@ -115,5 +121,29 @@ test('initial desktop and portrait views keep the whole miniature clear of viewp
     }
   } finally {
     release(world);
+  }
+});
+
+test('solar cycle is continuous across midnight and lights the night without daylight', () => {
+  const midnight = daylightAt(0),
+    next = daylightAt(24),
+    noon = daylightAt(12);
+  assert.deepEqual(midnight, next);
+  assert.deepEqual(daylightAt(-1), daylightAt(23));
+  assert.deepEqual(daylightAt(Number.NaN), daylightAt(10.5));
+  assert.equal(midnight.sunIntensity, 0);
+  assert.ok(midnight.moonIntensity > 0 && midnight.lampIntensity > 0);
+  assert.ok(
+    noon.sunIntensity > 2 && noon.ambientIntensity > midnight.ambientIntensity,
+  );
+  assert.equal(noon.lampIntensity, 0);
+  assert.ok(
+    daylightAt(8).sunPosition.x < 0 && daylightAt(16).sunPosition.x > 0,
+  );
+  for (let hour = 0; hour < 24; hour += 0.1) {
+    const state = daylightAt(hour),
+      following = daylightAt(hour + 0.1);
+    assert.ok(Math.abs(state.sunIntensity - following.sunIntensity) < 0.2);
+    assert.ok(state.sunPosition.toArray().every(Number.isFinite));
   }
 });

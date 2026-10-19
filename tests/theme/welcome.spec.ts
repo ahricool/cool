@@ -69,7 +69,11 @@ test('WebGL failure leaves a keyboard-accessible Enter, including narrow screens
     'data-state',
     'unavailable',
   );
-  await expect(page.getByRole('status')).toContainText('庭院暂歇');
+  await expect(page.getByRole('status')).toContainText('三维场景暂不可用');
+  await page.keyboard.press('Tab');
+  await expect(
+    page.getByRole('button', { name: '展开或收起光照控制' }),
+  ).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: '进入网站' })).toBeFocused();
   await page.keyboard.press('Enter');
@@ -132,7 +136,7 @@ test('welcome entry follows the persisted reader language', async ({
   ]);
   await page.goto('/');
   const enter = page.getByRole('link', { name: 'Enter the site' });
-  await expect(enter).toHaveText('Enter');
+  await expect(enter).toHaveText('');
   await enter.click();
   await expect(page).toHaveURL(/\/home$/);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
@@ -180,4 +184,52 @@ test('rendered garden rotates, zooms and keeps Enter after context loss', async 
   await page.getByRole('link', { name: '进入网站' }).click();
   await expect(page.locator('.story-card')).toBeVisible();
   await expect(canvas).toHaveCount(0);
+});
+
+test('icon-only controls change daylight, support keyboard and fit portrait screens', async ({
+  page,
+}) => {
+  await themeFixture(page);
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/');
+  await expect(page.locator('.welcome-world')).toHaveAttribute(
+    'data-state',
+    'ready',
+  );
+  const canvas = page.locator('.welcome-canvas canvas');
+  const capture = () =>
+    canvas.screenshot({ mask: [page.locator('.world-controls')] });
+  const slider = page.getByRole('slider', { name: '一天中的时间' });
+  await expect(slider).toHaveAttribute('aria-valuetext', '10:30');
+  expect(await page.locator('.welcome-world').innerText()).toBe('');
+  const morning = await capture();
+  await slider.fill('16');
+  await expect(slider).toHaveAttribute('aria-valuetext', '16:00');
+  await expect.poll(async () => (await capture()).equals(morning)).toBe(false);
+  const afternoon = await capture();
+  await slider.focus();
+  await page.keyboard.press('Home');
+  await expect(slider).toHaveValue('0');
+  await expect(slider).toHaveAttribute('aria-valuetext', '00:00');
+  await expect
+    .poll(async () => (await capture()).equals(afternoon))
+    .toBe(false);
+  const night = await capture();
+  await page.keyboard.press('End');
+  await expect(slider).toHaveValue('24');
+  await expect.poll(async () => (await capture()).equals(night)).toBe(true);
+  await page.setViewportSize({ width: 320, height: 844 });
+  const controls = page.locator('.world-controls');
+  const bounds = await controls.boundingBox();
+  expect(
+    bounds && bounds.x >= 0 && bounds.x + bounds.width <= 320,
+  ).toBeTruthy();
+  const toggle = page.getByRole('button', { name: '展开或收起光照控制' });
+  await toggle.click();
+  await expect(slider).toBeHidden();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await toggle.press('Enter');
+  await expect(slider).toBeVisible();
+  expect(errors).toEqual([]);
 });

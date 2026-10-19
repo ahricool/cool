@@ -1,19 +1,29 @@
 <script setup lang="ts">
+import type { WelcomeWorld } from '~/features/welcome/world';
+
 definePageMeta({ layout: false });
 const host = ref<HTMLElement>();
 const state = ref<'loading' | 'ready' | 'unavailable'>('loading');
 const { locale } = useCoolI18n();
 const english = computed(() => locale.value === 'en');
-let dispose: (() => void) | undefined;
+const hour = ref(10.5);
+const expanded = ref(true);
+const timeValue = computed(() => {
+  const minutes = Math.round((hour.value % 24) * 60);
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+});
+let world: WelcomeWorld | undefined;
 let cancelled = false;
-useHead({ title: 'Sakura · Welcome' });
+watch(hour, (value) => world?.setHour(value));
+useHead({ title: 'Hakurei Shrine' });
 onMounted(async () => {
   try {
     const { mountWelcomeWorld } = await import('~/features/welcome/world');
     if (cancelled || !host.value) return;
-    dispose = mountWelcomeWorld(host.value, () => {
+    world = mountWelcomeWorld(host.value, () => {
       state.value = 'unavailable';
     });
+    world.setHour(hour.value);
     state.value = 'ready';
   } catch {
     if (!cancelled) state.value = 'unavailable';
@@ -21,58 +31,104 @@ onMounted(async () => {
 });
 onBeforeUnmount(() => {
   cancelled = true;
-  dispose?.();
+  world?.dispose();
 });
 </script>
 
 <template>
   <main class="welcome-world" :data-state="state">
-    <div class="welcome-grain" aria-hidden="true" />
-    <div class="welcome-signature" aria-hidden="true">
-      桜庭<span>SAKURA GARDEN</span>
-    </div>
     <div
       ref="host"
       class="welcome-canvas"
       role="img"
       :aria-label="
         english
-          ? 'A miniature cherry blossom shrine garden. Drag to rotate, scroll or pinch to zoom.'
-          : '樱花神社微缩庭院。拖动旋转，滚轮或双指缩放。'
+          ? 'A miniature Hakurei shrine. Drag to rotate, scroll or pinch to zoom.'
+          : '博丽神社微缩庭院。拖动旋转，滚轮或双指缩放。'
       "
     />
     <div v-if="state !== 'ready'" class="welcome-status" role="status">
-      <span class="welcome-flower" aria-hidden="true">✿</span>
-      <p>
-        {{
-          state === 'loading'
-            ? english
-              ? 'A little world is blooming…'
-              : '一方庭院，正在盛开…'
-            : english
-              ? 'The garden is resting. Come on in.'
-              : '庭院暂歇，欢迎继续入内。'
-        }}
-      </p>
+      <svg
+        v-if="state === 'loading'"
+        class="loading-orbit"
+        viewBox="0 0 48 48"
+        aria-hidden="true"
+      >
+        <circle cx="24" cy="24" r="17" />
+        <path d="M24 7a17 17 0 0 1 17 17" />
+      </svg>
+      <svg v-else viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M8 16h32M5 10q19 5 38 0M14 12v28m20-28v28M7 41 41 7" />
+      </svg>
+      <span class="sr-only">{{
+        state === 'loading'
+          ? english
+            ? 'Loading the shrine'
+            : '庭院加载中'
+          : english
+            ? 'The 3D scene is unavailable. Use the arrow to enter the site.'
+            : '三维场景暂不可用，可通过箭头进入网站。'
+      }}</span>
     </div>
-    <NuxtLink
-      class="welcome-enter"
-      to="/home"
-      :prefetch="false"
-      :aria-label="english ? 'Enter the site' : '进入网站'"
-      >{{ english ? 'Enter' : '进入' }}
-      <span class="welcome-arrow" aria-hidden="true"
-    /></NuxtLink>
-    <div class="welcome-caption" aria-hidden="true">
-      <span>A MOMENT IN BLOOM</span><i />夢のつづき
-    </div>
-    <p v-if="state === 'ready'" class="welcome-hint">
-      {{
-        english
-          ? 'Drag to explore · Scroll or pinch to zoom'
-          : '拖动环绕 · 滚轮或双指缩放'
-      }}
-    </p>
+    <nav
+      class="world-controls"
+      :aria-label="english ? 'Scene controls' : '场景控制'"
+    >
+      <div v-show="expanded" id="daylight-controls" class="daylight-controls">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 7v5l3 2" />
+        </svg>
+        <input
+          v-model.number="hour"
+          type="range"
+          min="0"
+          max="24"
+          step="0.1"
+          :disabled="state !== 'ready'"
+          :aria-label="english ? 'Time of day' : '一天中的时间'"
+          :aria-valuetext="timeValue"
+        />
+        <svg
+          v-if="hour >= 6 && hour < 18"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="4" />
+          <path
+            d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"
+          />
+        </svg>
+        <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 15.5A8 8 0 0 1 8.5 5 8 8 0 1 0 19 15.5Z" />
+        </svg>
+      </div>
+      <button
+        type="button"
+        :aria-label="
+          english ? 'Toggle daylight controls' : '展开或收起光照控制'
+        "
+        :aria-expanded="expanded"
+        aria-controls="daylight-controls"
+        @click="expanded = !expanded"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 7h16M4 17h16" />
+          <circle cx="9" cy="7" r="2" />
+          <circle cx="15" cy="17" r="2" />
+        </svg>
+      </button>
+      <NuxtLink
+        class="welcome-enter"
+        to="/home"
+        :prefetch="false"
+        :aria-label="english ? 'Enter the site' : '进入网站'"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 12h14m-5-5 5 5-5 5" />
+        </svg>
+      </NuxtLink>
+    </nav>
   </main>
 </template>
 
@@ -80,7 +136,7 @@ onBeforeUnmount(() => {
 html[data-surface='welcome'],
 html[data-surface='welcome'] body {
   margin: 0;
-  background: #f4eaee;
+  background: #c9e4e8;
 }
 </style>
 <style scoped>
@@ -89,14 +145,8 @@ html[data-surface='welcome'] body {
   inset: 0;
   overflow: hidden;
   isolation: isolate;
-  color: #8d687a;
-  background: radial-gradient(
-    ellipse at 50% 43%,
-    #fff9f7 0%,
-    #f5eaf0 58%,
-    #e9e1ef 100%
-  );
-  font-family: Georgia, 'Times New Roman', serif;
+  color: #334b4a;
+  background: #c9e4e8;
 }
 .welcome-canvas {
   position: absolute;
@@ -111,158 +161,124 @@ html[data-surface='welcome'] body {
   width: 100%;
   height: 100%;
 }
-.welcome-grain {
+.world-controls {
   position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.27;
-  background-image: radial-gradient(#bca8b7 0.6px, transparent 0.6px);
-  background-size: 6px 6px;
-}
-.welcome-signature {
-  position: absolute;
-  z-index: 1;
-  top: max(35px, env(safe-area-inset-top));
-  left: max(40px, env(safe-area-inset-left));
-  letter-spacing: 0.28em;
-  font-size: 26px;
-  pointer-events: none;
-}
-.welcome-signature span {
-  display: block;
-  font:
-    9px/2.8 Arial,
-    sans-serif;
-  letter-spacing: 0.26em;
-}
-.welcome-enter {
-  position: absolute;
-  z-index: 2;
-  top: max(32px, env(safe-area-inset-top));
-  right: max(40px, env(safe-area-inset-right));
-  display: inline-flex;
-  align-items: center;
-  gap: 30px;
-  min-height: 52px;
-  padding: 0 25px;
-  border: 1px solid #fff9;
-  border-radius: 19px;
-  background: #efb4cc88;
-  backdrop-filter: blur(14px);
-  color: #694254;
-  text-decoration: none;
-  font:
-    15px/1.2 Arial,
-    sans-serif;
-  box-shadow:
-    0 6px 30px #b97a9c16,
-    inset 0 1px #fff9;
-  transition:
-    background 0.2s,
-    transform 0.2s;
-}
-.welcome-enter:hover {
-  background: #efb4ccc9;
-  transform: translateY(-2px);
-}
-.welcome-enter:focus-visible {
-  outline: 3px solid #9e567c;
-  outline-offset: 5px;
-}
-.welcome-arrow {
-  position: relative;
-  width: 13px;
-  height: 13px;
-  border-top: 1.5px solid currentColor;
-  border-right: 1.5px solid currentColor;
-}
-.welcome-arrow::after {
-  content: '';
-  position: absolute;
-  top: 5px;
-  right: -2px;
-  width: 18px;
-  height: 1.5px;
-  background: currentColor;
-  transform: rotate(-45deg);
-}
-.welcome-caption {
-  position: absolute;
-  left: 40px;
-  bottom: max(35px, env(safe-area-inset-bottom));
+  top: max(24px, env(safe-area-inset-top));
+  right: max(24px, env(safe-area-inset-right));
   display: flex;
-  gap: 16px;
   align-items: center;
-  font-size: 12px;
-  letter-spacing: 0.17em;
-  pointer-events: none;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid #fff9;
+  border-radius: 28px;
+  background: #f7f5e6d9;
+  box-shadow: 0 4px 24px #243b3b14;
+  backdrop-filter: blur(16px);
 }
-.welcome-caption span {
-  font:
-    9px/1.4 Arial,
-    sans-serif;
-  letter-spacing: 0.2em;
+.world-controls button,
+.welcome-enter {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
 }
-.welcome-caption i {
-  width: 32px;
-  height: 1px;
-  background: #aa889c66;
+.world-controls button:hover,
+.welcome-enter:hover {
+  background: #56715a15;
 }
-.welcome-hint {
-  position: absolute;
-  right: 40px;
-  bottom: max(25px, env(safe-area-inset-bottom));
-  font:
-    11px/1.5 Arial,
-    sans-serif;
-  letter-spacing: 0.06em;
-  pointer-events: none;
-  opacity: 0.8;
+.world-controls svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+.world-controls button circle {
+  fill: #f7f5e6;
+}
+.world-controls :focus-visible {
+  outline: 2px solid #9d3d24;
+  outline-offset: 3px;
+}
+.daylight-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-right: 1px solid #334b4a22;
+}
+.daylight-controls input {
+  width: clamp(80px, 12vw, 160px);
+  height: 42px;
+  margin: 0;
+  accent-color: #a34a2c;
+  cursor: ew-resize;
+}
+.daylight-controls input:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.daylight-controls svg {
+  width: 17px;
+  height: 17px;
 }
 .welcome-status {
   position: absolute;
   inset: 0;
   display: grid;
   place-content: center;
-  text-align: center;
   pointer-events: none;
 }
-.welcome-flower {
-  font-size: 70px;
-  color: #dca9bf;
+.welcome-status svg {
+  width: 48px;
+  height: 48px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
 }
-.welcome-status p {
-  font-size: 14px;
-  letter-spacing: 0.08em;
+.loading-orbit circle {
+  opacity: 0.15;
+}
+.loading-orbit {
+  animation: orbit 2s linear infinite;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
 }
 @media (max-width: 600px) {
-  .welcome-signature {
-    left: max(22px, env(safe-area-inset-left));
-    top: max(26px, env(safe-area-inset-top));
-    font-size: 23px;
+  .world-controls {
+    top: max(16px, env(safe-area-inset-top));
+    right: max(16px, env(safe-area-inset-right));
   }
-  .welcome-enter {
-    right: max(22px, env(safe-area-inset-right));
-    top: max(24px, env(safe-area-inset-top));
-    min-height: 48px;
-    padding: 0 19px;
-    gap: 20px;
-  }
-  .welcome-caption {
-    left: max(22px, env(safe-area-inset-left));
-    bottom: max(63px, env(safe-area-inset-bottom));
-    font-size: 10px;
-  }
-  .welcome-hint {
-    left: max(22px, env(safe-area-inset-left));
-    right: auto;
-    bottom: max(24px, env(safe-area-inset-bottom));
-    font-size: 10px;
+  .daylight-controls {
+    gap: 8px;
+    padding: 0 8px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .welcome-enter {
-    transition: none;
+  .loading-orbit {
+    animation: none;
   }
 }
 </style>
