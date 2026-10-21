@@ -5,65 +5,109 @@ import { daylightAt } from '../../apps/frontend/app/features/welcome/daylight';
 import {
   createWelcomeCamera,
   createWelcomeGarden,
+  welcomeFocus,
+  welcomeCameraLimits,
 } from '../../apps/frontend/app/features/welcome/world';
 
+function meshes(world: THREE.Group) {
+  const result: THREE.Mesh[] = [];
+  world.traverse((object) => {
+    if (object instanceof THREE.Mesh) result.push(object);
+  });
+  return result;
+}
 function release(world: THREE.Group) {
-  const textures = new Set<THREE.Texture>();
-  for (const object of world.children) {
-    const mesh = object as THREE.Mesh;
-    mesh.geometry.dispose();
+  const geometries = new Set<THREE.BufferGeometry>(),
+    materials = new Set<THREE.Material>();
+  for (const mesh of meshes(world)) {
+    if (mesh instanceof THREE.InstancedMesh) mesh.dispose();
+    geometries.add(mesh.geometry);
     for (const material of Array.isArray(mesh.material)
       ? mesh.material
-      : [mesh.material]) {
-      if (material instanceof THREE.MeshToonMaterial && material.gradientMap)
-        textures.add(material.gradientMap);
-      material.dispose();
+      : [mesh.material])
+      materials.add(material);
+  }
+  geometries.forEach((g) => g.dispose());
+  materials.forEach((m) => m.dispose());
+}
+function eachPoint(world: THREE.Group, visit: (point: THREE.Vector3) => void) {
+  world.updateMatrixWorld(true);
+  const point = new THREE.Vector3(),
+    matrix = new THREE.Matrix4();
+  for (const mesh of meshes(world)) {
+    const positions = mesh.geometry.getAttribute('position');
+    const count = mesh instanceof THREE.InstancedMesh ? mesh.count : 1;
+    for (let instance = 0; instance < count; instance++) {
+      if (mesh instanceof THREE.InstancedMesh) {
+        mesh.getMatrixAt(instance, matrix);
+        matrix.premultiply(mesh.matrixWorld);
+      } else matrix.copy(mesh.matrixWorld);
+      for (let i = 0; i < positions.count; i++)
+        visit(point.fromBufferAttribute(positions, i).applyMatrix4(matrix));
     }
   }
-  textures.forEach((texture) => texture.dispose());
 }
 
-test('welcome garden has finite, normalized geometry in bounded material batches', () => {
+test('Narukami has finite normalized geometry, a large sakura and bounded draw/triangle budgets', () => {
   const world = createWelcomeGarden();
   try {
-    assert.ok(world.children.length > 0 && world.children.length <= 20);
-    let vertices = 0;
-    const plinthBounds = new THREE.Box3();
-    const point = new THREE.Vector3();
-    for (const object of world.children) {
-      assert.ok(object instanceof THREE.Mesh);
-      const { geometry } = object;
-      const position = geometry.getAttribute('position');
-      const normal = geometry.getAttribute('normal');
+    assert.ok(meshes(world).length < 35);
+    let triangles = 0;
+    for (const mesh of meshes(world)) {
+      const { geometry } = mesh,
+        position = geometry.getAttribute('position'),
+        normal = geometry.getAttribute('normal');
       assert.equal(position.count, normal.count);
-      assert.equal(position.count % 3, 0);
-      vertices += position.count;
+      triangles +=
+        ((geometry.index?.count ?? position.count) / 3) *
+        (mesh instanceof THREE.InstancedMesh ? mesh.count : 1);
       for (let i = 0; i < position.count; i++) {
         assert.ok(
           [position.getX(i), position.getY(i), position.getZ(i)].every(
             Number.isFinite,
           ),
         );
-        if (position.getY(i) < 0)
-          plinthBounds.expandByPoint(point.fromBufferAttribute(position, i));
-        const length = Math.hypot(
-          normal.getX(i),
-          normal.getY(i),
-          normal.getZ(i),
+        assert.ok(
+          Math.abs(
+            Math.hypot(normal.getX(i), normal.getY(i), normal.getZ(i)) - 1,
+          ) < 0.0001,
         );
-        assert.ok(Math.abs(length - 1) < 0.0001);
       }
     }
-    // Preserve small-scene performance when adding miniature details.
-    assert.ok(vertices < 200_000, `Unexpected vertex count: ${vertices}`);
+    assert.ok(triangles < 220_000, `Unexpected triangle count: ${triangles}`);
     const bounds = new THREE.Box3().setFromObject(world);
-    assert.ok(bounds.min.y <= -0.99 && bounds.max.y > 5.5);
-    assert.ok(bounds.max.y < 7);
-    // The complete miniature lives on a genuinely square thick plinth.
-    assert.ok(Math.abs(plinthBounds.min.x + 6.3) < 0.0001);
-    assert.ok(Math.abs(plinthBounds.max.x - 6.3) < 0.0001);
-    assert.ok(Math.abs(plinthBounds.min.z + 6.3) < 0.0001);
-    assert.ok(Math.abs(plinthBounds.max.z - 6.3) < 0.0001);
+    assert.ok(bounds.min.y <= -1.49 && bounds.max.y > 9.5 && bounds.max.y < 11);
+    assert.ok(world.getObjectByName('sacred-sakura'));
+    const flowers = world.getObjectByName('sakura-florets');
+    assert.ok(flowers instanceof THREE.InstancedMesh && flowers.count >= 2000);
+    const plinth = new THREE.Box3();
+    eachPoint(world, (p) => {
+      if (p.y < 0) plinth.expandByPoint(p);
+    });
+    for (const axis of ['x', 'z'] as const) {
+      assert.ok(Math.abs(plinth.min[axis] + 6.325) < 0.001);
+      assert.ok(Math.abs(plinth.max[axis] - 6.325) < 0.001);
+    }
+  } finally {
+    release(world);
+  }
+});
+
+test('closest orbit stays outside all shrine geometry at every allowed angle', () => {
+  const world = createWelcomeGarden();
+  try {
+    let radius = 0;
+    eachPoint(world, (p) => {
+      radius = Math.max(radius, p.distanceTo(welcomeFocus));
+    });
+    assert.ok(
+      radius + 0.2 < welcomeCameraLimits.minDistance,
+      `Model radius ${radius}`,
+    );
+    assert.ok(
+      welcomeCameraLimits.minPolarAngle > 0 &&
+        welcomeCameraLimits.maxPolarAngle < Math.PI / 2,
+    );
   } finally {
     release(world);
   }
@@ -73,10 +117,10 @@ test('procedural foliage and garden details are reproducible between visits', ()
   const first = createWelcomeGarden();
   const second = createWelcomeGarden();
   try {
-    assert.equal(first.children.length, second.children.length);
-    first.children.forEach((object, index) => {
+    assert.equal(meshes(first).length, meshes(second).length);
+    meshes(first).forEach((object, index) => {
       const a = object as THREE.Mesh;
-      const b = second.children[index] as THREE.Mesh;
+      const b = meshes(second)[index] as THREE.Mesh;
       assert.deepEqual(
         a.geometry.getAttribute('position').array,
         b.geometry.getAttribute('position').array,
@@ -99,16 +143,9 @@ test('initial desktop and portrait views keep the whole miniature clear of viewp
     ]) {
       const camera = createWelcomeCamera(width! / height!);
       const projected = new THREE.Box3();
-      const point = new THREE.Vector3();
-      for (const object of world.children) {
-        const positions = (object as THREE.Mesh).geometry.getAttribute(
-          'position',
-        );
-        for (let i = 0; i < positions.count; i++)
-          projected.expandByPoint(
-            point.fromBufferAttribute(positions, i).project(camera),
-          );
-      }
+      eachPoint(world, (point) =>
+        projected.expandByPoint(point.clone().project(camera)),
+      );
       assert.ok(
         projected.min.x > -0.9 && projected.max.x < 0.9,
         `${width}×${height}: horizontal framing`,

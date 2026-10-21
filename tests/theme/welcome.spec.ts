@@ -233,3 +233,60 @@ test('icon-only controls change daylight, support keyboard and fit portrait scre
   await expect(slider).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('six slow reduced-motion frames downgrade quality without clearing the scene', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 800, height: 600 },
+    deviceScaleFactor: 1.5,
+    reducedMotion: 'reduce',
+    baseURL: 'http://127.0.0.1:43871',
+  });
+  const page = await context.newPage();
+  await themeFixture(page);
+  try {
+    await page.goto('/');
+    await expect(page.locator('.welcome-world')).toHaveAttribute(
+      'data-state',
+      'ready',
+    );
+    const canvas = page.locator('.welcome-canvas canvas');
+    await expect
+      .poll(() => canvas.evaluate((c: HTMLCanvasElement) => c.width))
+      .toBe(1200);
+    await page.evaluate(() => {
+      let calls = 0;
+      // Deliberately report a 60 ms render. Do not depend on machine speed.
+      performance.now = () => ++calls * 60;
+    });
+    for (let i = 0; i < 6; i++) {
+      await page.getByRole('slider').fill(String(11 + i * 0.1));
+      await page.waitForTimeout(1000);
+    }
+    await expect
+      .poll(() => canvas.evaluate((c: HTMLCanvasElement) => c.width))
+      .toBe(800);
+    // No interaction after the downgrade: its last on-demand frame must remain visible.
+    await page.waitForTimeout(700);
+    const screenshot = await canvas.screenshot();
+    const colors = await page.evaluate(async (png) => {
+      const image = new Image();
+      image.src = 'data:image/png;base64,' + png;
+      await image.decode();
+      const sample = document.createElement('canvas');
+      sample.width = 160;
+      sample.height = 120;
+      const ctx = sample.getContext('2d')!;
+      ctx.drawImage(image, 0, 0, 160, 120);
+      const pixels = ctx.getImageData(0, 0, 160, 120).data,
+        unique = new Set<number>();
+      for (let i = 0; i < pixels.length; i += 4)
+        unique.add(pixels[i]! * 65536 + pixels[i + 1]! * 256 + pixels[i + 2]!);
+      return unique.size;
+    }, screenshot.toString('base64'));
+    expect(colors).toBeGreaterThan(500);
+  } finally {
+    await context.close();
+  }
+});

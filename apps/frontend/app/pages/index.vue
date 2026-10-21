@@ -15,7 +15,7 @@ const timeValue = computed(() => {
 let world: WelcomeWorld | undefined;
 let cancelled = false;
 watch(hour, (value) => world?.setHour(value));
-useHead({ title: 'Hakurei Shrine' });
+useHead({ title: 'Grand Narukami Shrine' });
 onMounted(async () => {
   try {
     const { mountWelcomeWorld } = await import('~/features/welcome/world');
@@ -43,8 +43,8 @@ onBeforeUnmount(() => {
       role="img"
       :aria-label="
         english
-          ? 'A miniature Hakurei shrine. Drag to rotate, scroll or pinch to zoom.'
-          : '博丽神社微缩庭院。拖动旋转，滚轮或双指缩放。'
+          ? 'Grand Narukami Shrine and its Sacred Sakura. Drag to rotate, scroll or pinch to zoom.'
+          : '鸣神大社与巨大神樱。拖动旋转，滚轮或双指缩放。'
       "
     />
     <div v-if="state !== 'ready'" class="welcome-status" role="status">
