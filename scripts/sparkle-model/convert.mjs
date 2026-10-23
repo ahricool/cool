@@ -88,33 +88,22 @@ try {
   server.close();
 }
 
-execFileSync(
-  join(root, 'node_modules/.bin/gltf-transform'),
-  [
-    'optimize',
-    raw,
-    output,
-    // Draco decodes to plain float positions. Quantised meshopt output skewed
-    // the skin binding once bones moved.
-    '--compress',
-    'draco',
-    '--texture-compress',
-    'webp',
-    '--texture-size',
-    '1024',
-    '--simplify',
-    'false',
-    '--palette',
-    'false',
-    '--flatten',
-    'false',
-    '--join',
-    'false',
-    '--instance',
-    'false',
-  ],
-  { stdio: 'inherit' },
-);
+// Separate steps rather than `optimize`: its dedup pass merges materials that
+// share a texture and renames them, and the scene relies on material names
+// to keep ink outlines off eyes, mouth and inner cloth layers.
+const gltfTransform = (...args) =>
+  execFileSync(join(root, 'node_modules/.bin/gltf-transform'), args, {
+    stdio: 'inherit',
+  });
+const textured = join(work, 'sparkle-webp.glb');
+// Textures are already capped at 2048 px by the exporter.
+gltfTransform('webp', raw, textured);
+// Expression targets touch few vertices: store them sparsely.
+const sparse = join(work, 'sparkle-sparse.glb');
+gltfTransform('sparse', textured, sparse);
+// Draco decodes to plain float positions. Quantised meshopt output skewed the
+// skin binding once bones moved.
+gltfTransform('draco', sparse, output);
 const { size } = await stat(output);
 await rm(work, { recursive: true, force: true });
 console.log(`Wrote ${output} (${(size / 1024 / 1024).toFixed(2)} MB)`);
