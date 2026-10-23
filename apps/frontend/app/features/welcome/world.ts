@@ -74,7 +74,7 @@ export function mountWelcomeWorld(
     Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.5),
   );
   renderer.shadowMap.enabled = true;
-  // The sun only moves with the time slider. Reuse the static depth map between frames.
+  // The depth map is redrawn only when the sun moves, or every frame once Sparkle walks in it.
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -126,7 +126,8 @@ export function mountWelcomeWorld(
     landscape: ReturnType<typeof createLandscape>,
     sparkle: ReturnType<typeof createSparkle>;
   const glowing: THREE.MeshToonMaterial[] = [];
-  let time = 0;
+  let time = 0,
+    walker = false;
   function animate(dt: number) {
     const state = daylight.state;
     shared.time.value = time;
@@ -144,7 +145,7 @@ export function mountWelcomeWorld(
         state.lampIntensity *
         (material.name === 'lantern' ? 0.32 : 0.55) *
         flame;
-    sparkle.update(dt, time, camera, state);
+    sparkle.update(dt, time, camera);
   }
   function draw(now = 0) {
     frame = 0;
@@ -157,6 +158,7 @@ export function mountWelcomeWorld(
     last = now;
     time += dt;
     animate(dt);
+    if (walker) renderer.shadowMap.needsUpdate = true;
     const start = performance.now();
     renderer.render(scene, camera);
     if (performance.now() - start > 45) slowFrames++;
@@ -242,6 +244,7 @@ export function mountWelcomeWorld(
       .then((model) => {
         if (disposed) return;
         sparkle.attachModel(model);
+        walker = true;
         requestRender();
       })
       .catch(() => {});

@@ -15,6 +15,18 @@ const timeValue = computed(() => {
 let world: WelcomeWorld | undefined;
 let cancelled = false;
 watch(hour, (value) => world?.setHour(value));
+// One in-scene day every ten real minutes; held still while the slider is dragged.
+const DAY_MS = 10 * 60 * 1000;
+const dragging = ref(false);
+let clock: ReturnType<typeof setInterval> | undefined;
+let lastTick = 0;
+function tick() {
+  const now = performance.now();
+  const elapsed = Math.min(now - lastTick, 1000);
+  lastTick = now;
+  if (dragging.value || document.hidden || state.value !== 'ready') return;
+  hour.value = (hour.value + (elapsed / DAY_MS) * 24) % 24;
+}
 useHead({ title: '梦桜' });
 onMounted(async () => {
   try {
@@ -25,12 +37,17 @@ onMounted(async () => {
     });
     world.setHour(hour.value);
     state.value = 'ready';
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      lastTick = performance.now();
+      clock = setInterval(tick, 250);
+    }
   } catch {
     if (!cancelled) state.value = 'unavailable';
   }
 });
 onBeforeUnmount(() => {
   cancelled = true;
+  clearInterval(clock);
   world?.dispose();
 });
 </script>
@@ -88,6 +105,9 @@ onBeforeUnmount(() => {
           :disabled="state !== 'ready'"
           :aria-label="english ? 'Time of day' : '一天中的时间'"
           :aria-valuetext="timeValue"
+          @pointerdown="dragging = true"
+          @pointerup="dragging = false"
+          @pointercancel="dragging = false"
         />
         <svg
           v-if="hour >= 6 && hour < 18"

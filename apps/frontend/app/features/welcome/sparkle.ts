@@ -1,21 +1,7 @@
 import * as THREE from 'three';
-import type { Daylight } from './daylight';
 import { groundAt, obstacles, roamSpots, terrace } from './layout';
 import type { SparkleModel } from './sparkle-model';
 import { seeded } from './toon';
-
-function softDisc() {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 64;
-  const context = canvas.getContext('2d')!;
-  const gradient = context.createRadialGradient(32, 32, 0, 32, 32, 32);
-  gradient.addColorStop(0, 'rgba(255,255,255,1)');
-  gradient.addColorStop(0.55, 'rgba(255,255,255,0.55)');
-  gradient.addColorStop(1, 'rgba(255,255,255,0)');
-  context.fillStyle = gradient;
-  context.fillRect(0, 0, 64, 64);
-  return new THREE.CanvasTexture(canvas);
-}
 
 /** Petals and leaves on the court that scatter when she lands or runs past. */
 function createLitter(count: number) {
@@ -126,20 +112,8 @@ type Phase = 'idle' | 'walk';
 export function createSparkle(mobile: boolean) {
   const root = new THREE.Group();
   root.name = 'sparkle';
-  const blob = new THREE.Mesh(
-    new THREE.CircleGeometry(0.3, 24).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({
-      color: 0x3b2f55,
-      alphaMap: softDisc(),
-      transparent: true,
-      depthWrite: false,
-      polygonOffset: true,
-      polygonOffsetFactor: -2,
-    }),
-  );
-  blob.visible = false;
   const litter = createLitter(mobile ? 60 : 110);
-  root.add(litter.mesh, blob);
+  root.add(litter.mesh);
 
   const random = seeded(8);
   const position = new THREE.Vector2(...roamSpots[0]!);
@@ -191,9 +165,8 @@ export function createSparkle(mobile: boolean) {
     attachModel(next: SparkleModel) {
       model = next;
       root.add(next.root);
-      blob.visible = true;
     },
-    update(dt: number, time: number, camera: THREE.Camera, light: Daylight) {
+    update(dt: number, time: number, camera: THREE.Camera) {
       elapsed += dt;
       if (phase === 'idle') {
         if (elapsed > idleFor) {
@@ -224,11 +197,6 @@ export function createSparkle(mobile: boolean) {
       if (!model) return;
 
       const ground = groundAt(position.x, position.y);
-      // Soft round contact shadow under her feet.
-      blob.position.set(position.x, ground + 0.004, position.y);
-      blob.scale.set(1.15, 1, 0.85);
-      (blob.material as THREE.MeshBasicMaterial).opacity =
-        0.22 + light.day * 0.1;
 
       // Turn to travel, then settle facing the viewer with idle glances.
       toCamera.set(
