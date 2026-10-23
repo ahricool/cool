@@ -202,9 +202,40 @@ export async function loadSparkleModel(
   };
   morph('にこり', 0.35);
 
+  // Twin tails: each bone chain bends a little more towards its tip, driven
+  // by damped springs so the hair lags, overshoots and settles.
+  const tails = (
+    [
+      ['zb_', 1],
+      ['yb__', -1],
+    ] as const
+  ).map(([prefix, side]) => ({
+    side,
+    chain: [...bones.keys()]
+      .filter((name) => name.startsWith(prefix))
+      .sort(
+        (a, b) =>
+          Number(a.slice(prefix.length).split('_')[0]) -
+          Number(b.slice(prefix.length).split('_')[0]),
+      ),
+    trail: new Spring(28, 4.5),
+    lift: new Spring(24, 4),
+    twist: new Spring(20, 4),
+  }));
+  let lastTime = 0,
+    lastYaw = 0;
+
   return {
     root,
     pose(p: ModelPose) {
+      const dt = Math.min(0.1, Math.max(0, p.time - lastTime));
+      lastTime = p.time;
+      const yawRate =
+        dt > 0
+          ? Math.atan2(Math.sin(p.yaw - lastYaw), Math.cos(p.yaw - lastYaw)) /
+            dt
+          : 0;
+      lastYaw = p.yaw;
       root.position.set(p.x, p.y, p.z);
       root.rotation.y = p.yaw;
 
@@ -281,7 +312,56 @@ export async function loadSparkleModel(
         turn(`${side}足首D`, -(hip + knee) * 0.7, 0, 0);
       }
       morph('まばたき', p.blink);
+
+      // Tails trail back while walking, bounce with each step, swing out
+      // against her turns and drift in a light breeze.
+      for (const tail of tails) {
+        const phase = tail.side > 0 ? 0 : 1.9;
+        const breeze =
+          Math.sin(p.time * 1.3 + phase) * 0.05 +
+          Math.sin(p.time * 2.7 + phase * 2) * 0.025;
+        const trail = tail.trail.step(
+          p.walk * 0.16 + Math.cos(p.stride * 2) * p.walk * 0.06 + breeze * 0.6,
+          dt,
+        );
+        const lift = tail.lift.step(
+          breeze + Math.abs(swing) * 0.05 - yawRate * tail.side * 0.04,
+          dt,
+        );
+        const twist = tail.twist.step(
+          THREE.MathUtils.clamp(-yawRate * 0.12, -0.35, 0.35),
+          dt,
+        );
+        const count = tail.chain.length;
+        tail.chain.forEach((name, i) => {
+          // Weights rise towards the tip and sum to about 1 along the chain.
+          const weight = (0.5 + (i / count) * 1.0) / count;
+          turn(name, trail * weight, twist * weight, lift * tail.side * weight);
+        });
+      }
     },
   };
 }
+/** Damped spring for hair follow-through, sub-stepped for stability. */
+class Spring {
+  value = 0;
+  private velocity = 0;
+  constructor(
+    private readonly stiffness: number,
+    private readonly damping: number,
+  ) {}
+  step(target: number, dt: number) {
+    const steps = Math.max(1, Math.ceil(dt / 0.016));
+    const h = dt / steps;
+    for (let i = 0; i < steps; i++) {
+      this.velocity +=
+        (this.stiffness * (target - this.value) -
+          this.damping * this.velocity) *
+        h;
+      this.value += this.velocity * h;
+    }
+    return this.value;
+  }
+}
+
 export type SparkleModel = Awaited<ReturnType<typeof loadSparkleModel>>;
