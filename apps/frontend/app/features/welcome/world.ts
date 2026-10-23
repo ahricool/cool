@@ -54,6 +54,8 @@ export function mountWelcomeWorld(
   const renderer = new THREE.WebGLRenderer({
     antialias: !mobile,
     powerPreference: 'low-power',
+    // Sparkle's projected shadow uses the stencil to darken each pixel once.
+    stencil: true,
   });
   let disposed = false,
     lost = false,

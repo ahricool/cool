@@ -224,11 +224,13 @@ export function createSparkle(mobile: boolean) {
       if (!model) return;
 
       const ground = groundAt(position.x, position.y);
-      // Soft round contact shadow under her feet.
+      // Her silhouette cast by the sun; a faint round contact shadow takes
+      // over under the moon, when the light is too soft for a sharp shape.
+      model.setShadow(light.sunPosition, ground + 0.006, light.day * 0.32);
       blob.position.set(position.x, ground + 0.004, position.y);
-      blob.scale.set(1.15, 1, 0.85);
+      blob.scale.set(0.8, 1, 0.65);
       (blob.material as THREE.MeshBasicMaterial).opacity =
-        0.22 + light.day * 0.1;
+        0.08 + (1 - light.day) * 0.14;
 
       // Turn to travel, then settle facing the viewer with idle glances.
       toCamera.set(

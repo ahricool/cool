@@ -92,6 +92,44 @@ export async function loadSparkleModel(
         `outgoingLight *= ink;\n#include <opaque_fragment>`,
       );
   };
+
+  // Silhouette shadow: the skinned body flattened onto her ground plane along
+  // the sun, so it follows the time of day without re-rendering the shadow map.
+  const shadowUniforms = {
+    shadowSlope: { value: new THREE.Vector2() },
+    shadowPlane: { value: 0 },
+  };
+  const shadow = new THREE.MeshBasicMaterial({
+    name: 'sparkle-shadow',
+    color: 0x3b2f55,
+    transparent: true,
+    opacity: 0,
+    // Flattening flips half the faces, and the skirt and hair are open shells.
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    // Each pixel darkens once even where limbs and layers overlap.
+    stencilWrite: true,
+    stencilRef: 1,
+    stencilFunc: THREE.NotEqualStencilFunc,
+    stencilZPass: THREE.ReplaceStencilOp,
+  });
+  shadow.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, shadowUniforms);
+    shader.vertexShader =
+      `uniform vec2 shadowSlope;\nuniform float shadowPlane;\n${shader.vertexShader}`.replace(
+        '#include <project_vertex>',
+        `vec4 shadowWorld = modelMatrix * vec4(transformed, 1.0);
+        shadowWorld.xz -= shadowSlope * (shadowWorld.y - shadowPlane);
+        shadowWorld.y = shadowPlane;
+        vec4 mvPosition = viewMatrix * shadowWorld;
+        gl_Position = projectionMatrix * mvPosition;`,
+      );
+  };
+  shadow.customProgramCacheKey = () => 'sparkle-shadow';
+  const shadows: THREE.SkinnedMesh[] = [];
+
   for (const part of parts) {
     const source = part.material as THREE.MeshStandardMaterial;
     // Painted MMD textures under the scene's soft two-tone cel light.
@@ -123,6 +161,19 @@ export async function loadSparkleModel(
     part.castShadow = false;
     part.receiveShadow = true;
     if (unlined.has(material.name)) continue;
+    // Facial layers sit inside the body's outline, so they need no shadow.
+    const cast = new THREE.SkinnedMesh(part.geometry, shadow);
+    cast.name = 'sparkle-shadow';
+    cast.bind(part.skeleton, part.bindMatrix);
+    cast.morphTargetInfluences = part.morphTargetInfluences;
+    cast.morphTargetDictionary = part.morphTargetDictionary;
+    cast.frustumCulled = false;
+    cast.renderOrder = 1;
+    cast.position.copy(part.position);
+    cast.quaternion.copy(part.quaternion);
+    cast.scale.copy(part.scale);
+    part.parent!.add(cast);
+    shadows.push(cast);
     const outline = new THREE.SkinnedMesh(part.geometry, ink);
     outline.name = 'sparkle-outline';
     outline.bind(part.skeleton, part.bindMatrix);
@@ -227,6 +278,15 @@ export async function loadSparkleModel(
 
   return {
     root,
+    /** Casts along `sun` (towards the light) onto the plane y = `ground`. */
+    setShadow(sun: THREE.Vector3, ground: number, opacity: number) {
+      // Clamp the elevation so dawn and dusk shadows stay on the courtyard.
+      const rise = Math.max(sun.y, Math.hypot(sun.x, sun.z) * 0.45);
+      shadowUniforms.shadowSlope.value.set(sun.x / rise, sun.z / rise);
+      shadowUniforms.shadowPlane.value = ground;
+      shadow.opacity = opacity;
+      for (const cast of shadows) cast.visible = opacity > 0.01;
+    },
     pose(p: ModelPose) {
       const dt = Math.min(0.1, Math.max(0, p.time - lastTime));
       lastTime = p.time;
