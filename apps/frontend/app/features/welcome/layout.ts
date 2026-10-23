@@ -17,6 +17,8 @@ export const office = {
   depth: 2.9,
 };
 export const mound = { x: -4.65, z: -4.45, top: 0.95 };
+/** Flat meadow the plinth rests on; the stone base sinks slightly into it. */
+export const meadow = { y: plinth.bottom + 0.08, radius: 90 };
 
 export const sakuraTrees = [
   { x: -4.55, z: -4.4, y: mound.top, scale: 1.18 },
@@ -41,7 +43,7 @@ export const bellRope = { x: 0, z: -0.84, top: 2.42, bottom: 1.05 };
 export const offeringBox = { x: 0, z: -1.3 };
 export const storehouse = { x: -5.0, z: -1.75 };
 
-/** Courtyard obstacles Reimu avoids when choosing a new place to sweep. */
+/** Courtyard obstacles Sparkle steers around when choosing where to go next. */
 export const obstacles = [
   { x: -torii.half, z: torii.z, r: 0.45 },
   { x: torii.half, z: torii.z, r: 0.45 },
@@ -55,8 +57,8 @@ export const obstacles = [
   { x: sakuraTrees[1]!.x, z: sakuraTrees[1]!.z, r: 1.0 },
 ];
 
-/** Places in the front court that are open enough to sweep. */
-export const sweepSpots: [number, number][] = [
+/** Open places in the front court where Sparkle may stop and play. */
+export const roamSpots: [number, number][] = [
   [1.55, 3.55],
   [-2.55, 2.3],
   [-1.15, 3.75],

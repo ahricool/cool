@@ -43,8 +43,8 @@ onBeforeUnmount(() => {
       role="img"
       :aria-label="
         english
-          ? 'A miniature Hakurei Shrine where Reimu sweeps the courtyard. Drag to rotate, scroll or pinch to zoom.'
-          : '博丽神社微缩庭院，灵梦正在打扫前院。拖动旋转，滚轮或双指缩放。'
+          ? 'A miniature Hakurei Shrine on a summer meadow where Sparkle plays in the courtyard. Drag to rotate, scroll or pinch to zoom.'
+          : '草坪上的博丽神社微缩庭院，花火在前院嬉戏。拖动旋转，滚轮或双指缩放。'
       "
     />
     <div v-if="state !== 'ready'" class="welcome-status" role="status">

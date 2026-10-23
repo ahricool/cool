@@ -805,8 +805,6 @@ export function buildTorii(b: ToonBuilder) {
   ]);
   b.part(new THREE.TubeGeometry(rope, 16, 0.035, 6), 'straw', 0, 0, 0);
   b.box(0.13, 0.42, 0.12, 'red', 0, H - 0.43, z);
-  b.box(0.42, 0.5, 0.06, 'gold', 0, H - 0.43, z + 0.07);
-  b.box(0.34, 0.42, 0.06, 'roofEdge', 0, H - 0.43, z + 0.09);
   b.box(half * 2 + 0.7, 0.16, 0.2, 'red', 0, H - 0.12, z);
   // Kasagi: upswept lintel with a dark cap.
   const span = half + 0.72;

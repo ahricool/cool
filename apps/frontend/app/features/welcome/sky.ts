@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { Daylight } from './daylight';
 import { seeded, ToonBuilder, type SharedUniforms } from './toon';
 
-/** Gradient dome, a sea of slow clouds around the floating base, and night stars. */
+/** Gradient dome, slow high clouds and night stars. */
 export function createSky(
   shared: SharedUniforms,
   ramp: THREE.Texture,
@@ -80,16 +80,16 @@ export function createSky(
       2,
     );
   };
-  const count = mobile ? 9 : 14;
+  // A few high clouds drifting above the mountain ridges.
+  const count = mobile ? 6 : 10;
   for (let i = 0; i < count; i++) {
-    const a = (i / count) * Math.PI * 2 + random() * 0.3;
-    const low = i % 3 !== 0;
-    const r = low ? 15 + random() * 6 : 26 + random() * 8;
+    const a = (i / count) * Math.PI * 2 + random() * 0.4;
+    const r = 50 + random() * 8;
     puffs(
       Math.cos(a) * r,
-      low ? -4.6 + random() * 2.2 : 1.5 + random() * 5,
+      14 + random() * 7,
       Math.sin(a) * r,
-      low ? 0.8 + random() * 0.5 : 1.3 + random(),
+      1.6 + random() * 1.1,
     );
   }
   const clouds = b.build(shared, ramp);
