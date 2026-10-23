@@ -218,9 +218,9 @@ export async function loadSparkleModel(
           Number(a.slice(prefix.length).split('_')[0]) -
           Number(b.slice(prefix.length).split('_')[0]),
       ),
-    trail: new Spring(28, 4.5),
-    lift: new Spring(24, 4),
-    twist: new Spring(20, 4),
+    trail: new Spring(26, 3.2),
+    lift: new Spring(22, 3),
+    twist: new Spring(18, 3),
   }));
   let lastTime = 0,
     lastYaw = 0;
@@ -314,29 +314,42 @@ export async function loadSparkleModel(
       morph('まばたき', p.blink);
 
       // Tails trail back while walking, bounce with each step, swing out
-      // against her turns and drift in a light breeze.
+      // against her turns and sway in a breeze. Sized to read at the default
+      // camera distance, where she is only a few dozen pixels tall.
       for (const tail of tails) {
         const phase = tail.side > 0 ? 0 : 1.9;
         const breeze =
-          Math.sin(p.time * 1.3 + phase) * 0.05 +
-          Math.sin(p.time * 2.7 + phase * 2) * 0.025;
+          Math.sin(p.time * 1.5 + phase) * 0.22 +
+          Math.sin(p.time * 2.9 + phase * 2) * 0.08;
+        // Biased back and outward so the larger swing clears her body.
         const trail = tail.trail.step(
-          p.walk * 0.16 + Math.cos(p.stride * 2) * p.walk * 0.06 + breeze * 0.6,
+          0.06 +
+            p.walk * 0.45 +
+            Math.cos(p.stride * 2) * p.walk * 0.2 +
+            breeze * 0.45,
           dt,
         );
         const lift = tail.lift.step(
-          breeze + Math.abs(swing) * 0.05 - yawRate * tail.side * 0.04,
+          0.2 + breeze + Math.abs(swing) * 0.2 - yawRate * tail.side * 0.12,
           dt,
         );
         const twist = tail.twist.step(
-          THREE.MathUtils.clamp(-yawRate * 0.12, -0.35, 0.35),
+          THREE.MathUtils.clamp(-yawRate * 0.3, -0.6, 0.6),
           dt,
         );
         const count = tail.chain.length;
         tail.chain.forEach((name, i) => {
           // Weights rise towards the tip and sum to about 1 along the chain.
           const weight = (0.5 + (i / count) * 1.0) / count;
-          turn(name, trail * weight, twist * weight, lift * tail.side * weight);
+          // A gentle wave travels down the tail so the hair never hangs rigid.
+          const wave =
+            Math.sin(p.time * 2.4 - i * 0.45 + phase) * (0.09 + p.walk * 0.08);
+          turn(
+            name,
+            (trail + wave * 0.6) * weight,
+            twist * weight,
+            (lift + wave) * tail.side * weight,
+          );
         });
       }
     },
