@@ -17,7 +17,7 @@ const INK = 0.075;
 /** Self-lit share of the albedo, and saturation boost after lighting. */
 const LIFT = 0.12;
 const SATURATION = 1.35;
-/** Eye, mouth and expression layers stay free of ink lines. */
+/** Eye, mouth, expression and inner cloth layers stay free of ink lines. */
 const unlined = new Set([
   '表情',
   '眼睛',
@@ -29,6 +29,11 @@ const unlined = new Set([
   '眉毛',
   '腰饰球',
   '腰饰球2',
+  // Inner cloth layers sit just under their outer layer; their hulls would
+  // poke through and paint the back skirt and sleeves dark.
+  '裙后内侧',
+  '袖子内侧',
+  '头饰内侧',
 ]);
 
 export interface ModelPose {
@@ -169,28 +174,43 @@ export async function loadSparkleModel(
   const turn = (name: string, x: number, y: number, z: number) =>
     rotate(name, delta.setFromEuler(euler.set(x, y, z)));
 
-  // Long sleeve tails hanging from each upper arm: aim them straight down
-  // (a little behind her) whatever the arm does, so they never float.
-  const hang = new THREE.Vector3(0, -1, -0.22).normalize();
+  // Long sleeve tails hang from the underside of each upper arm, close to
+  // the armpit. Near the arm each one flares outward (and back, behind the
+  // forearm), then droops to hang almost straight down, close beside her hips. The
+  // two never cross and stay clear of arms, skirt and legs.
   const sleeves = (
     [
-      ['zx_0_1', 'zx_15_1', '左肩C'],
-      ['yx__1', 'yx__16', '右肩C'],
+      ['zx_', '左肩C', 1],
+      ['yx__', '右肩C', -1],
     ] as const
-  ).flatMap(([root, tip, shoulder]) => {
-    const a = bones.get(root)?.bone,
-      b = bones.get(tip)?.bone;
+  ).flatMap(([prefix, shoulder, side]) => {
+    const chain = [...bones.keys()]
+      .filter((name) => name.startsWith(prefix))
+      .sort(
+        (a, b) =>
+          Number(a.slice(prefix.length).split('_')[0]) -
+          Number(b.slice(prefix.length).split('_')[0]),
+      );
+    const upper = new THREE.Vector3(side * 0.68, -1, -0.62).normalize();
+    const lower = new THREE.Vector3(side * 0.04, -1, -0.32).normalize();
+    const a = bones.get(chain[0]!)?.bone,
+      b = bones.get(chain[chain.length - 1]!)?.bone;
     if (!a || !b) return [];
     const from = figure.worldToLocal(a.getWorldPosition(new THREE.Vector3()));
     const to = figure.worldToLocal(b.getWorldPosition(new THREE.Vector3()));
     const rest = to.sub(from).normalize();
-    return [
-      {
-        root,
-        shoulder,
-        aim: new THREE.Quaternion().setFromUnitVectors(rest, hang),
-      },
-    ];
+    const aim = new THREE.Quaternion().setFromUnitVectors(rest, upper);
+    // Spread the droop from `upper` to `lower` over three bones a quarter to
+    // half way down, expressed in the aimed chain's frame: aim⁻¹·step·aim.
+    const step = new THREE.Quaternion().slerp(
+      new THREE.Quaternion().setFromUnitVectors(upper, lower),
+      1 / 3,
+    );
+    const droop = aim.clone().invert().multiply(step).multiply(aim);
+    const bends = [0.22, 0.34, 0.46].map(
+      (t) => chain[Math.round(t * (chain.length - 1))]!,
+    );
+    return [{ root: chain[0]!, shoulder, aim, droop, bends }];
   });
   const parent = new THREE.Quaternion();
   const sway = new THREE.Quaternion();
@@ -282,6 +302,7 @@ export async function loadSparkleModel(
           sleeve.root,
           parent.invert().multiply(sway).multiply(sleeve.aim),
         );
+        for (const name of sleeve.bends) rotate(name, sleeve.droop);
       }
       // Elbows bend forward in the lowered arm's own frame.
       const bend = 0.22;
