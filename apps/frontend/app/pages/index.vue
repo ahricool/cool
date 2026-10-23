@@ -15,7 +15,7 @@ const timeValue = computed(() => {
 let world: WelcomeWorld | undefined;
 let cancelled = false;
 watch(hour, (value) => world?.setHour(value));
-useHead({ title: 'Hakurei Shrine' });
+useHead({ title: '梦桜' });
 onMounted(async () => {
   try {
     const { mountWelcomeWorld } = await import('~/features/welcome/world');
@@ -43,8 +43,8 @@ onBeforeUnmount(() => {
       role="img"
       :aria-label="
         english
-          ? 'A miniature Hakurei Shrine on a summer meadow where Sparkle plays in the courtyard. Drag to rotate, scroll or pinch to zoom.'
-          : '草坪上的博丽神社微缩庭院，花火在前院嬉戏。拖动旋转，滚轮或双指缩放。'
+          ? 'A miniature shrine on a summer meadow where Sparkle walks in the courtyard. Drag to rotate, scroll or pinch to zoom.'
+          : '草坪上的神社微缩庭院，花火在前院散步。拖动旋转，滚轮或双指缩放。'
       "
     />
     <div v-if="state !== 'ready'" class="welcome-status" role="status">
