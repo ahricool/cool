@@ -10,7 +10,7 @@ const { contentLang } = useCoolI18n();
     <NuxtLink
       v-if="placement === 'header'"
       class="brand-link"
-      to="/"
+      to="/home"
       :aria-label="store.site.title"
       ><SakuraFlower class="brand-flower" /><SakuraWordmark
     /></NuxtLink>

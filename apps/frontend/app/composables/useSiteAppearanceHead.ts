@@ -15,6 +15,7 @@ export function useSiteAppearanceHead() {
     () => store?.site.appearance ?? defaultAppearance,
   );
   const { locale, contentLang } = useCoolI18n();
+  const isWelcome = computed(() => route.path === '/');
   const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
   const theme = computed(() => resolveSiteTheme(appearance.value.themeId));
   const preferences = Object.fromEntries(
@@ -41,9 +42,13 @@ export function useSiteAppearanceHead() {
   });
   useHead(() => ({
     htmlAttrs: {
-      class: dark.value ? 'dark' : '',
+      class: !isWelcome.value && dark.value ? 'dark' : '',
       lang: contentLang(locale.value),
-      'data-surface': isAdmin.value ? 'admin' : 'blog',
+      'data-surface': isWelcome.value
+        ? 'welcome'
+        : isAdmin.value
+          ? 'admin'
+          : 'blog',
       'data-font': isAdmin.value
         ? store?.loaded
           ? appearance.value.font
@@ -54,7 +59,11 @@ export function useSiteAppearanceHead() {
       style: `--site-font-scale: ${(isAdmin.value ? appearance.value.fontSize : publicAppearance.value.fontSize) / 100}`,
     },
     bodyAttrs: {
-      class: isAdmin.value ? 'admin-ui' : `${theme.value.directory}-ui`,
+      class: isWelcome.value
+        ? 'welcome-ui'
+        : isAdmin.value
+          ? 'admin-ui'
+          : `${theme.value.directory}-ui`,
     },
     link: [
       {

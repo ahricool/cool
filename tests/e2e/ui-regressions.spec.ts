@@ -7,7 +7,7 @@ test('mobile readers navigate with the Logo, About and search without a drawer',
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 844 });
-  await page.goto(blog);
+  await page.goto(blog + '/home');
   await expect(page.locator('#mobile-sidebar')).toHaveCount(0);
   await expect(page.locator('.header-brand a')).toBeVisible();
   const navigation = page.getByRole('navigation', { name: '主导航' });
@@ -15,7 +15,7 @@ test('mobile readers navigate with the Logo, About and search without a drawer',
   await navigation.getByRole('link', { name: '关于我', exact: true }).click();
   await expect(page).toHaveURL(blog + '/about');
   await page.locator('.header-brand a').click();
-  await expect(page).toHaveURL(blog + '/');
+  await expect(page).toHaveURL(blog + '/home');
   await navigation.getByRole('link', { name: '搜索', exact: true }).click();
   await expect(page.locator('.page-heading h1')).toHaveText('搜索');
   await page.getByRole('searchbox').fill('Sakura');

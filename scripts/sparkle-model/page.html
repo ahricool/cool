@@ -1,0 +1,77 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Sparkle model converter</title>
+<script type="importmap">
+  {
+    "imports": {
+      "three": "/three/build/three.module.js",
+      "three/addons/": "/three/examples/jsm/"
+    }
+  }
+</script>
+<script type="module">
+  import * as THREE from 'three';
+  import { MMDLoader } from 'three/addons/loaders/MMDLoader.js';
+  import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+
+  // Expressions the welcome scene uses; every morph stores all vertices.
+  const keep = ['まばたき', '笑い', 'にこり', 'にやり２'];
+
+  try {
+    const mesh = await new MMDLoader().loadAsync('/source/花火3.0.pmx');
+    // MMDLoader resolves before its textures finish decoding.
+    const ready = (m) => !m.map || m.map.image?.width > 0;
+    for (let i = 0; i < 200 && !mesh.material.every(ready); i++)
+      await new Promise((r) => setTimeout(r, 100));
+
+    const geometry = mesh.geometry;
+    const index = keep.map((name) => mesh.morphTargetDictionary[name]);
+    for (const key of Object.keys(geometry.morphAttributes)) {
+      const list = geometry.morphAttributes[key];
+      geometry.morphAttributes[key] = index.map((i) => list[i]);
+      geometry.morphAttributes[key].forEach((a, j) => (a.name = keep[j]));
+    }
+    mesh.updateMorphTargets();
+
+    // Materials share a handful of atlases; export each image once.
+    const images = new Map();
+    const unique = (texture) => {
+      if (!texture?.image?.width) return null;
+      const key = texture.image.src || texture.uuid;
+      if (!images.has(key)) images.set(key, texture);
+      return images.get(key);
+    };
+    mesh.material = mesh.material.map(
+      (m) =>
+        new THREE.MeshStandardMaterial({
+          name: m.name,
+          map: unique(m.map),
+          color: m.color ?? 0xffffff,
+          transparent: m.transparent,
+          opacity: m.opacity,
+          side: m.side,
+          alphaTest: m.transparent ? 0 : 0.5,
+          roughness: 1,
+          metalness: 0,
+        }),
+    );
+    // MMDLoader keeps the whole parsed PMX in userData; never export it.
+    mesh.traverse((object) => (object.userData = {}));
+    geometry.userData = {};
+
+    const glb = await new GLTFExporter().parseAsync(mesh, {
+      binary: true,
+      maxTextureSize: 1024,
+      onlyVisible: false,
+    });
+    const response = await fetch('/save', { method: 'PUT', body: glb });
+    if (!response.ok) throw new Error(`save failed: ${response.status}`);
+    console.log(
+      `exported ${geometry.getAttribute('position').count} vertices, ` +
+        `${mesh.material.length} materials, ${images.size} textures`,
+    );
+    window.converted = true;
+  } catch (error) {
+    window.converted = String(error?.stack ?? error);
+  }
+</script>

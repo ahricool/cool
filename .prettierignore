@@ -4,6 +4,8 @@ data/
 **/generated
 package-lock.json
 apps/frontend/public/sakura/
+# Vendored three.js Draco decoder.
+apps/frontend/public/draco/
 **/.nuxt/
 **/.output/
 playwright-report/

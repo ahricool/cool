@@ -1,13 +1,14 @@
 # Cool
 
-Cool 是个人博客与内容管理系统：NestJS + PostgreSQL 管理内容，一个 Nuxt 4 应用同时提供 Sakura 博客 `/` 和管理工作台 `/admin`。只有一个站长账户，其他人都是访客。
+Cool 是个人博客与内容管理系统：NestJS + PostgreSQL 管理内容，一个 Nuxt 4 应用同时提供 3D 神社欢迎页 `/`、Sakura / Ury 博客 `/home` 和管理工作台 `/admin`。只有一个站长账户，其他人都是访客。
 
-项目独立实现前后端，不依赖 Halo 服务或 Halo 管理端。所有浏览器页面（包括登录、管理、错误和弹窗状态）采用统一的 Sakura / 二次元 / 少女风格；公开页和管理端共用 Sakura 设计语言与本地资源，管理端使用 Element Plus，编辑和表格区域保持清晰易读。
+项目独立实现前后端，不依赖 Halo 服务或 Halo 管理端。博客与管理端沿用各自的主题样式与本地资源；欢迎页采用独立、明亮的动画渲染神社场景。管理端使用 Element Plus，编辑和表格区域保持清晰易读。
 
 ## 已实现
 
 - **双语**：简体中文/English 界面，首次默认中文，footer 可切换并保存到 cookie。文章、独立页面和其他公开内容可分别编辑双语版本；URL 不包含语言，缺少当前语言的已发布版本时自动展示另一语言的已发布内容。
 
+- **欢迎页**：独立全屏 Three.js 神社微缩庭院，三渲二描边着色，坐落在夏末初秋的开阔草坪上，远处群山环绕：石砌木层方形底座、前低后高的前院与本殿高台、樱花，《星穹铁道》花火（本地官方 3D 模型）在前院走动。树叶、纸垂、绘马、铃绳与灯笼随风轻摆，花瓣飘落，夜晚有灵光点点。拖动环绕、滚轮/双指缩放；画面无可见文字，右上角图标菜单提供 0–24 小时时间滑条，联动太阳、天空、阴影、晨昏与夜间灯笼，箭头进入 `/home`。全部程序化生成，不加载模型或贴图；WebGL 不可用时保留可访问的入口。文章、搜索和管理深链接不经过欢迎页。设计见 [神社欢迎场景](docs/welcome-scene.md)。
 - **博客**：首页按发布译文的时间混排文章和完整短动态，游标无限加载；顶栏仅 Logo、关于我和搜索。文章满宽封面、作者和完整时间、自动正文预览及阅读全文；保留文章标签页与独立页面。
 - **管理工作台**：首次设置密码、登录、Markdown 编辑/预览、浏览器草稿恢复、发布/撤回/预约发布时间、媒体库、标签、独立页面、关于我、短动态、相册、评论审核、网站配置、个人资料、改密和会话撤销。
 - **后端**：NestJS 11、Prisma 7、PostgreSQL 17、SQL migration、Swagger、JWT、限流和输入校验。数据库只保存 Markdown 原文。
@@ -46,7 +47,8 @@ npm run dev:frontend
 
 | 入口                | 地址                                   |
 | ------------------- | -------------------------------------- |
-| 博客                | http://localhost:3001                  |
+| 欢迎页              | http://localhost:3001                  |
+| 博客                | http://localhost:3001/home             |
 | 管理工作台          | http://localhost:3001/admin            |
 | 首次设置密码/登录   | http://localhost:3001/admin/login      |
 | API                 | http://localhost:3000/api/v1           |
@@ -110,3 +112,15 @@ GitHub Actions 仅在 push 到 `main` 时运行，非 main 分支和 PR 不触�
 - `ghcr.io/ahricool/cool-frontend`
 
 镜像提供 `latest`、`main` 和 `sha-<完整 commit SHA>` 标签；同一标签包含 `linux/amd64`（Intel/AMD）与 `linux/arm64`（ARM64）两个平台，Docker 自动选择服务器原生架构。首次启用 ARM64 时，必须先合入本次修改并等待 main 的两个镜像任务发布成功，再执行 `bash deploy.sh`；仅更新源码不会为旧镜像补充 ARM64，历史 SHA 标签也不会自动重建。正常部署固定使用 `latest`，无需配置镜像变量或生成版本清单；SHA 标签保留用于故障恢复。流水线不自动部署服务器。
+
+## 角色模型与版权
+
+欢迎页中的花火（Sparkle）3D 模型来自《崩坏：星穹铁道》官方 MMD 模型，**模型及角色版权归 miHoYo / HoYoverse 所有**，MMD 模型编辑：神帝宇。本项目为非商业个人站点，模型仅用于欢迎页展示，不用于任何商业用途，也不用于 18 禁、极端宗教宣传、血腥恐怖猎奇或人身攻击等内容。他人使用本模型造成的后果由使用者自行承担，与模型改造者及 miHoYo 无关。
+
+模型原始使用规则写明「请勿二次配布」；本仓库在知悉该条款的前提下，随站点代码附带转换后的 `apps/frontend/public/models/sparkle.glb`，仅供本站非商业展示，请勿单独提取、转载或再分发该模型。如需重新生成，从官方渠道获取模型压缩包，解压后运行：
+
+```bash
+npm run model:sparkle -- <包含 花火3.0.pmx 的目录>
+```
+
+脚本在无头 Chromium 中用 three r171 的 MMDLoader 读取 PMX，导出 GLB（只保留眨眼与笑容表情），再用 gltf-transform 做 Draco 几何压缩与 WebP 贴图，输出约 1 MB。首次运行前需 `npx playwright install chromium`。模型文件缺失或加载失败时，欢迎页正常显示庭院，只是没有角色。Draco 解码器（`apps/frontend/public/draco/`）来自 three.js，MIT 许可。

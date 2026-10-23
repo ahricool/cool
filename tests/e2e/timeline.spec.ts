@@ -28,7 +28,7 @@ test('timeline loads the next mixed page automatically and resets its cursor for
       },
     });
   });
-  await page.goto(blog);
+  await page.goto(blog + '/home');
   await expect(page.locator('.timeline-update')).toHaveCount(10);
   await page.locator('.timeline-status').scrollIntoViewIfNeeded();
   await expect(page.locator('.timeline-update')).toHaveCount(20);
@@ -49,6 +49,6 @@ test('timeline loads the next mixed page automatically and resets its cursor for
   await page.reload();
   await expect(page.locator('.timeline-update')).toHaveCount(2);
   expect(requested.at(-1)).toBe('en:first');
-  expect(new URL(page.url()).pathname).toBe('/');
+  expect(new URL(page.url()).pathname).toBe('/home');
   expect(new URL(page.url()).search).toBe('');
 });

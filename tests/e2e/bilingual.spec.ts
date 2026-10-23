@@ -6,14 +6,14 @@ test('reader choice persists without changing URLs across navigation, history an
   page,
   context,
 }) => {
-  await page.goto(site);
+  await page.goto(site + '/home');
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
   await page
     .locator('.site-footer')
     .getByRole('button', { name: '中文', exact: true })
     .click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
-  expect(new URL(page.url()).pathname).toBe('/');
+  expect(new URL(page.url()).pathname).toBe('/home');
   expect(
     (await context.cookies()).find((cookie) => cookie.name === 'cool_locale')
       ?.value,
@@ -24,7 +24,7 @@ test('reader choice persists without changing URLs across navigation, history an
     .click();
   await expect(page).toHaveURL(site + '/about');
   await page.goBack();
-  await expect(page).toHaveURL(site + '/');
+  await expect(page).toHaveURL(site + '/home');
   await page.goForward();
   await expect(page).toHaveURL(site + '/about');
   await page.reload();

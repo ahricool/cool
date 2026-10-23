@@ -62,7 +62,7 @@ test('SPA switches complete trees in both directions; Admin, Teleports and histo
       attributeFilter: ['data-surface'],
     });
   });
-  await page.goto('/');
+  await page.goto('/home');
   await surface(page, 'default');
   await expect(page.locator('.story-card')).toBeVisible();
   await page.evaluate(() => {
@@ -77,7 +77,7 @@ test('SPA switches complete trees in both directions; Admin, Teleports and histo
     'rgb(255, 255, 255)',
   );
   await page.keyboard.press('Escape');
-  await spa(page, '/');
+  await spa(page, '/home');
   await surface(page, 'ury');
   await expect(page.locator('[data-admin-feedback]')).toHaveCount(0);
   await expect(page.locator('.ury-story')).toBeVisible();
@@ -179,7 +179,7 @@ test('Admin color mode and public color mode have separate cookies and retain th
   page,
 }) => {
   await themeFixture(page, { themeId: 'ury' });
-  await page.goto('/');
+  await page.goto('/home');
   await surface(page, 'ury');
   await page.getByLabel('配色', { exact: true }).selectOption('dark');
   await expect(page.locator('body')).toHaveCSS(
@@ -194,7 +194,7 @@ test('Admin color mode and public color mode have separate cookies and retain th
   );
   await page.getByRole('button', { name: '切换深色', exact: true }).click();
   await expect(page.locator('html')).toHaveClass('dark');
-  await spa(page, '/');
+  await spa(page, '/home');
   await surface(page, 'ury');
   await page.getByLabel('配色', { exact: true }).selectOption('light');
   await spa(page, '/admin/settings');
@@ -234,7 +234,7 @@ test('missing, unknown and retired IDs fall back without writes; Admin offers on
   ]) {
     state.settings.site.appearance.themeId = id as string;
     const saved = structuredClone(state.settings);
-    await page.goto('/');
+    await page.goto('/home');
     await surface(page, 'default');
     await expect(page.locator('.story-card')).toBeVisible();
     await page.reload();
@@ -263,7 +263,7 @@ test('missing, unknown and retired IDs fall back without writes; Admin offers on
       appearance: { ...saved.site.appearance, themeId: 'default' },
     },
   });
-  await spa(page, '/');
+  await spa(page, '/home');
   await surface(page, 'default');
   await page.reload();
   await surface(page, 'default');
@@ -287,7 +287,7 @@ for (const themeId of ['default', 'ury'] as const) {
         ]);
         const errors: string[] = [];
         page.on('pageerror', (error) => errors.push(error.message));
-        await page.goto('/');
+        await page.goto('/home');
         await surface(page, themeId);
         await expect(
           page.locator(
@@ -415,7 +415,7 @@ test('first Ury load fetches its visual resources without Sakura styles or image
   await themeFixture(page, { themeId: 'ury' });
   const urls: string[] = [];
   page.on('request', (request) => urls.push(request.url()));
-  await page.goto('/');
+  await page.goto('/home');
   await surface(page, 'ury');
   await expect(page.locator('.ury-story')).toBeVisible();
   expect(urls.some((url) => url.includes('/sakura/'))).toBe(false);

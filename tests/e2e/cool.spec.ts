@@ -143,12 +143,12 @@ test('all blog routes load on desktop and mobile without external resources', as
       external.push(r.url());
   });
   page.on('pageerror', (e) => errors.push(e.message));
-  for (const path of ['/', '/tags', '/search']) {
+  for (const path of ['/home', '/tags', '/search']) {
     await page.goto(blog + path);
     await expect(page.locator('#content')).toBeVisible();
     await expect(page.locator('.api-state[role="alert"]')).toHaveCount(0);
   }
-  await page.goto(blog);
+  await page.goto(blog + '/home');
   await expect(page.locator('.hero-brand')).toBeVisible();
   await expect(page.locator('#page')).toHaveCSS('opacity', '1');
   await page.screenshot({
@@ -164,8 +164,8 @@ test('all blog routes load on desktop and mobile without external resources', as
     .click();
   await expect(page).toHaveURL(blog + '/about');
   await page.locator('.header-brand a').click();
-  await expect(page).toHaveURL(blog + '/');
-  await page.goto(blog);
+  await expect(page).toHaveURL(blog + '/home');
+  await page.goto(blog + '/home');
   await expect(page.locator('#content')).toBeVisible();
   await expect(page.locator('#page')).toHaveCSS('opacity', '1');
   await expect

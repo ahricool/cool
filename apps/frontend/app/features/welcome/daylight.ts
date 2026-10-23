@@ -1,0 +1,113 @@
+import * as THREE from 'three';
+import { lanterns } from './layout';
+
+export const normalizeHour = (hour: number) =>
+  Number.isFinite(hour) ? ((hour % 24) + 24) % 24 : 10.5;
+
+const color = (hex: number) => new THREE.Color(hex);
+
+/**
+ * Periodic solar cycle tuned for cel shading: lit faces stay near their painted
+ * colour, shade comes from a cool sky light, and night is a readable blue.
+ */
+export function daylightAt(hour: number) {
+  const angle = ((normalizeHour(hour) - 6) / 24) * Math.PI * 2;
+  const altitude = Math.sin(angle);
+  const day = THREE.MathUtils.smoothstep(altitude, -0.12, 0.3);
+  const noon = THREE.MathUtils.smoothstep(altitude, 0.05, 0.75);
+  const twilight = (1 - noon) * day;
+  // Peaks at sunrise and sunset so dusk gets its own colours instead of grey midpoints.
+  const dusk = Math.min(1, twilight * 3.2);
+  return {
+    day,
+    sunPosition: new THREE.Vector3(
+      -Math.cos(angle) * 13,
+      Math.max(0.5, altitude * 15),
+      7,
+    ),
+    sunColor: color(0xffa463).lerp(color(0xfff3de), noon),
+    sunIntensity: day * (1.15 + noon * 0.5),
+    skyColor: color(0x7086cf)
+      .lerp(color(0xc3d3ff), day)
+      .lerp(color(0xf2b9cf), dusk * 0.8),
+    groundColor: color(0x403c6a).lerp(color(0xd9c4b3), day),
+    ambientIntensity: 1.15 + day * 0.4,
+    moonIntensity: (1 - day) * 0.75,
+    lampIntensity: (1 - day) * 2.4,
+    skyTop: color(0x0f1a3e)
+      .lerp(color(0x5ab4f0), day)
+      .lerp(color(0x6d76d0), dusk * 0.75),
+    skyHorizon: color(0x2b3c78)
+      .lerp(color(0xd4f0ff), day)
+      .lerp(color(0xffa58c), dusk),
+    haze: dusk,
+    stars: 1 - THREE.MathUtils.smoothstep(altitude, -0.3, 0.02),
+    ink: 0.55 + day * 0.45,
+    motes: 0.35 + (1 - day) * 0.65,
+  };
+}
+export type Daylight = ReturnType<typeof daylightAt>;
+
+export function createDaylight(
+  scene: THREE.Scene,
+  renderer: THREE.WebGLRenderer,
+  shadowMapSize = 2048,
+) {
+  const sun = new THREE.DirectionalLight();
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(shadowMapSize, shadowMapSize);
+  Object.assign(sun.shadow.camera, {
+    left: -10,
+    right: 10,
+    top: 10,
+    bottom: -10,
+    near: 0.5,
+    far: 55,
+  });
+  sun.shadow.normalBias = 0.03;
+  sun.shadow.bias = -0.0004;
+  sun.shadow.radius = 2;
+  const sky = new THREE.HemisphereLight();
+  const moon = new THREE.DirectionalLight(0x9db8ff, 0);
+  moon.position.set(6, 10, -5);
+  const lamps = lanterns.map(({ x, y, z }) => {
+    const light = new THREE.PointLight(0xffb45e, 0, 3.6, 1.6);
+    light.position.set(x, y, z);
+    return light;
+  });
+  scene.add(sun, sky, moon, ...lamps);
+  let state = daylightAt(10.5);
+  return {
+    get state() {
+      return state;
+    },
+    setHour(hour: number) {
+      state = daylightAt(hour);
+      sun.position.copy(state.sunPosition);
+      sun.color.copy(state.sunColor);
+      sun.intensity = state.sunIntensity;
+      sun.castShadow = state.day > 0.04;
+      sky.color.copy(state.skyColor);
+      sky.groundColor.copy(state.groundColor);
+      sky.intensity = state.ambientIntensity;
+      moon.intensity = state.moonIntensity;
+      lamps.forEach((light) => {
+        light.intensity = state.lampIntensity;
+      });
+      renderer.shadowMap.needsUpdate = true;
+    },
+    /** Candle-like flicker for the lantern lights. */
+    flicker(time: number) {
+      lamps.forEach((light, i) => {
+        light.intensity =
+          state.lampIntensity *
+          (0.9 +
+            Math.sin(time * 7.3 + i * 2.1) * 0.05 +
+            Math.sin(time * 13.7 + i) * 0.05);
+      });
+    },
+    dispose() {
+      sun.shadow.map?.dispose();
+    },
+  };
+}

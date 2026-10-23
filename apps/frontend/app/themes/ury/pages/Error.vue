@@ -12,6 +12,8 @@ useHead(() => ({ title: `${t('暂时迷路了')} · Ury` }));
     <p>{{ error.statusCode }}</p>
     <h1>{{ t('这个页面暂时不在这里。') }}</h1>
     <p>{{ t('也许只是转错了一个路口，回去继续你的故事吧。') }}</p>
-    <button @click="clearError({ redirect: '/' })">{{ t('返回首页') }}</button>
+    <button @click="clearError({ redirect: '/home' })">
+      {{ t('返回首页') }}
+    </button>
   </main>
 </template>

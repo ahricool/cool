@@ -181,7 +181,7 @@ test('populated reading pages remain usable on desktop and mobile in both palett
     [390, 844],
   ]) {
     await page.setViewportSize({ width: width!, height: height! });
-    await page.goto(blog);
+    await page.goto(blog + '/home');
     await expect(page.locator('.hero-brand')).toBeVisible();
     if ((await page.locator('html').getAttribute('class'))?.includes('dark'))
       await page.getByRole('button', { name: '切换浅色', exact: true }).click();
