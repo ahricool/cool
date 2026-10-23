@@ -2,10 +2,21 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createDaylight, normalizeHour } from './daylight';
 import { createWelcomeGarden } from './garden';
+import { createGardenLife } from './life';
+import { createReimu } from './reimu';
+import { createSky } from './sky';
+import { createRamp, createSharedUniforms } from './toon';
 
 export { createWelcomeGarden } from './garden';
 
-const focus = new THREE.Vector3(0, 0.45, 0);
+export const welcomeFocus = new THREE.Vector3(0, -0.05, -0.2);
+export const welcomeCameraLimits = {
+  minDistance: 9,
+  maxDistance: 34,
+  minPolarAngle: Math.PI * 0.17,
+  maxPolarAngle: Math.PI * 0.45,
+};
+const focus = welcomeFocus;
 
 function fitWelcomeCamera(camera: THREE.PerspectiveCamera, aspect: number) {
   camera.aspect = aspect;
@@ -13,15 +24,15 @@ function fitWelcomeCamera(camera: THREE.PerspectiveCamera, aspect: number) {
   camera.fov = THREE.MathUtils.radToDeg(
     2 *
       Math.atan(
-        Math.tan(THREE.MathUtils.degToRad(38) / 2) * Math.max(1, 1.25 / aspect),
+        Math.tan(THREE.MathUtils.degToRad(38) / 2) * Math.max(1, 1.3 / aspect),
       ),
   );
   camera.updateProjectionMatrix();
 }
 
 export function createWelcomeCamera(aspect = 1) {
-  const camera = new THREE.PerspectiveCamera(38, aspect, 0.1, 100);
-  camera.position.set(12.8, 12.5, 18.8);
+  const camera = new THREE.PerspectiveCamera(38, aspect, 0.1, 200);
+  camera.position.set(13.2, 12.4, 18.6);
   camera.lookAt(focus);
   fitWelcomeCamera(camera, aspect);
   camera.updateMatrixWorld();
@@ -41,40 +52,33 @@ export function mountWelcomeWorld(
   const mobile = host.clientWidth < 700;
   const renderer = new THREE.WebGLRenderer({
     antialias: !mobile,
-    alpha: true,
     powerPreference: 'low-power',
   });
   let disposed = false,
     lost = false,
     frame = 0,
     last = 0,
-    time = 0,
-    slowFrames = 0;
+    slowFrames = 0,
+    degraded = false;
   const scene = new THREE.Scene();
   const camera = createWelcomeCamera();
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.copy(focus);
   controls.enablePan = false;
-  controls.minDistance = 15;
-  controls.maxDistance = 36;
-  controls.minPolarAngle = Math.PI * 0.17;
-  controls.maxPolarAngle = Math.PI * 0.44;
+  Object.assign(controls, welcomeCameraLimits);
   controls.enableDamping = false;
   controls.rotateSpeed = 0.55;
   controls.zoomSpeed = 0.65;
-  renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(
     Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.5),
   );
   renderer.shadowMap.enabled = true;
-  // Only the sun moves; petals do not cast shadows. Reuse the static depth map.
+  // The sun only moves with the time slider. Reuse the static depth map between frames.
   renderer.shadowMap.autoUpdate = false;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-  const geometries = new Set<THREE.BufferGeometry>(),
-    materials = new Set<THREE.Material>();
+  // Painted colours are already final; tone mapping would grey them out.
+  renderer.toneMapping = THREE.NoToneMapping;
   function dispose() {
     if (disposed) return;
     disposed = true;
@@ -85,9 +89,12 @@ export function mountWelcomeWorld(
     renderer.domElement.removeEventListener('webglcontextlost', contextLost);
     controls.removeEventListener('change', requestRender);
     controls.dispose();
+    const geometries = new Set<THREE.BufferGeometry>(),
+      materials = new Set<THREE.Material>(),
+      textures = new Set<THREE.Texture>();
     scene.traverse((object) => {
-      if (object instanceof THREE.Mesh) {
-        if (object instanceof THREE.InstancedMesh) object.dispose();
+      if (object instanceof THREE.InstancedMesh) object.dispose();
+      if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
         geometries.add(object.geometry);
         for (const material of Array.isArray(object.material)
           ? object.material
@@ -96,51 +103,46 @@ export function mountWelcomeWorld(
       }
     });
     geometries.forEach((geometry) => geometry.dispose());
-    const textures = new Set<THREE.Texture>();
     materials.forEach((material) => {
-      if (material instanceof THREE.MeshToonMaterial && material.gradientMap)
-        textures.add(material.gradientMap);
+      for (const value of Object.values(material))
+        if (value instanceof THREE.Texture) textures.add(value);
       material.dispose();
     });
+    textures.add(ramp);
     textures.forEach((texture) => texture.dispose());
     daylight.dispose();
     renderer.dispose();
     renderer.forceContextLoss();
     renderer.domElement.remove();
   }
+  const shared = createSharedUniforms();
+  const ramp = createRamp();
   const daylight = createDaylight(scene, renderer, mobile ? 1024 : 2048);
   const observer = new ResizeObserver(resize);
-  const petalGeometry = new THREE.PlaneGeometry(0.085, 0.06);
-  const petalMaterial = new THREE.MeshStandardMaterial({
-    color: 0xefceab,
-    side: THREE.DoubleSide,
-    roughness: 1,
-  });
-  const petals = new THREE.InstancedMesh(
-    petalGeometry,
-    petalMaterial,
-    mobile ? 12 : 22,
-  );
-  petals.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-  petals.frustumCulled = false;
-  const dummy = new THREE.Object3D();
-  function updatePetals() {
-    for (let i = 0; i < petals.count; i++) {
-      const phase = i * 2.39996;
-      dummy.position.set(
-        Math.sin(phase) * 5.5 + Math.sin(time * 0.26 + phase) * 0.5,
-        0.4 + ((((i * 0.431 - time * 0.23) % 5) + 5) % 5),
-        Math.cos(phase * 1.7) * 4.8,
-      );
-      dummy.rotation.set(
-        phase + time * 0.5,
-        phase * 0.7 + time * 0.3,
-        phase + time * 0.15,
-      );
-      dummy.updateMatrix();
-      petals.setMatrixAt(i, dummy.matrix);
-    }
-    petals.instanceMatrix.needsUpdate = true;
+  // Built inside the guarded block below so a failure still releases the renderer.
+  let sky: ReturnType<typeof createSky>,
+    life: ReturnType<typeof createGardenLife>,
+    reimu: ReturnType<typeof createReimu>;
+  const glowing: THREE.MeshToonMaterial[] = [];
+  let time = 0;
+  function animate(dt: number) {
+    const state = daylight.state;
+    shared.time.value = time;
+    shared.ink.value = state.ink;
+    shared.rim.value
+      .copy(state.skyColor)
+      .multiplyScalar(0.05 + state.day * 0.13);
+    sky.update(time);
+    life.update(time);
+    daylight.flicker(time);
+    const flame =
+      0.9 + Math.sin(time * 6.1) * 0.06 + Math.sin(time * 10.3) * 0.04;
+    for (const material of glowing)
+      material.emissiveIntensity =
+        state.lampIntensity *
+        (material.name === 'lantern' ? 0.32 : 0.55) *
+        flame;
+    reimu.update(dt, time, camera, state);
   }
   function draw(now = 0) {
     frame = 0;
@@ -149,18 +151,22 @@ export function mountWelcomeWorld(
       frame = requestAnimationFrame(draw);
       return;
     }
-    if (!reducedMotion.matches) time += Math.min((now - last) / 1000, 0.06);
+    const dt = reducedMotion.matches ? 0 : Math.min((now - last) / 1000, 0.1);
     last = now;
-    updatePetals();
+    time += dt;
+    animate(dt);
     const start = performance.now();
     renderer.render(scene, camera);
     if (performance.now() - start > 45) slowFrames++;
     else slowFrames = Math.max(0, slowFrames - 1);
-    if (slowFrames >= 6) {
+    if (slowFrames >= 6 && !degraded) {
+      degraded = true;
       renderer.setPixelRatio(1);
       renderer.shadowMap.enabled = false;
-      petals.count = 10;
+      life.setMotes(daylight.state.motes, 1);
       slowFrames = 0;
+      // Resizing clears the drawing buffer. Redraw now, including on-demand reduced-motion frames.
+      renderer.render(scene, camera);
     }
     if (!reducedMotion.matches) frame = requestAnimationFrame(draw);
   }
@@ -195,22 +201,30 @@ export function mountWelcomeWorld(
     frame = 0;
     unavailable();
   }
+  function setHour(hour: number) {
+    daylight.setHour(normalizeHour(hour));
+    sky.setDaylight(daylight.state);
+    life.setMotes(daylight.state.motes, renderer.getPixelRatio());
+  }
   try {
-    scene.add(petals);
-    scene.add(createWelcomeGarden());
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(200, 200),
-      new THREE.ShadowMaterial({ color: 0x243d3b, opacity: 0.23 }),
-    );
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -1.04;
-    ground.receiveShadow = true;
-    scene.add(ground);
+    sky = createSky(shared, ramp, mobile);
+    life = createGardenLife(shared, ramp, mobile);
+    reimu = createReimu(mobile);
+    const garden = createWelcomeGarden(shared, ramp);
+    scene.add(sky.root, garden, life.root, reimu.root);
+    scene.traverse((object) => {
+      if (
+        object instanceof THREE.Mesh &&
+        object.material instanceof THREE.MeshToonMaterial &&
+        ['glow', 'lantern'].includes(object.material.name)
+      )
+        glowing.push(object.material);
+    });
     host.appendChild(renderer.domElement);
     renderer.domElement.setAttribute('aria-hidden', 'true');
     controls.update();
-    updatePetals();
-    daylight.setHour(10.5);
+    setHour(10.5);
+    animate(0);
     resize();
     renderer.render(scene, camera);
     observer.observe(host);
@@ -223,7 +237,7 @@ export function mountWelcomeWorld(
       dispose,
       setHour(hour: number) {
         if (disposed || lost) return;
-        daylight.setHour(normalizeHour(hour));
+        setHour(hour);
         requestRender();
       },
     };
