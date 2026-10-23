@@ -42,6 +42,16 @@ export const palette = {
   cloud: 0xffffff,
   glow: 0xffd98a,
   lantern: 0xff7a5a,
+  // Late-summer meadow, shrubs and far mountains around the plinth.
+  meadow: 0xa8d06a,
+  meadowDry: 0xd3cf6e,
+  meadowDeep: 0x86bf5c,
+  shrubGold: 0xe6c45a,
+  shrubAmber: 0xdc9b4c,
+  shrubOlive: 0xb0c75e,
+  shrubGreen: 0x72b158,
+  mountain: 0x6f9e88,
+  mountainFar: 0x8eabc9,
 };
 export type Tone = keyof typeof palette;
 

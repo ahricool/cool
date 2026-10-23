@@ -7,7 +7,7 @@ import {
   isLawn,
   obstacles,
   plinth,
-  sweepSpots,
+  roamSpots,
   terrace,
 } from '../../apps/frontend/app/features/welcome/layout';
 import {
@@ -144,8 +144,8 @@ test('initial desktop and portrait views keep the whole miniature clear of viewp
   }
 });
 
-test('Reimu sweeps on open court ground and can always hop to a nearby spot', () => {
-  for (const [x, z] of sweepSpots) {
+test('Sparkle roams open court ground and can always reach a nearby spot', () => {
+  for (const [x, z] of roamSpots) {
     assert.ok(
       z > terrace.front + 1.2 && Math.abs(x) < plinth.half - 1,
       `${x}, ${z}`,
@@ -158,11 +158,11 @@ test('Reimu sweeps on open court ground and can always hop to a nearby spot', ()
         `spot ${x}, ${z} inside obstacle`,
       );
     assert.ok(
-      sweepSpots.some(([ox, oz]) => {
+      roamSpots.some(([ox, oz]) => {
         const distance = Math.hypot(ox - x, oz - z);
         return distance > 0.8 && distance < 2.8;
       }),
-      `spot ${x}, ${z} has no hop target`,
+      `spot ${x}, ${z} has no nearby target`,
     );
   }
   // Raised terrace and paving are reported so feet and litter stay on the surface.

@@ -3,18 +3,19 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createDaylight, normalizeHour } from './daylight';
 import { createWelcomeGarden } from './garden';
 import { createGardenLife } from './life';
-import { createReimu } from './reimu';
+import { createLandscape } from './landscape';
+import { createSparkle } from './sparkle';
 import { createSky } from './sky';
 import { createRamp, createSharedUniforms } from './toon';
 
 export { createWelcomeGarden } from './garden';
 
-export const welcomeFocus = new THREE.Vector3(0, -0.05, -0.2);
+export const welcomeFocus = new THREE.Vector3(0, 0.75, -0.2);
 export const welcomeCameraLimits = {
   minDistance: 9,
   maxDistance: 34,
   minPolarAngle: Math.PI * 0.17,
-  maxPolarAngle: Math.PI * 0.45,
+  maxPolarAngle: Math.PI * 0.47,
 };
 const focus = welcomeFocus;
 
@@ -32,7 +33,7 @@ function fitWelcomeCamera(camera: THREE.PerspectiveCamera, aspect: number) {
 
 export function createWelcomeCamera(aspect = 1) {
   const camera = new THREE.PerspectiveCamera(38, aspect, 0.1, 200);
-  camera.position.set(13.2, 12.4, 18.6);
+  camera.position.set(14.1, 9.6, 19.9);
   camera.lookAt(focus);
   fitWelcomeCamera(camera, aspect);
   camera.updateMatrixWorld();
@@ -122,7 +123,8 @@ export function mountWelcomeWorld(
   // Built inside the guarded block below so a failure still releases the renderer.
   let sky: ReturnType<typeof createSky>,
     life: ReturnType<typeof createGardenLife>,
-    reimu: ReturnType<typeof createReimu>;
+    landscape: ReturnType<typeof createLandscape>,
+    sparkle: ReturnType<typeof createSparkle>;
   const glowing: THREE.MeshToonMaterial[] = [];
   let time = 0;
   function animate(dt: number) {
@@ -142,7 +144,7 @@ export function mountWelcomeWorld(
         state.lampIntensity *
         (material.name === 'lantern' ? 0.32 : 0.55) *
         flame;
-    reimu.update(dt, time, camera, state);
+    sparkle.update(dt, time, camera, state);
   }
   function draw(now = 0) {
     frame = 0;
@@ -204,14 +206,16 @@ export function mountWelcomeWorld(
   function setHour(hour: number) {
     daylight.setHour(normalizeHour(hour));
     sky.setDaylight(daylight.state);
+    landscape.setDaylight(daylight.state);
     life.setMotes(daylight.state.motes, renderer.getPixelRatio());
   }
   try {
     sky = createSky(shared, ramp, mobile);
     life = createGardenLife(shared, ramp, mobile);
-    reimu = createReimu(mobile);
+    landscape = createLandscape(shared, ramp, mobile);
+    sparkle = createSparkle(mobile);
     const garden = createWelcomeGarden(shared, ramp);
-    scene.add(sky.root, garden, life.root, reimu.root);
+    scene.add(sky.root, landscape.root, garden, life.root, sparkle.root);
     scene.traverse((object) => {
       if (
         object instanceof THREE.Mesh &&
@@ -232,6 +236,15 @@ export function mountWelcomeWorld(
     document.addEventListener('visibilitychange', visibility);
     reducedMotion.addEventListener('change', motion);
     renderer.domElement.addEventListener('webglcontextlost', contextLost);
+    // Swap in the official model when it exists locally; keep the standee otherwise.
+    import('./sparkle-model')
+      .then(({ loadSparkleModel }) => loadSparkleModel(shared, ramp))
+      .then((model) => {
+        if (disposed) return;
+        sparkle.attachModel(model);
+        requestRender();
+      })
+      .catch(() => {});
     requestRender();
     return {
       dispose,

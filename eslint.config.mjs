@@ -12,6 +12,7 @@ export default ts.config(
       '**/.nuxt/**',
       '**/.output/**',
       'apps/frontend/public/sakura/**',
+      'apps/frontend/public/draco/**',
       'test-results/**',
       'playwright-report/**',
     ],
@@ -28,7 +29,7 @@ export default ts.config(
   },
   { files: ['apps/frontend/**/*.ts'], rules: { 'no-undef': 'off' } },
   {
-    files: ['**/*.cjs', 'scripts/*.mjs'],
+    files: ['**/*.cjs', 'scripts/**/*.mjs'],
     rules: { '@typescript-eslint/no-require-imports': 'off' },
     languageOptions: {
       globals: {

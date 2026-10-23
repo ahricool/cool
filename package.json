@@ -27,17 +27,20 @@
     "test:themes": "playwright test --config playwright.theme.config.ts",
     "audit": "node scripts/audit.mjs",
     "dev:frontend": "npm run dev -w @cool/frontend",
+    "model:sparkle": "node scripts/sparkle-model/convert.mjs",
     "test:unit": "node --import tsx --test tests/unit/*.test.ts apps/frontend/build/*.test.ts apps/frontend/app/features/admin/api.test.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
-    "eslint": "^10.11.0",
-    "typescript-eslint": "^8.46.0",
-    "prettier": "^3.6.0",
-    "typescript": "~5.9.3",
-    "eslint-plugin-vue": "^10.5.0",
+    "@gltf-transform/cli": "^4.5.1",
     "@playwright/test": "^1.56.0",
-    "tsx": "^4.20.0"
+    "eslint": "^10.11.0",
+    "eslint-plugin-vue": "^10.5.0",
+    "prettier": "^3.6.0",
+    "three-r171": "npm:three@0.171.0",
+    "tsx": "^4.20.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.0"
   },
   "overrides": {
     "deepmerge-ts": "^8.0.2",
