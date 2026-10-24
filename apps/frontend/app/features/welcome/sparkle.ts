@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import { groundAt, obstacles, roamSpots, terrace } from './layout';
+import { groundAt, roamSpots, terrace } from './layout';
 import type { SparkleModel } from './sparkle-model';
 import { seeded } from './toon';
+import { randomSpot, routeBetween, surfaceAt } from './walk';
 
 /** Petals and leaves on the court that scatter when she lands or runs past. */
 function createLitter(count: number) {
@@ -88,21 +89,6 @@ function createLitter(count: number) {
   };
 }
 
-/** Whether the straight path between two court spots clears every obstacle. */
-function clearPath(ax: number, az: number, bx: number, bz: number) {
-  const dx = bx - ax,
-    dz = bz - az,
-    length = dx * dx + dz * dz || 1;
-  return obstacles.every((o) => {
-    const t = THREE.MathUtils.clamp(
-      ((o.x - ax) * dx + (o.z - az) * dz) / length,
-      0,
-      1,
-    );
-    return Math.hypot(ax + dx * t - o.x, az + dz * t - o.z) > o.r + 0.15;
-  });
-}
-
 type Phase = 'idle' | 'walk';
 
 /**
@@ -115,9 +101,13 @@ export function createSparkle(mobile: boolean) {
   const litter = createLitter(mobile ? 60 : 110);
   root.add(litter.mesh);
 
-  const random = seeded(8);
-  const position = new THREE.Vector2(...roamSpots[0]!);
-  const to = new THREE.Vector2();
+  // Unseeded, so every visit starts somewhere new and wanders differently.
+  const random = Math.random;
+  const start = randomSpot(random);
+  const position = new THREE.Vector2(start.x, start.z);
+  /** Remaining legs of the current walk; the first is where she heads now. */
+  let route: { x: number; z: number }[] = [];
+  let height = surfaceAt(position.x, position.y);
   const heading = new THREE.Vector3(1, 0, 0);
   const toCamera = new THREE.Vector3();
   let model: SparkleModel | undefined;
@@ -127,23 +117,15 @@ export function createSparkle(mobile: boolean) {
     stride = 0,
     stepping = 0,
     blinkAt = 1.2,
-    yaw = 0,
+    yaw = random() * Math.PI * 2,
     look = 0,
     lookTimer = 0;
 
-  function chooseSpot() {
-    const candidates = roamSpots.filter(([x, z]) => {
-      const distance = Math.hypot(x - position.x, z - position.y);
-      return (
-        distance > 0.8 &&
-        distance < 2.8 &&
-        clearPath(position.x, position.y, x, z)
-      );
-    });
-    const [x, z] = candidates.length
-      ? candidates[Math.floor(random() * candidates.length)]!
-      : roamSpots[Math.floor(random() * roamSpots.length)]!;
-    to.set(x + (random() - 0.5) * 0.4, z + (random() - 0.5) * 0.4);
+  /** Somewhere new anywhere she can reach, usually a short stroll away. */
+  function chooseRoute() {
+    const far = random() < 0.25;
+    const goal = randomSpot(random, position, far ? 2.5 : 0.8, far ? 9 : 3);
+    route = routeBetween(position.x, position.y, goal.x, goal.z);
   }
   function enter(next: Phase) {
     phase = next;
@@ -170,14 +152,16 @@ export function createSparkle(mobile: boolean) {
       elapsed += dt;
       if (phase === 'idle') {
         if (elapsed > idleFor) {
-          chooseSpot();
-          enter('walk');
+          chooseRoute();
+          if (route.length) enter('walk');
+          else enter('idle');
         }
       } else {
+        const to = route[0]!;
         const dx = to.x - position.x,
-          dz = to.y - position.y,
+          dz = to.z - position.y,
           distance = Math.hypot(dx, dz);
-        faceTowards(to.x, to.y);
+        faceTowards(to.x, to.z);
         const step = Math.min(distance, 0.55 * dt);
         if (distance > 1e-4) {
           position.x += (dx / distance) * step;
@@ -189,14 +173,19 @@ export function createSparkle(mobile: boolean) {
         // Each footfall nudges the petals under her feet.
         if (Math.floor(stride) !== previous && Math.floor(stride) % 2 === 0)
           litter.scatter(position.x, position.y, 0.32, 0.45);
-        if (distance < 0.02) enter('idle');
+        if (distance < 0.02) {
+          route.shift();
+          if (!route.length) enter('idle');
+        }
       }
       // Ease in and out of the stride rather than snapping between poses.
       stepping += ((phase === 'walk' ? 1 : 0) - stepping) * Math.min(1, dt * 8);
       litter.update(dt);
       if (!model) return;
 
-      const ground = groundAt(position.x, position.y);
+      // Ease onto each stair step rather than popping up it.
+      const ground = surfaceAt(position.x, position.y);
+      height += (ground - height) * Math.min(1, dt * 10);
 
       // Turn to travel, then settle facing the viewer with idle glances.
       toCamera.set(
@@ -222,7 +211,7 @@ export function createSparkle(mobile: boolean) {
           : 0;
       model.pose({
         x: position.x,
-        y: ground,
+        y: height,
         z: position.y,
         yaw,
         walk: stepping,
