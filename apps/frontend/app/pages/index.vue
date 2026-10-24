@@ -3,6 +3,7 @@ import type { WelcomeWorld } from '~/features/welcome/world';
 
 definePageMeta({ layout: false });
 const host = ref<HTMLElement>();
+const menu = ref<HTMLElement>();
 const state = ref<'loading' | 'ready' | 'unavailable'>('loading');
 const { locale } = useCoolI18n();
 const english = computed(() => locale.value === 'en');
@@ -32,9 +33,13 @@ onMounted(async () => {
   try {
     const { mountWelcomeWorld } = await import('~/features/welcome/world');
     if (cancelled || !host.value) return;
-    world = mountWelcomeWorld(host.value, () => {
-      state.value = 'unavailable';
-    });
+    world = mountWelcomeWorld(
+      host.value,
+      () => {
+        state.value = 'unavailable';
+      },
+      menu.value,
+    );
     world.setHour(hour.value);
     state.value = 'ready';
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -88,7 +93,9 @@ onBeforeUnmount(() => {
       }}</span>
     </div>
     <nav
+      ref="menu"
       class="world-controls"
+      :data-board="state === 'ready' || undefined"
       :aria-label="english ? 'Scene controls' : '场景控制'"
     >
       <div v-show="expanded" id="daylight-controls" class="daylight-controls">
@@ -250,6 +257,42 @@ html[data-surface='welcome'] body {
 .daylight-controls svg {
   width: 17px;
   height: 17px;
+}
+/* Drawn by three.js as a wooden board (features/welcome/menu.ts); the DOM
+   controls stay on top, transparent, inked to read on the wood. */
+.world-controls[data-board] {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  color: #4a2a1e;
+}
+.world-controls[data-board] button:hover,
+.world-controls[data-board] .welcome-enter:hover {
+  background: #fff4dc33;
+}
+.world-controls[data-board] button circle {
+  fill: #d3965c;
+}
+.world-controls[data-board] .daylight-controls {
+  border-right-color: transparent;
+  color: #fff4dc;
+}
+.world-controls[data-board] .daylight-controls input {
+  appearance: none;
+  background: transparent;
+}
+.world-controls[data-board] .daylight-controls input::-webkit-slider-thumb {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  opacity: 0;
+}
+.world-controls[data-board] .daylight-controls input::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  opacity: 0;
 }
 .welcome-status {
   position: absolute;

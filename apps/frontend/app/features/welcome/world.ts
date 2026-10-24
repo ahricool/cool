@@ -4,6 +4,7 @@ import { createDaylight, normalizeHour } from './daylight';
 import { createWelcomeGarden } from './garden';
 import { createGardenLife } from './life';
 import { createLandscape } from './landscape';
+import { createMenuBar } from './menu';
 import { createSparkle } from './sparkle';
 import { createSky } from './sky';
 import { createRamp, createSharedUniforms } from './toon';
@@ -48,6 +49,8 @@ export interface WelcomeWorld {
 export function mountWelcomeWorld(
   host: HTMLElement,
   unavailable: () => void,
+  /** Scene controls to dress as a wooden board drawn over the world. */
+  menuElement?: HTMLElement,
 ): WelcomeWorld {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const mobile = host.clientWidth < 700;
@@ -93,7 +96,7 @@ export function mountWelcomeWorld(
     const geometries = new Set<THREE.BufferGeometry>(),
       materials = new Set<THREE.Material>(),
       textures = new Set<THREE.Texture>();
-    scene.traverse((object) => {
+    const visit = (object: THREE.Object3D) => {
       if (object instanceof THREE.InstancedMesh) object.dispose();
       if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
         geometries.add(object.geometry);
@@ -102,7 +105,9 @@ export function mountWelcomeWorld(
           : [object.material])
           materials.add(material);
       }
-    });
+    };
+    scene.traverse(visit);
+    menu?.scene.traverse(visit);
     geometries.forEach((geometry) => geometry.dispose());
     materials.forEach((material) => {
       for (const value of Object.values(material))
@@ -124,7 +129,8 @@ export function mountWelcomeWorld(
   let sky: ReturnType<typeof createSky>,
     life: ReturnType<typeof createGardenLife>,
     landscape: ReturnType<typeof createLandscape>,
-    sparkle: ReturnType<typeof createSparkle>;
+    sparkle: ReturnType<typeof createSparkle>,
+    menu: ReturnType<typeof createMenuBar> | undefined;
   const glowing: THREE.MeshToonMaterial[] = [];
   let time = 0,
     walker = false;
@@ -146,6 +152,16 @@ export function mountWelcomeWorld(
         (material.name === 'lantern' ? 0.32 : 0.55) *
         flame;
     sparkle.update(dt, time, camera);
+    menu?.update(time);
+  }
+  /** The world, then the menu board on top with a fresh depth buffer. */
+  function present() {
+    renderer.render(scene, camera);
+    if (!menu) return;
+    renderer.autoClear = false;
+    renderer.clearDepth();
+    renderer.render(menu.scene, menu.camera);
+    renderer.autoClear = true;
   }
   function draw(now = 0) {
     frame = 0;
@@ -160,7 +176,7 @@ export function mountWelcomeWorld(
     animate(dt);
     if (walker) renderer.shadowMap.needsUpdate = true;
     const start = performance.now();
-    renderer.render(scene, camera);
+    present();
     if (performance.now() - start > 45) slowFrames++;
     else slowFrames = Math.max(0, slowFrames - 1);
     if (slowFrames >= 6 && !degraded) {
@@ -170,7 +186,7 @@ export function mountWelcomeWorld(
       life.setMotes(daylight.state.motes, 1);
       slowFrames = 0;
       // Resizing clears the drawing buffer. Redraw now, including on-demand reduced-motion frames.
-      renderer.render(scene, camera);
+      present();
     }
     if (!reducedMotion.matches) frame = requestAnimationFrame(draw);
   }
@@ -185,6 +201,7 @@ export function mountWelcomeWorld(
     if (!w || !h) return;
     renderer.setSize(w, h);
     fitWelcomeCamera(camera, w / h);
+    menu?.layout();
     requestRender();
   }
   function visibility() {
@@ -210,6 +227,7 @@ export function mountWelcomeWorld(
     sky.setDaylight(daylight.state);
     landscape.setDaylight(daylight.state);
     life.setMotes(daylight.state.motes, renderer.getPixelRatio());
+    menu?.setHour(normalizeHour(hour));
   }
   try {
     sky = createSky(shared, ramp, mobile);
@@ -218,6 +236,7 @@ export function mountWelcomeWorld(
     sparkle = createSparkle(mobile);
     const garden = createWelcomeGarden(shared, ramp);
     scene.add(sky.root, landscape.root, garden, life.root, sparkle.root);
+    if (menuElement) menu = createMenuBar(host, menuElement, ramp);
     scene.traverse((object) => {
       if (
         object instanceof THREE.Mesh &&
@@ -232,8 +251,10 @@ export function mountWelcomeWorld(
     setHour(10.5);
     animate(0);
     resize();
-    renderer.render(scene, camera);
+    present();
     observer.observe(host);
+    // Collapsing the daylight group or reflowing the controls reshapes the board.
+    if (menuElement) observer.observe(menuElement);
     controls.addEventListener('change', requestRender);
     document.addEventListener('visibilitychange', visibility);
     reducedMotion.addEventListener('change', motion);
