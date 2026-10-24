@@ -845,7 +845,7 @@ export function buildTorii(b: ToonBuilder) {
     0,
     plaque.y,
     plaque.front + 0.006,
-    0.24,
+    0.21,
     0.05,
     'blossomPaint',
   );
