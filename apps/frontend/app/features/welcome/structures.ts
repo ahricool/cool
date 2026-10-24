@@ -847,7 +847,7 @@ export function buildTorii(b: ToonBuilder) {
     plaque.front + 0.006,
     0.24,
     0.05,
-    'azalea',
+    'dustyRose',
   );
   b.box(half * 2 + 0.7, 0.16, 0.2, 'red', 0, H - 0.12, z);
   // Kasagi: upswept lintel with a dark cap.
