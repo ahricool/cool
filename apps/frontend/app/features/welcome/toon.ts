@@ -38,8 +38,8 @@ export const palette = {
   blossomLight: 0xffdde9,
   blossomDeep: 0xf79abb,
   azalea: 0xff8fb4,
-  /** Muted, greyed rose for lettering that should sit quietly on the torii. */
-  dustyRose: 0xc4a2ab,
+  /** blossomLight for painted lettering: the same pink, but it never sways. */
+  blossomPaint: 0xffdde9,
   water: 0x79d8e6,
   cloud: 0xffffff,
   glow: 0xffd98a,
