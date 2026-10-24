@@ -1,8 +1,26 @@
 import * as THREE from 'three';
+import type { Daylight } from './daylight';
 import { groundAt, roamSpots, terrace } from './layout';
 import type { SparkleModel } from './sparkle-model';
 import { seeded } from './toon';
 import { randomSpot, routeBetween, surfaceAt } from './walk';
+
+/** Soft disc for the contact blob; red channel is the alpha map. */
+function softDisc() {
+  const size = 64;
+  const data = new Uint8Array(size * size);
+  const mid = (size - 1) / 2;
+  for (let y = 0; y < size; y++)
+    for (let x = 0; x < size; x++) {
+      const r = Math.hypot(x - mid, y - mid) / mid;
+      data[y * size + x] = Math.round(
+        255 * (1 - THREE.MathUtils.smoothstep(r, 0.35, 1)),
+      );
+    }
+  const texture = new THREE.DataTexture(data, size, size, THREE.RedFormat);
+  texture.needsUpdate = true;
+  return texture;
+}
 
 /** Petals and leaves on the court that scatter when she lands or runs past. */
 function createLitter(count: number) {
@@ -98,8 +116,21 @@ type Phase = 'idle' | 'walk';
 export function createSparkle(mobile: boolean) {
   const root = new THREE.Group();
   root.name = 'sparkle';
+  const blob = new THREE.Mesh(
+    new THREE.CircleGeometry(0.3, 24).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({
+      color: 0x3b2f55,
+      alphaMap: softDisc(),
+      transparent: true,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+    }),
+  );
+  blob.name = 'sparkle-contact';
+  blob.visible = false;
   const litter = createLitter(mobile ? 60 : 110);
-  root.add(litter.mesh);
+  root.add(litter.mesh, blob);
 
   // Unseeded, so every visit starts somewhere new and wanders differently.
   const random = Math.random;
@@ -147,8 +178,9 @@ export function createSparkle(mobile: boolean) {
     attachModel(next: SparkleModel) {
       model = next;
       root.add(next.root);
+      blob.visible = true;
     },
-    update(dt: number, time: number, camera: THREE.Camera) {
+    update(dt: number, time: number, camera: THREE.Camera, light: Daylight) {
       elapsed += dt;
       if (phase === 'idle') {
         if (elapsed > idleFor) {
@@ -186,6 +218,10 @@ export function createSparkle(mobile: boolean) {
       // Ease onto each stair step rather than popping up it.
       const ground = surfaceAt(position.x, position.y);
       height += (ground - height) * Math.min(1, dt * 10);
+      blob.position.set(position.x, height + 0.004, position.y);
+      blob.scale.set(1.15, 1, 0.85);
+      (blob.material as THREE.MeshBasicMaterial).opacity =
+        0.22 + light.day * 0.1;
 
       // Turn to travel, then settle facing the viewer with idle glances.
       toCamera.set(

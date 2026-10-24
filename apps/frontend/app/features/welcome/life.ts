@@ -253,7 +253,7 @@ function buildGrass(
   material.customProgramCacheKey = () => 'welcome-grass';
   const grass = new THREE.InstancedMesh(geometry, material, count);
   grass.name = 'grass';
-  grass.receiveShadow = true;
+  // Double-sided tufts sampling a PCF map is fill-rate with almost no silhouette.
   const random = seeded(99);
   const dummy = new THREE.Object3D();
   const tones = [

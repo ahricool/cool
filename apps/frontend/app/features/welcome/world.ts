@@ -22,6 +22,11 @@ export const welcomeCameraLimits = {
 };
 const focus = welcomeFocus;
 
+/** Cel outlines hide most aliasing, so a modest cap is enough for a miniature. */
+export function welcomePixelRatio(devicePixelRatio: number, mobile: boolean) {
+  return Math.min(devicePixelRatio || 1, mobile ? 1 : 1.25);
+}
+
 function fitWelcomeCamera(camera: THREE.PerspectiveCamera, aspect: number) {
   camera.aspect = aspect;
   // Keep the complete plinth in frame, with breathing room on portrait displays.
@@ -60,7 +65,9 @@ export function mountWelcomeWorld(
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const mobile = host.clientWidth < 700;
   const renderer = new THREE.WebGLRenderer({
-    antialias: !mobile,
+    // MSAA on a fullscreen canvas is why a discrete GPU sits at 100% for a
+    // miniature. Ink hulls already hide the jaggies toon shading would show.
+    antialias: false,
     powerPreference: 'low-power',
   });
   let disposed = false,
@@ -78,11 +85,10 @@ export function mountWelcomeWorld(
   controls.enableDamping = false;
   controls.rotateSpeed = 0.55;
   controls.zoomSpeed = 0.65;
-  renderer.setPixelRatio(
-    Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.5),
-  );
+  renderer.setPixelRatio(welcomePixelRatio(window.devicePixelRatio, mobile));
   renderer.shadowMap.enabled = true;
-  // The depth map is redrawn only when the sun moves, or every frame once Sparkle walks in it.
+  // Static casters only. Sparkle uses a contact blob, so the depth map is
+  // rebuilt when the sun moves, not every frame she idles or walks.
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -134,7 +140,7 @@ export function mountWelcomeWorld(
   }
   const shared = createSharedUniforms();
   const ramp = createRamp();
-  const daylight = createDaylight(scene, renderer, mobile ? 1024 : 2048);
+  const daylight = createDaylight(scene, renderer, mobile ? 512 : 1024);
   const observer = new ResizeObserver(resize);
   // Built inside the guarded block below so a failure still releases the renderer.
   let sky: ReturnType<typeof createSky>,
@@ -146,7 +152,6 @@ export function mountWelcomeWorld(
     menu: ReturnType<typeof createMenuBar> | undefined;
   const glowing: THREE.MeshToonMaterial[] = [];
   let time = 0,
-    walker = false,
     hourNow = 10.5,
     // Eased towards the target over a few seconds so rain rolls in and out.
     wet = 0,
@@ -168,7 +173,7 @@ export function mountWelcomeWorld(
         state.lampIntensity *
         (material.name === 'lantern' ? 0.32 : 0.55) *
         flame;
-    sparkle.update(dt, time, camera);
+    sparkle.update(dt, time, camera, state);
     if (wet !== wetTarget) {
       wet =
         reducedMotion.matches || Math.abs(wetTarget - wet) < 0.005
@@ -199,7 +204,6 @@ export function mountWelcomeWorld(
     last = now;
     time += dt;
     animate(dt);
-    if (walker) renderer.shadowMap.needsUpdate = true;
     const start = performance.now();
     present();
     if (performance.now() - start > 45) slowFrames++;
@@ -317,7 +321,6 @@ export function mountWelcomeWorld(
         }
         model = loaded;
         sparkle.attachModel(loaded);
-        walker = true;
         requestRender();
       })
       .catch(() => {});

@@ -57,6 +57,39 @@ function meadowColor(x: number, z: number, target: THREE.Color) {
     .lerp(color('meadowDeep'), deep * 0.6);
 }
 
+/**
+ * Ring of the meadow disc, warped so detail sits near the plinth. Split so
+ * only the inner disc (inside the sun shadow camera) samples the depth map.
+ */
+function meadowRing(
+  inner: number,
+  outer: number,
+  rings: number,
+  sectors: number,
+) {
+  const field = new THREE.RingGeometry(inner, outer, sectors, rings);
+  field.rotateX(-Math.PI / 2);
+  const fieldPosition = field.getAttribute('position');
+  for (let i = 0; i < fieldPosition.count; i++) {
+    const x = fieldPosition.getX(i),
+      z = fieldPosition.getZ(i);
+    const r = Math.hypot(x, z);
+    const scaled = meadow.radius * (r / meadow.radius) ** 1.6;
+    const k = r > 0 ? scaled / r : 0;
+    fieldPosition.setXYZ(i, x * k, 0, z * k);
+  }
+  const fieldColors = new Float32Array(fieldPosition.count * 3);
+  const patch = new THREE.Color();
+  for (let i = 0; i < fieldPosition.count; i++)
+    meadowColor(fieldPosition.getX(i), fieldPosition.getZ(i), patch).toArray(
+      fieldColors,
+      i * 3,
+    );
+  field.setAttribute('color', new THREE.BufferAttribute(fieldColors, 3));
+  field.deleteAttribute('uv');
+  return field;
+}
+
 /** A ridge of peaks: a noisy cone whose silhouette rises to one summit. */
 function mountainGeometry(
   random: () => number,
@@ -108,38 +141,20 @@ export function createLandscape(
   const haze = { value: new THREE.Color(0xd4f0ff) };
   const random = seeded(2024);
 
-  // A finely divided disc so the colour drifts read as soft patches.
-  const rings = 40,
-    sectors = 96;
-  const field = new THREE.RingGeometry(0.01, meadow.radius, sectors, rings);
-  field.rotateX(-Math.PI / 2);
-  const fieldPosition = field.getAttribute('position');
-  // Pull rings inward so detail sits near the plinth.
-  for (let i = 0; i < fieldPosition.count; i++) {
-    const x = fieldPosition.getX(i),
-      z = fieldPosition.getZ(i);
-    const r = Math.hypot(x, z);
-    const scaled = meadow.radius * (r / meadow.radius) ** 1.6;
-    const k = r > 0 ? scaled / r : 0;
-    fieldPosition.setXYZ(i, x * k, 0, z * k);
-  }
-  const fieldColors = new Float32Array(fieldPosition.count * 3);
-  const patch = new THREE.Color();
-  for (let i = 0; i < fieldPosition.count; i++)
-    meadowColor(fieldPosition.getX(i), fieldPosition.getZ(i), patch).toArray(
-      fieldColors,
-      i * 3,
-    );
-  field.setAttribute('color', new THREE.BufferAttribute(fieldColors, 3));
-  field.deleteAttribute('uv');
-  const lawn = new THREE.Mesh(
-    field,
-    hazeMaterial('meadow', ramp, haze, 24, meadow.radius, 0.85),
-  );
+  // Inner disc sits in the sun shadow camera; the far field only needs colour.
+  const split = 28;
+  const paint = hazeMaterial('meadow', ramp, haze, 24, meadow.radius, 0.85);
+  const lawn = new THREE.Mesh(meadowRing(0.01, split + 0.2, 16, 64), paint);
   lawn.name = 'meadow';
   lawn.position.y = meadow.y;
   lawn.receiveShadow = true;
-  root.add(lawn);
+  const farLawn = new THREE.Mesh(
+    meadowRing(split - 0.2, meadow.radius, 24, 64),
+    paint,
+  );
+  farLawn.name = 'meadow-far';
+  farLawn.position.y = meadow.y;
+  root.add(lawn, farLawn);
 
   // Low shrubs in gold, amber, olive and green — the turn from summer to autumn.
   const b = new ToonBuilder();
@@ -200,7 +215,10 @@ export function createLandscape(
   }
   const shrubs = b.build(shared, ramp);
   shrubs.name = 'shrubs';
-  shrubs.traverse((object) => (object.castShadow = false));
+  shrubs.traverse((object) => {
+    object.castShadow = false;
+    object.receiveShadow = false;
+  });
   root.add(shrubs);
 
   // Two layers of ridges around the horizon: green near, blue-grey far.

@@ -132,8 +132,9 @@ export async function loadSparkleModel(
     source.dispose();
     part.material = material;
     part.frustumCulled = false;
-    // Casts into the same sun shadow map as the shrine.
-    part.castShadow = true;
+    // A contact blob under her feet; putting the skinned body in the sun
+    // shadow map would force a full depth pass every frame she moves.
+    part.castShadow = false;
     part.receiveShadow = true;
     if (unlined.has(material.name)) continue;
     const outline = new THREE.SkinnedMesh(part.geometry, ink);

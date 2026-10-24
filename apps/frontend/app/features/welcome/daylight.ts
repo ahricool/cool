@@ -55,10 +55,13 @@ export function daylightAt(hour: number, wet = 0) {
 }
 export type Daylight = ReturnType<typeof daylightAt>;
 
+/** Rebuild the depth map after the sun has travelled this far, in scene units. */
+const shadowMove = 0.08 ** 2;
+
 export function createDaylight(
   scene: THREE.Scene,
   renderer: THREE.WebGLRenderer,
-  shadowMapSize = 2048,
+  shadowMapSize = 1024,
 ) {
   const sun = new THREE.DirectionalLight();
   sun.castShadow = true;
@@ -84,6 +87,9 @@ export function createDaylight(
   });
   scene.add(sun, sky, moon, ...lamps);
   let state = daylightAt(10.5);
+  const lastShadowSun = new THREE.Vector3();
+  let lastCast = true;
+  let shadowReady = false;
   return {
     get state() {
       return state;
@@ -93,18 +99,33 @@ export function createDaylight(
       sun.position.copy(state.sunPosition);
       sun.color.copy(state.sunColor);
       sun.intensity = state.sunIntensity;
-      sun.castShadow = state.day > 0.04;
+      sun.visible = state.sunIntensity > 0.02;
+      sun.castShadow = sun.visible && state.day > 0.04;
       sky.color.copy(state.skyColor);
       sky.groundColor.copy(state.groundColor);
       sky.intensity = state.ambientIntensity;
       moon.intensity = state.moonIntensity;
+      moon.visible = state.moonIntensity > 0.02;
+      const lamplit = state.lampIntensity > 0.02;
       lamps.forEach((light) => {
         light.intensity = state.lampIntensity;
+        // Hidden lights drop out of the toon shader. Daytime otherwise pays for
+        // four point lights on every fragment of the meadow.
+        light.visible = lamplit;
       });
-      renderer.shadowMap.needsUpdate = true;
+      const sunMoved =
+        !shadowReady ||
+        lastShadowSun.distanceToSquared(sun.position) > shadowMove;
+      if (sunMoved || sun.castShadow !== lastCast) {
+        renderer.shadowMap.needsUpdate = true;
+        lastShadowSun.copy(sun.position);
+        lastCast = sun.castShadow;
+        shadowReady = true;
+      }
     },
     /** Candle-like flicker for the lantern lights. */
     flicker(time: number) {
+      if (!lamps[0]?.visible) return;
       lamps.forEach((light, i) => {
         light.intensity =
           state.lampIntensity *

@@ -1,7 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { daylightAt } from '../../apps/frontend/app/features/welcome/daylight';
+import {
+  createDaylight,
+  daylightAt,
+} from '../../apps/frontend/app/features/welcome/daylight';
 import {
   groundAt,
   isLawn,
@@ -10,9 +13,11 @@ import {
   roamSpots,
   terrace,
 } from '../../apps/frontend/app/features/welcome/layout';
+import { createSparkle } from '../../apps/frontend/app/features/welcome/sparkle';
 import {
   createWelcomeCamera,
   createWelcomeGarden,
+  welcomePixelRatio,
 } from '../../apps/frontend/app/features/welcome/world';
 
 function release(world: THREE.Group) {
@@ -196,5 +201,53 @@ test('solar cycle is continuous across midnight and lights the night without day
       following = daylightAt(hour + 0.1);
     assert.ok(Math.abs(state.sunIntensity - following.sunIntensity) < 0.2);
     assert.ok(state.sunPosition.toArray().every(Number.isFinite));
+  }
+});
+
+test('welcome pixel ratio stays modest so a fullscreen canvas does not shade 4K', () => {
+  assert.equal(welcomePixelRatio(2, false), 1.25);
+  assert.equal(welcomePixelRatio(2, true), 1);
+  assert.equal(welcomePixelRatio(1, false), 1);
+});
+
+test('daylight hides lanterns by day and dirties the shadow map only when the sun moves', () => {
+  const scene = new THREE.Scene();
+  const renderer = { shadowMap: { needsUpdate: false } };
+  const light = createDaylight(
+    scene,
+    renderer as unknown as THREE.WebGLRenderer,
+  );
+  const lamps = scene.children.filter(
+    (object): object is THREE.PointLight => object instanceof THREE.PointLight,
+  );
+  assert.equal(lamps.length, 4);
+  light.setHour(10.5);
+  assert.ok(lamps.every((lamp) => lamp.visible === false));
+  renderer.shadowMap.needsUpdate = false;
+  light.setHour(10.51);
+  assert.equal(renderer.shadowMap.needsUpdate, false);
+  light.setHour(16);
+  assert.equal(renderer.shadowMap.needsUpdate, true);
+  light.setHour(0);
+  assert.ok(lamps.every((lamp) => lamp.visible));
+  assert.equal(light.state.sunIntensity, 0);
+});
+
+test('Sparkle keeps a contact blob instead of a shadow-map caster', () => {
+  const sparkle = createSparkle(true);
+  try {
+    const blob = sparkle.root.getObjectByName('sparkle-contact');
+    assert.ok(blob instanceof THREE.Mesh);
+    assert.equal(blob.castShadow, false);
+    assert.equal(blob.visible, false);
+  } finally {
+    sparkle.root.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      object.geometry.dispose();
+      const material = object.material as THREE.Material;
+      for (const value of Object.values(material))
+        if (value instanceof THREE.Texture) value.dispose();
+      material.dispose();
+    });
   }
 });
