@@ -199,7 +199,7 @@ export function createMenuBar(
   const moonIcon = moonBuilder.build(shared, ramp, { castShadow: false });
   let daylightIcon: Box | undefined;
 
-  const falling = 14;
+  const falling = 6;
   const petals = new THREE.InstancedMesh(
     petalGeometry(3.6),
     new THREE.MeshToonMaterial({
@@ -466,15 +466,15 @@ export function createMenuBar(
       sunIcon.rotation.z = time * 0.25;
       for (let i = 0; i < falling; i++) {
         const seed = i * 12.9898;
-        const period = 5 + (i % 5) * 0.9;
+        const period = 6 + (i % 3) * 1.1;
         const progress = (((time / period + ((i * 0.618) % 1)) % 1) + 1) % 1;
         const fade = Math.min(1, progress * 8, (1 - progress) * 3);
         dummy.position.set(
           ledge.x +
             ((i * 0.381) % 1) * ledge.w -
-            progress * 0.9 +
+            progress * 0.5 +
             Math.sin(time * 1.1 + seed) * 0.15,
-          ledge.y - 0.05 - progress * 3,
+          ledge.y - 0.05 - progress * 1.4,
           0.5,
         );
         dummy.rotation.set(
