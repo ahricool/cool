@@ -78,9 +78,9 @@ export function createRain(mobile: boolean) {
   const root = new THREE.Group();
   root.name = 'weather';
   const { streaks, uniforms } = buildStreaks(mobile ? 350 : 700);
-  const count = 8;
+  const count = 20;
   const ripples = new THREE.InstancedMesh(
-    new THREE.RingGeometry(0.82, 1, 28).rotateX(-Math.PI / 2),
+    new THREE.RingGeometry(0.92, 1, 28).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({
       color: 0xffffff,
       transparent: true,
@@ -132,10 +132,10 @@ export function createRain(mobile: boolean) {
         const t = (clock - cycle) / 0.4;
         const live = t < 1 && wet > 0.4;
         dummy.position.set(spot.x, spot.y, spot.z);
-        dummy.scale.setScalar(live ? 0.04 + t * 0.2 : 0);
+        dummy.scale.setScalar(live ? 0.03 + t * 0.13 : 0);
         dummy.updateMatrix();
         ripples.setMatrixAt(i, dummy.matrix);
-        ripples.setColorAt(i, fade.setScalar(live ? (1 - t) * 0.45 * wet : 0));
+        ripples.setColorAt(i, fade.setScalar(live ? (1 - t) * 0.25 * wet : 0));
       }
       ripples.instanceMatrix.needsUpdate = true;
       if (ripples.instanceColor) ripples.instanceColor.needsUpdate = true;
