@@ -219,13 +219,20 @@ export function mountWelcomeWorld(
     if (!disposed && !lost && !frame && !document.hidden)
       frame = requestAnimationFrame(draw);
   }
+  let viewportWidth = 0,
+    viewportHeight = 0;
   function resize() {
     if (disposed) return;
     const w = host.clientWidth,
       h = host.clientHeight;
     if (!w || !h) return;
-    renderer.setSize(w, h);
-    fitWelcomeCamera(camera, w / h);
+    // Menu animation changes its width, but not the canvas or world camera.
+    if (w !== viewportWidth || h !== viewportHeight) {
+      viewportWidth = w;
+      viewportHeight = h;
+      renderer.setSize(w, h);
+      fitWelcomeCamera(camera, w / h);
+    }
     menu?.layout();
     requestRender();
   }

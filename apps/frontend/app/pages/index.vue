@@ -119,89 +119,93 @@ onBeforeUnmount(() => {
       :data-board="state === 'ready' || undefined"
       :aria-label="english ? 'Scene controls' : '场景控制'"
     >
-      <div v-show="menuOpen" id="scene-menu" class="scene-menu">
-        <div class="daylight-controls">
-          <svg data-icon="clock" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="8" />
-            <path d="M12 7v5l3 2" />
-          </svg>
-          <input
-            v-model.number="hour"
-            type="range"
-            min="0"
-            max="24"
-            step="0.1"
+      <div
+        class="scene-menu-reveal"
+        :class="{ 'is-open': menuOpen }"
+        :inert="!menuOpen"
+        :aria-hidden="!menuOpen"
+      >
+        <div id="scene-menu" class="scene-menu">
+          <div class="daylight-controls">
+            <svg data-icon="clock" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="8" />
+              <path d="M12 7v5l3 2" />
+            </svg>
+            <input
+              v-model.number="hour"
+              type="range"
+              min="0"
+              max="24"
+              step="0.1"
+              :disabled="state !== 'ready'"
+              :aria-label="english ? 'Time of day' : '一天中的时间'"
+              :aria-valuetext="timeValue"
+              @pointerdown="dragging = true"
+              @pointerup="dragging = false"
+              @pointercancel="dragging = false"
+            />
+            <svg
+              v-if="hour >= 6 && hour < 18"
+              data-icon="daylight"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path
+                d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"
+              />
+            </svg>
+            <svg
+              v-else
+              data-icon="daylight"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="M19 15.5A8 8 0 0 1 8.5 5 8 8 0 1 0 19 15.5Z" />
+            </svg>
+          </div>
+          <button
+            type="button"
+            :aria-label="
+              weather === 'rain'
+                ? english
+                  ? 'Weather: light rain. Switch to clear skies'
+                  : '天气：小雨，切换为晴天'
+                : english
+                  ? 'Weather: clear. Switch to light rain'
+                  : '天气：晴，切换为小雨'
+            "
             :disabled="state !== 'ready'"
-            :aria-label="english ? 'Time of day' : '一天中的时间'"
-            :aria-valuetext="timeValue"
-            @pointerdown="dragging = true"
-            @pointerup="dragging = false"
-            @pointercancel="dragging = false"
-          />
-          <svg
-            v-if="hour >= 6 && hour < 18"
-            data-icon="daylight"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
+            @click="toggleWeather"
           >
-            <circle cx="12" cy="12" r="4" />
-            <path
-              d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"
-            />
-          </svg>
-          <svg
-            v-else
-            data-icon="daylight"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
+            <svg data-icon="weather" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M7 17h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 17Z"
+              />
+              <path v-if="weather === 'rain'" d="M9 20l-1 2m5-2-1 2m5-2-1 2" />
+            </svg>
+          </button>
+          <NuxtLink
+            class="welcome-enter"
+            to="/home"
+            :prefetch="false"
+            :aria-label="english ? 'Enter the site' : '进入网站'"
           >
-            <path d="M19 15.5A8 8 0 0 1 8.5 5 8 8 0 1 0 19 15.5Z" />
-          </svg>
+            <svg data-icon="enter" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 12h14m-5-5 5 5-5 5" />
+            </svg>
+          </NuxtLink>
         </div>
-        <button
-          type="button"
-          :aria-label="
-            weather === 'rain'
-              ? english
-                ? 'Weather: light rain. Switch to clear skies'
-                : '天气：小雨，切换为晴天'
-              : english
-                ? 'Weather: clear. Switch to light rain'
-                : '天气：晴，切换为小雨'
-          "
-          :disabled="state !== 'ready'"
-          @click="toggleWeather"
-        >
-          <svg data-icon="weather" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M7 17h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 17Z"
-            />
-            <path v-if="weather === 'rain'" d="M9 20l-1 2m5-2-1 2m5-2-1 2" />
-          </svg>
-        </button>
-        <NuxtLink
-          class="welcome-enter"
-          to="/home"
-          :prefetch="false"
-          :aria-label="english ? 'Enter the site' : '进入网站'"
-        >
-          <svg data-icon="enter" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M5 12h14m-5-5 5 5-5 5" />
-          </svg>
-        </NuxtLink>
       </div>
       <button
+        v-show="state !== 'unavailable'"
         type="button"
         :aria-label="english ? 'Toggle scene menu' : '展开或收起菜单'"
         :aria-expanded="menuOpen"
         aria-controls="scene-menu"
         @click="expanded = !expanded"
       >
-        <svg data-icon="toggle" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M12 11c-2-3-2-6 0-8 2 2 2 5 0 8Zm1 1c3-1.5 6-.6 7 2-2.8 1.3-5.5.6-7-2Zm-.4 1.2c1.8 2.8 1.6 5.8-.6 7.6-1.9-2.1-1.6-5 .6-7.6Zm-1.2 0c.4 3.3-1.2 5.9-4.1 6.5-.6-2.8.9-5.4 4.1-6.5ZM11 12c-1.5 3-4.4 3.9-7 2.5 1-2.6 4-3.6 7-2.5Z"
-          />
-        </svg>
+        <span data-icon="toggle" aria-hidden="true" />
       </button>
     </nav>
   </main>
@@ -211,7 +215,7 @@ onBeforeUnmount(() => {
 html[data-surface='welcome'],
 html[data-surface='welcome'] body {
   margin: 0;
-  background: #c9e4e8;
+  background: #fff1f6;
 }
 </style>
 <style scoped>
@@ -221,7 +225,7 @@ html[data-surface='welcome'] body {
   overflow: hidden;
   isolation: isolate;
   color: #334b4a;
-  background: #c9e4e8;
+  background: #fff1f6;
 }
 .welcome-canvas {
   position: absolute;
@@ -249,6 +253,15 @@ html[data-surface='welcome'] body {
   background: #f7f5e6d9;
   box-shadow: 0 4px 24px #243b3b14;
   backdrop-filter: blur(16px);
+}
+.welcome-world[data-state='loading'] .world-controls {
+  visibility: hidden;
+}
+/* Keep a measurable anchor for the Three.js blossom without a fallback icon. */
+.world-controls [data-icon='toggle'] {
+  display: block;
+  width: 20px;
+  height: 20px;
 }
 .world-controls button,
 .welcome-enter {
@@ -284,10 +297,23 @@ html[data-surface='welcome'] body {
   outline: 2px solid #9d3d24;
   outline-offset: 3px;
 }
+.scene-menu-reveal {
+  display: grid;
+  grid-template-columns: 0fr;
+  transition: grid-template-columns 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.scene-menu-reveal.is-open {
+  grid-template-columns: 1fr;
+}
 .scene-menu {
+  min-width: 0;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 4px;
+}
+.scene-menu > * {
+  flex-shrink: 0;
 }
 .world-controls[data-board] .scene-menu {
   gap: 2px;
@@ -412,6 +438,9 @@ html[data-surface='welcome'] body {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .scene-menu-reveal {
+    transition: none;
+  }
   .loading-orbit {
     animation: none;
   }
