@@ -325,6 +325,12 @@ export function createMenuBar(
     if (!element) return;
     const r = element.getBoundingClientRect();
     if (!r.width || !r.height) return;
+    // The DOM panel clips while expanding; mirror that for its 3D controls.
+    const panel = element.closest('.scene-menu');
+    if (panel) {
+      const clip = panel.getBoundingClientRect();
+      if (r.left < clip.left - 0.5 || r.right > clip.right + 0.5) return;
+    }
     // Into menu units, with y growing upwards from the top of the canvas.
     return {
       x: (r.left - origin.left) / UNIT,
