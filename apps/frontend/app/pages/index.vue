@@ -191,17 +191,14 @@ onBeforeUnmount(() => {
         </NuxtLink>
       </div>
       <button
+        v-show="state !== 'unavailable'"
         type="button"
         :aria-label="english ? 'Toggle scene menu' : '展开或收起菜单'"
         :aria-expanded="menuOpen"
         aria-controls="scene-menu"
         @click="expanded = !expanded"
       >
-        <svg data-icon="toggle" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M12 11c-2-3-2-6 0-8 2 2 2 5 0 8Zm1 1c3-1.5 6-.6 7 2-2.8 1.3-5.5.6-7-2Zm-.4 1.2c1.8 2.8 1.6 5.8-.6 7.6-1.9-2.1-1.6-5 .6-7.6Zm-1.2 0c.4 3.3-1.2 5.9-4.1 6.5-.6-2.8.9-5.4 4.1-6.5ZM11 12c-1.5 3-4.4 3.9-7 2.5 1-2.6 4-3.6 7-2.5Z"
-          />
-        </svg>
+        <span data-icon="toggle" aria-hidden="true" />
       </button>
     </nav>
   </main>
@@ -211,7 +208,7 @@ onBeforeUnmount(() => {
 html[data-surface='welcome'],
 html[data-surface='welcome'] body {
   margin: 0;
-  background: #c9e4e8;
+  background: #fff1f6;
 }
 </style>
 <style scoped>
@@ -221,7 +218,7 @@ html[data-surface='welcome'] body {
   overflow: hidden;
   isolation: isolate;
   color: #334b4a;
-  background: #c9e4e8;
+  background: #fff1f6;
 }
 .welcome-canvas {
   position: absolute;
@@ -249,6 +246,15 @@ html[data-surface='welcome'] body {
   background: #f7f5e6d9;
   box-shadow: 0 4px 24px #243b3b14;
   backdrop-filter: blur(16px);
+}
+.welcome-world[data-state='loading'] .world-controls {
+  visibility: hidden;
+}
+/* Keep a measurable anchor for the Three.js blossom without a fallback icon. */
+.world-controls [data-icon='toggle'] {
+  display: block;
+  width: 20px;
+  height: 20px;
 }
 .world-controls button,
 .welcome-enter {
