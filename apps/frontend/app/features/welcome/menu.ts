@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { ToonBuilder, createSharedUniforms, palette, seeded } from './toon';
-import type { Tone } from './toon';
+import type { SharedUniforms, Tone } from './toon';
 
 /** Screen pixels per menu unit, sized so the builder's ink hulls read as ~1.7px lines. */
 const UNIT = 36;
 /** Range thumb width in CSS pixels; index.vue gives the native thumb the same size. */
-export const MENU_THUMB = 22;
+export const MENU_THUMB = 18;
 const FACE: [number, number, number] = [Math.PI / 2, 0, 0];
 
 interface Box {
@@ -101,6 +101,36 @@ function sprig(
     );
 }
 
+/** Crescent between two circles meeting at the top and bottom, horns to the right. */
+function crescent(r: number) {
+  const inner = r * 0.8;
+  const radius = Math.hypot(inner, r);
+  const tip = Math.atan2(r, -inner);
+  const shape = new THREE.Shape();
+  shape.absarc(0, 0, r, Math.PI / 2, Math.PI * 1.5, false);
+  shape.absarc(inner, 0, radius, Math.PI * 2 - tip, tip, true);
+  return new THREE.ExtrudeGeometry(shape, {
+    depth: 0.06,
+    bevelEnabled: false,
+    curveSegments: 10,
+  });
+}
+
+/** One clock hand pointing up from the pivot. */
+function hand(
+  length: number,
+  width: number,
+  tone: Tone,
+  shared: SharedUniforms,
+  ramp: THREE.Texture,
+) {
+  const b = new ToonBuilder();
+  b.box(width, length, 0.03, tone, 0, length / 2 - width / 2, 0, {
+    outline: false,
+  });
+  return b.build(shared, ramp, { castShadow: false });
+}
+
 /** Flat petal outline shared by the resting and falling petals. */
 function petalGeometry(size: number) {
   const shape = new THREE.Shape();
@@ -133,10 +163,41 @@ export function createMenuBar(
 
   let board: THREE.Group | undefined;
   const thumbBuilder = new ToonBuilder();
-  flower(thumbBuilder, 0, 0, 0.6, 0.36, 0.3);
-  thumbBuilder.ball(0.07, 'gold', 0, 0, 0.72, [1, 1, 0.5], { outline: false });
+  flower(thumbBuilder, 0, 0, 0.6, 0.28, 0.3);
+  thumbBuilder.ball(0.055, 'gold', 0, 0, 0.72, [1, 1, 0.5], { outline: false });
   const thumb = thumbBuilder.build(shared, ramp, { castShadow: false });
   thumb.visible = false;
+
+  // Icons that move with the hour: clock hands, a turning sun and the moon.
+  const clock = new THREE.Group();
+  const hourHand = hand(0.11, 0.05, 'woodDark', shared, ramp);
+  const minuteHand = hand(0.16, 0.035, 'redDark', shared, ramp);
+  clock.add(hourHand, minuteHand);
+  const sunBuilder = new ToonBuilder();
+  sunBuilder.ball(0.1, 'gold', 0, 0, 0, [1, 1, 0.5]);
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    sunBuilder.box(
+      0.04,
+      0.07,
+      0.03,
+      'gold',
+      Math.cos(a) * 0.18,
+      Math.sin(a) * 0.18,
+      0,
+      {
+        rotation: [0, 0, a - Math.PI / 2],
+        outline: false,
+      },
+    );
+  }
+  const sunIcon = sunBuilder.build(shared, ramp, { castShadow: false });
+  const moonBuilder = new ToonBuilder();
+  moonBuilder.part(crescent(0.2), 'straw', 0, 0, -0.03, {
+    rotation: [0, 0, -0.5],
+  });
+  const moonIcon = moonBuilder.build(shared, ramp, { castShadow: false });
+  let daylightIcon: Box | undefined;
 
   const falling = 14;
   const petals = new THREE.InstancedMesh(
@@ -153,7 +214,7 @@ export function createMenuBar(
   );
   petals.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   petals.frustumCulled = false;
-  scene.add(thumb, petals);
+  scene.add(thumb, petals, clock, sunIcon, moonIcon);
 
   let ledge: Box = { x: 0, y: 0, w: 0, h: 0 };
   let groove: Box | undefined;
@@ -171,6 +232,15 @@ export function createMenuBar(
       w: r.width / UNIT,
       h: r.height / UNIT,
     };
+  }
+
+  function placeIcons() {
+    clock.rotation.set(0, 0, 0);
+    hourHand.rotation.z = -((hour % 12) / 12) * Math.PI * 2;
+    minuteHand.rotation.z = -(hour % 1) * Math.PI * 2;
+    const day = hour >= 6 && hour < 18;
+    sunIcon.visible = !!daylightIcon && day;
+    moonIcon.visible = !!daylightIcon && !day;
   }
 
   function placeThumb() {
@@ -202,6 +272,9 @@ export function createMenuBar(
       board = undefined;
     }
     groove = undefined;
+    daylightIcon = undefined;
+    clock.visible = false;
+    placeIcons();
     if (!nav) return;
 
     const b = new ToonBuilder();
@@ -223,16 +296,16 @@ export function createMenuBar(
     b.slab(nav.w + 0.3, 0.16, 0.42, bottom + 0.02, 'woodDark', cx, 0.14, 0.06, {
       rotation: FACE,
     });
-    // Faint grain.
+    // Faint grain along the upper and lower edges, clear of the icons.
     for (let i = 0; i < 5; i++) {
       const length = 0.4 + random() * 0.7;
       b.box(
         length,
         0.025,
         0.02,
-        'woodDark',
+        'bark',
         left + 0.3 + random() * Math.max(0, nav.w - 0.6 - length) + length / 2,
-        cy + (random() - 0.5) * nav.h * 0.55,
+        cy + (i % 2 ? 1 : -1) * nav.h * (0.3 + random() * 0.08),
         0.01,
         { outline: false },
       );
@@ -291,6 +364,72 @@ export function createMenuBar(
           outline: false,
         },
       );
+    // Icons, modelled where the hidden SVGs sit.
+    const icon = (name: string) => {
+      const box = measure(menu.querySelector(`[data-icon="${name}"]`), origin);
+      return box && { x: box.x + box.w / 2, y: box.y - box.h / 2 };
+    };
+    const face = icon('clock');
+    if (face) {
+      b.cylinder(0.21, 0.21, 0.08, 'paper', face.x, face.y, 0.06, 20, {
+        rotation: FACE,
+      });
+      clock.position.set(face.x, face.y, 0.16);
+      clock.visible = true;
+    }
+    const sky = measure(menu.querySelector('[data-icon="daylight"]'), origin);
+    if (sky) {
+      daylightIcon = sky;
+      sunIcon.position.set(sky.x + sky.w / 2, sky.y - sky.h / 2, 0.15);
+      moonIcon.position.copy(sunIcon.position);
+    }
+    const toggle = icon('toggle');
+    if (toggle)
+      for (const side of [1, -1]) {
+        b.box(
+          0.36,
+          0.05,
+          0.03,
+          'woodDark',
+          toggle.x,
+          toggle.y + side * 0.1,
+          0.16,
+          {
+            outline: false,
+          },
+        );
+        b.cylinder(
+          0.075,
+          0.075,
+          0.06,
+          'paper',
+          toggle.x - side * 0.08,
+          toggle.y + side * 0.1,
+          0.19,
+          14,
+          {
+            rotation: FACE,
+          },
+        );
+      }
+    const enter = icon('enter');
+    if (enter) {
+      const tip: THREE.Vector3Tuple = [enter.x + 0.17, enter.y, 0.17];
+      b.beam([enter.x - 0.18, enter.y, 0.17], tip, 0.04, 'redDark', 0.04, {
+        outline: false,
+      });
+      for (const side of [1, -1])
+        b.beam(
+          tip,
+          [enter.x + 0.03, enter.y + side * 0.15, 0.17],
+          0.04,
+          'redDark',
+          0.04,
+          {
+            outline: false,
+          },
+        );
+    }
     // Blossom sprigs over the top-left corner and hanging off the bottom right.
     sprig(b, random, left + 0.1, top - 0.2, Math.PI * 0.9, 0.95);
     sprig(b, random, left + 0.3, top - 0.05, Math.PI * 0.62, 0.55);
@@ -319,10 +458,12 @@ export function createMenuBar(
     setHour(next: number) {
       hour = next;
       placeThumb();
+      placeIcons();
     },
     /** Petals drift down from the ledge and fade out below the board. */
     update(time: number) {
       shared.time.value = time;
+      sunIcon.rotation.z = time * 0.25;
       for (let i = 0; i < falling; i++) {
         const seed = i * 12.9898;
         const period = 5 + (i % 5) * 0.9;

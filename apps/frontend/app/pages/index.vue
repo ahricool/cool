@@ -99,7 +99,7 @@ onBeforeUnmount(() => {
       :aria-label="english ? 'Scene controls' : '场景控制'"
     >
       <div v-show="expanded" id="daylight-controls" class="daylight-controls">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
+        <svg data-icon="clock" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="8" />
           <path d="M12 7v5l3 2" />
         </svg>
@@ -118,6 +118,7 @@ onBeforeUnmount(() => {
         />
         <svg
           v-if="hour >= 6 && hour < 18"
+          data-icon="daylight"
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
@@ -126,7 +127,7 @@ onBeforeUnmount(() => {
             d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"
           />
         </svg>
-        <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+        <svg v-else data-icon="daylight" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M19 15.5A8 8 0 0 1 8.5 5 8 8 0 1 0 19 15.5Z" />
         </svg>
       </div>
@@ -139,7 +140,7 @@ onBeforeUnmount(() => {
         aria-controls="daylight-controls"
         @click="expanded = !expanded"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
+        <svg data-icon="toggle" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 7h16M4 17h16" />
           <circle cx="9" cy="7" r="2" />
           <circle cx="15" cy="17" r="2" />
@@ -151,7 +152,7 @@ onBeforeUnmount(() => {
         :prefetch="false"
         :aria-label="english ? 'Enter the site' : '进入网站'"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
+        <svg data-icon="enter" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 12h14m-5-5 5 5-5 5" />
         </svg>
       </NuxtLink>
@@ -261,11 +262,23 @@ html[data-surface='welcome'] body {
 /* Drawn by three.js as a wooden board (features/welcome/menu.ts); the DOM
    controls stay on top, transparent, inked to read on the wood. */
 .world-controls[data-board] {
+  gap: 2px;
+  padding: 3px 4px;
   border-color: transparent;
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
   color: #4a2a1e;
+}
+.world-controls[data-board] button,
+.world-controls[data-board] .welcome-enter {
+  width: 32px;
+  height: 32px;
+}
+/* Icons are modelled on the board; the SVGs stay as the fallback and as
+   measured anchors for where the board draws them. */
+.world-controls[data-board] svg {
+  visibility: hidden;
 }
 .world-controls[data-board] button:hover,
 .world-controls[data-board] .welcome-enter:hover {
@@ -275,22 +288,25 @@ html[data-surface='welcome'] body {
   fill: #d3965c;
 }
 .world-controls[data-board] .daylight-controls {
+  gap: 6px;
+  padding: 0 8px 0 6px;
   border-right-color: transparent;
   color: #fff4dc;
 }
 .world-controls[data-board] .daylight-controls input {
+  height: 30px;
   appearance: none;
   background: transparent;
 }
 .world-controls[data-board] .daylight-controls input::-webkit-slider-thumb {
   appearance: none;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   opacity: 0;
 }
 .world-controls[data-board] .daylight-controls input::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border: 0;
   opacity: 0;
 }
