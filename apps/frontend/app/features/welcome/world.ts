@@ -5,6 +5,8 @@ import { createWelcomeGarden } from './garden';
 import { createGardenLife } from './life';
 import { createLandscape } from './landscape';
 import { createMenuBar } from './menu';
+import { createRain } from './rain';
+import type { SparkleModel } from './sparkle-model';
 import { createSparkle } from './sparkle';
 import { createSky } from './sky';
 import { createRamp, createSharedUniforms } from './toon';
@@ -41,9 +43,12 @@ export function createWelcomeCamera(aspect = 1) {
   return camera;
 }
 
+export type Weather = 'clear' | 'rain';
+
 export interface WelcomeWorld {
   dispose(): void;
   setHour(hour: number): void;
+  setWeather(weather: Weather): void;
 }
 
 export function mountWelcomeWorld(
@@ -86,6 +91,12 @@ export function mountWelcomeWorld(
   function dispose() {
     if (disposed) return;
     disposed = true;
+    // The model owns its skeletons and textures; release it on its own path.
+    if (model) {
+      model.root.removeFromParent();
+      model.dispose();
+      model = undefined;
+    }
     cancelAnimationFrame(frame);
     observer.disconnect();
     document.removeEventListener('visibilitychange', visibility);
@@ -130,10 +141,16 @@ export function mountWelcomeWorld(
     life: ReturnType<typeof createGardenLife>,
     landscape: ReturnType<typeof createLandscape>,
     sparkle: ReturnType<typeof createSparkle>,
+    rain: ReturnType<typeof createRain>,
+    model: SparkleModel | undefined,
     menu: ReturnType<typeof createMenuBar> | undefined;
   const glowing: THREE.MeshToonMaterial[] = [];
   let time = 0,
-    walker = false;
+    walker = false,
+    hourNow = 10.5,
+    // Eased towards the target over a few seconds so rain rolls in and out.
+    wet = 0,
+    wetTarget = 0;
   function animate(dt: number) {
     const state = daylight.state;
     shared.time.value = time;
@@ -152,6 +169,14 @@ export function mountWelcomeWorld(
         (material.name === 'lantern' ? 0.32 : 0.55) *
         flame;
     sparkle.update(dt, time, camera);
+    if (wet !== wetTarget) {
+      wet =
+        reducedMotion.matches || Math.abs(wetTarget - wet) < 0.005
+          ? wetTarget
+          : wet + (wetTarget - wet) * Math.min(1, dt * 0.6);
+      applyLight();
+    }
+    rain.update(time);
     menu?.update(time);
   }
   /** The world, then the menu board on top with a fresh depth buffer. */
@@ -223,19 +248,34 @@ export function mountWelcomeWorld(
     unavailable();
   }
   function setHour(hour: number) {
-    daylight.setHour(normalizeHour(hour));
+    hourNow = normalizeHour(hour);
+    applyLight();
+    // Light treats 24:00 as midnight, but the thumb stays at the slider's end.
+    menu?.setHour(THREE.MathUtils.clamp(hour, 0, 24));
+  }
+  function applyLight() {
+    const hour = hourNow;
+    daylight.setHour(hour, wet);
+    rain.setWet(wet);
     sky.setDaylight(daylight.state);
     landscape.setDaylight(daylight.state);
     life.setMotes(daylight.state.motes, renderer.getPixelRatio());
-    menu?.setHour(normalizeHour(hour));
   }
   try {
     sky = createSky(shared, ramp, mobile);
     life = createGardenLife(shared, ramp, mobile);
     landscape = createLandscape(shared, ramp, mobile);
     sparkle = createSparkle(mobile);
+    rain = createRain(mobile);
     const garden = createWelcomeGarden(shared, ramp);
-    scene.add(sky.root, landscape.root, garden, life.root, sparkle.root);
+    scene.add(
+      sky.root,
+      landscape.root,
+      garden,
+      life.root,
+      sparkle.root,
+      rain.root,
+    );
     if (menuElement) menu = createMenuBar(host, menuElement, ramp);
     scene.traverse((object) => {
       if (
@@ -262,9 +302,14 @@ export function mountWelcomeWorld(
     // Swap in the official model when it exists locally; keep the standee otherwise.
     import('./sparkle-model')
       .then(({ loadSparkleModel }) => loadSparkleModel(shared, ramp))
-      .then((model) => {
-        if (disposed) return;
-        sparkle.attachModel(model);
+      .then((loaded) => {
+        // Leaving while the GLB was still loading: nothing else will free it.
+        if (disposed) {
+          loaded.dispose();
+          return;
+        }
+        model = loaded;
+        sparkle.attachModel(loaded);
         walker = true;
         requestRender();
       })
@@ -275,6 +320,12 @@ export function mountWelcomeWorld(
       setHour(hour: number) {
         if (disposed || lost) return;
         setHour(hour);
+        requestRender();
+      },
+      setWeather(weather: Weather) {
+        if (disposed || lost) return;
+        wetTarget = weather === 'rain' ? 1 : 0;
+        menu?.setWeather(weather);
         requestRender();
       },
     };

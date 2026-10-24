@@ -198,6 +198,29 @@ export function createMenuBar(
   });
   const moonIcon = moonBuilder.build(shared, ramp, { castShadow: false });
   let daylightIcon: Box | undefined;
+  // Weather: a cloud with the sun peeking out, or the same cloud with drops.
+  const cloud = (b: ToonBuilder) => {
+    b.ball(0.11, 'cloud', -0.08, -0.02, 0.04, [1, 0.85, 0.5]);
+    b.ball(0.13, 'cloud', 0.05, 0.03, 0.06, [1, 0.9, 0.5]);
+    b.ball(0.09, 'cloud', 0.15, -0.04, 0.05, [1, 0.85, 0.5]);
+  };
+  const clearBuilder = new ToonBuilder();
+  clearBuilder.ball(0.1, 'gold', -0.07, 0.08, -0.04, [1, 1, 0.5]);
+  cloud(clearBuilder);
+  const clearIcon = clearBuilder.build(shared, ramp, { castShadow: false });
+  const rainBuilder = new ToonBuilder();
+  cloud(rainBuilder);
+  for (const [x, y] of [
+    [-0.09, -0.17],
+    [0.03, -0.2],
+    [0.14, -0.16],
+  ] as const)
+    rainBuilder.ball(0.035, 'water', x, y, 0.08, [0.8, 1.5, 0.6], {
+      outline: false,
+    });
+  const rainIcon = rainBuilder.build(shared, ramp, { castShadow: false });
+  let weatherIcon = false,
+    raining = false;
 
   const falling = 6;
   const petals = new THREE.InstancedMesh(
@@ -214,7 +237,7 @@ export function createMenuBar(
   );
   petals.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   petals.frustumCulled = false;
-  scene.add(thumb, petals, clock, sunIcon, moonIcon);
+  scene.add(thumb, petals, clock, sunIcon, moonIcon, clearIcon, rainIcon);
 
   let ledge: Box = { x: 0, y: 0, w: 0, h: 0 };
   let groove: Box | undefined;
@@ -241,6 +264,8 @@ export function createMenuBar(
     const day = hour >= 6 && hour < 18;
     sunIcon.visible = !!daylightIcon && day;
     moonIcon.visible = !!daylightIcon && !day;
+    clearIcon.visible = weatherIcon && !raining;
+    rainIcon.visible = weatherIcon && raining;
   }
 
   function placeThumb() {
@@ -273,6 +298,7 @@ export function createMenuBar(
     }
     groove = undefined;
     daylightIcon = undefined;
+    weatherIcon = false;
     clock.visible = false;
     placeIcons();
     if (!nav) return;
@@ -383,6 +409,12 @@ export function createMenuBar(
       sunIcon.position.set(sky.x + sky.w / 2, sky.y - sky.h / 2, 0.15);
       moonIcon.position.copy(sunIcon.position);
     }
+    const weather = icon('weather');
+    if (weather) {
+      weatherIcon = true;
+      clearIcon.position.set(weather.x - 0.03, weather.y + 0.02, 0.18);
+      rainIcon.position.set(weather.x - 0.03, weather.y + 0.06, 0.18);
+    }
     const toggle = icon('toggle');
     if (toggle)
       for (const side of [1, -1]) {
@@ -455,6 +487,10 @@ export function createMenuBar(
     scene,
     camera,
     layout,
+    setWeather(weather: 'clear' | 'rain') {
+      raining = weather === 'rain';
+      placeIcons();
+    },
     setHour(next: number) {
       hour = next;
       placeThumb();

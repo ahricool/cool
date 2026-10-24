@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { WelcomeWorld } from '~/features/welcome/world';
+import type { WelcomeWorld, Weather } from '~/features/welcome/world';
 
 definePageMeta({ layout: false });
 const host = ref<HTMLElement>();
@@ -16,6 +16,16 @@ const timeValue = computed(() => {
 let world: WelcomeWorld | undefined;
 let cancelled = false;
 watch(hour, (value) => world?.setHour(value));
+// Each real minute rolls the weather: light rain one time in three. Choosing
+// it from the menu holds that weather for the next minute instead.
+const WEATHER_MS = 60 * 1000;
+const weather = ref<Weather>('clear');
+let weatherUntil = 0;
+watch(weather, (value) => world?.setWeather(value));
+function toggleWeather() {
+  weather.value = weather.value === 'rain' ? 'clear' : 'rain';
+  weatherUntil = performance.now() + WEATHER_MS;
+}
 // One in-scene day every ten real minutes; held still while the slider is dragged.
 const DAY_MS = 10 * 60 * 1000;
 const dragging = ref(false);
@@ -25,7 +35,12 @@ function tick() {
   const now = performance.now();
   const elapsed = Math.min(now - lastTick, 1000);
   lastTick = now;
-  if (dragging.value || document.hidden || state.value !== 'ready') return;
+  if (document.hidden || state.value !== 'ready') return;
+  if (now >= weatherUntil) {
+    weather.value = Math.random() < 1 / 3 ? 'rain' : 'clear';
+    weatherUntil = now + WEATHER_MS;
+  }
+  if (dragging.value) return;
   hour.value = (hour.value + (elapsed / DAY_MS) * 24) % 24;
 }
 useHead({ title: '梦桜' });
@@ -44,6 +59,8 @@ onMounted(async () => {
     state.value = 'ready';
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
       lastTick = performance.now();
+      // The visit opens on the current clear weather; the first roll is a minute in.
+      weatherUntil = lastTick + WEATHER_MS;
       clock = setInterval(tick, 250);
     }
   } catch {
@@ -131,6 +148,27 @@ onBeforeUnmount(() => {
           <path d="M19 15.5A8 8 0 0 1 8.5 5 8 8 0 1 0 19 15.5Z" />
         </svg>
       </div>
+      <button
+        type="button"
+        :aria-label="
+          weather === 'rain'
+            ? english
+              ? 'Weather: light rain. Switch to clear skies'
+              : '天气：小雨，切换为晴天'
+            : english
+              ? 'Weather: clear. Switch to light rain'
+              : '天气：晴，切换为小雨'
+        "
+        :disabled="state !== 'ready'"
+        @click="toggleWeather"
+      >
+        <svg data-icon="weather" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M7 17h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 17Z"
+          />
+          <path v-if="weather === 'rain'" d="M9 20l-1 2m5-2-1 2m5-2-1 2" />
+        </svg>
+      </button>
       <button
         type="button"
         :aria-label="

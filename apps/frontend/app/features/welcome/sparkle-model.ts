@@ -125,6 +125,10 @@ export async function loadSparkleModel(
       );
     };
     material.customProgramCacheKey = () => 'sparkle-model';
+    // Only the colour map carries over; anything else the GLB attached goes now.
+    for (const value of Object.values(source))
+      if (value instanceof THREE.Texture && value !== source.map)
+        value.dispose();
     source.dispose();
     part.material = material;
     part.frustumCulled = false;
@@ -251,6 +255,36 @@ export async function loadSparkleModel(
 
   return {
     root,
+    /** Releases everything the model owns; the shared ramp stays with the scene. */
+    dispose() {
+      const geometries = new Set<THREE.BufferGeometry>(),
+        materials = new Set<THREE.Material>(),
+        textures = new Set<THREE.Texture>(),
+        skeletons = new Set<THREE.Skeleton>();
+      root.traverse((object) => {
+        if (!(object instanceof THREE.Mesh)) return;
+        geometries.add(object.geometry);
+        materials.add(object.material as THREE.Material);
+        if (object instanceof THREE.SkinnedMesh) skeletons.add(object.skeleton);
+      });
+      materials.forEach((material) => {
+        for (const value of Object.values(material))
+          if (value instanceof THREE.Texture && value !== ramp)
+            textures.add(value);
+        material.dispose();
+      });
+      textures.forEach((texture) => {
+        if (
+          typeof ImageBitmap !== 'undefined' &&
+          texture.image instanceof ImageBitmap
+        )
+          texture.image.close();
+        texture.dispose();
+      });
+      geometries.forEach((geometry) => geometry.dispose());
+      // Frees each skeleton's bone texture.
+      skeletons.forEach((skeleton) => skeleton.dispose());
+    },
     pose(p: ModelPose) {
       const dt = Math.min(0.1, Math.max(0, p.time - lastTime));
       lastTime = p.time;
