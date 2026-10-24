@@ -40,6 +40,69 @@ function flower(
   b.ball(r * 0.24, 'gold', x, y, z + r * 0.12, [1, 1, 0.5], { outline: false });
 }
 
+/** Sakura petal pointing up +y from its base, with the notch at the tip. */
+function petalShape(length: number) {
+  const w = length * 0.42;
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 0);
+  shape.quadraticCurveTo(w * 1.25, length * 0.35, w * 0.82, length * 0.86);
+  shape.quadraticCurveTo(w * 0.45, length * 1.04, 0, length * 0.86);
+  shape.quadraticCurveTo(-w * 0.45, length * 1.04, -w * 0.82, length * 0.86);
+  shape.quadraticCurveTo(-w * 1.25, length * 0.35, 0, 0);
+  return shape;
+}
+
+/**
+ * A close-up blossom: notched petals cupped slightly towards the viewer, a
+ * deeper blush at their base, and a ring of stamens tipped with pollen.
+ */
+function blossom(b: ToonBuilder, r: number) {
+  const petal = petalShape(r);
+  const blush = petalShape(r * 0.42);
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    // Rotated so each petal points outwards along `a`, tilted up into a cup.
+    const rotation: [number, number, number] = [0.22, 0, a - Math.PI / 2];
+    b.part(
+      new THREE.ExtrudeGeometry(petal, {
+        depth: 0.03,
+        bevelEnabled: true,
+        bevelThickness: 0.012,
+        bevelSize: 0.012,
+        bevelSegments: 1,
+        curveSegments: 8,
+      }),
+      'blossomLight',
+      Math.cos(a) * r * 0.06,
+      Math.sin(a) * r * 0.06,
+      0,
+      { rotation },
+    );
+    b.part(
+      new THREE.ShapeGeometry(blush, 6),
+      'blossomDeep',
+      Math.cos(a) * r * 0.08,
+      Math.sin(a) * r * 0.08,
+      0.06,
+      { rotation, outline: false },
+    );
+  }
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 + 0.3;
+    const reach = r * (i % 2 ? 0.3 : 0.38);
+    const tip: THREE.Vector3Tuple = [
+      Math.cos(a) * reach,
+      Math.sin(a) * reach,
+      0.11,
+    ];
+    b.beam([0, 0, 0.07], tip, 0.008, 'blossomDeep', 0.006, {
+      outline: false,
+    });
+    b.ball(0.022, 'gold', ...tip, [1, 1, 0.7], { outline: false });
+  }
+  b.ball(r * 0.1, 'shrubAmber', 0, 0, 0.08, [1, 1, 0.5], { outline: false });
+}
+
 /** A short blossoming twig growing from (x, y) at `angle`. */
 function sprig(
   b: ToonBuilder,
@@ -221,7 +284,7 @@ export function createMenuBar(
   const rainIcon = rainBuilder.build(shared, ramp, { castShadow: false });
   // The menu button: a sakura blossom that keeps turning.
   const menuBuilder = new ToonBuilder();
-  flower(menuBuilder, 0, 0, 0, 0.27, 0, 'blossomLight');
+  blossom(menuBuilder, 0.48);
   const menuFlower = menuBuilder.build(shared, ramp, { castShadow: false });
   menuFlower.visible = false;
   let weatherIcon = false,
@@ -356,22 +419,6 @@ export function createMenuBar(
     for (const px of [left + inset, right - inset]) {
       b.beam([px, top - 0.12, 0.05], [px, 4, 0.05], 0.035, 'straw');
       b.ball(0.08, 'gold', px, top - 0.12, 0.08, [1, 1, 0.6]);
-    }
-    // Round wooden tokens behind each button.
-    for (const element of menu.querySelectorAll('button, a')) {
-      const token = measure(element, origin);
-      if (!token) continue;
-      b.cylinder(
-        token.w * 0.46,
-        token.w * 0.46,
-        0.12,
-        'woodLight',
-        token.x + token.w / 2,
-        token.y - token.h / 2,
-        0.06,
-        24,
-        { rotation: FACE },
-      );
     }
     // Carved groove for the time slider, and a divider after the daylight group.
     const daylight = measure(menu.querySelector('.daylight-controls'), origin);

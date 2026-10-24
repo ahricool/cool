@@ -335,9 +335,10 @@ html[data-surface='welcome'] body {
 .world-controls[data-board] svg {
   visibility: hidden;
 }
+/* No round backdrop on the board: the modelled icons stand on the wood. */
 .world-controls[data-board] button:hover,
 .world-controls[data-board] .welcome-enter:hover {
-  background: #fff4dc33;
+  background: transparent;
 }
 .world-controls[data-board] button circle {
   fill: #d3965c;
