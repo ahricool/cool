@@ -219,6 +219,11 @@ export function createMenuBar(
       outline: false,
     });
   const rainIcon = rainBuilder.build(shared, ramp, { castShadow: false });
+  // The menu button: a sakura blossom that keeps turning.
+  const menuBuilder = new ToonBuilder();
+  flower(menuBuilder, 0, 0, 0, 0.27, 0, 'blossomLight');
+  const menuFlower = menuBuilder.build(shared, ramp, { castShadow: false });
+  menuFlower.visible = false;
   let weatherIcon = false,
     raining = false;
 
@@ -237,7 +242,16 @@ export function createMenuBar(
   );
   petals.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   petals.frustumCulled = false;
-  scene.add(thumb, petals, clock, sunIcon, moonIcon, clearIcon, rainIcon);
+  scene.add(
+    thumb,
+    petals,
+    clock,
+    sunIcon,
+    moonIcon,
+    clearIcon,
+    rainIcon,
+    menuFlower,
+  );
 
   let ledge: Box = { x: 0, y: 0, w: 0, h: 0 };
   let groove: Box | undefined;
@@ -416,34 +430,8 @@ export function createMenuBar(
       rainIcon.position.set(weather.x - 0.03, weather.y + 0.06, 0.18);
     }
     const toggle = icon('toggle');
-    if (toggle)
-      for (const side of [1, -1]) {
-        b.box(
-          0.36,
-          0.05,
-          0.03,
-          'woodDark',
-          toggle.x,
-          toggle.y + side * 0.1,
-          0.16,
-          {
-            outline: false,
-          },
-        );
-        b.cylinder(
-          0.075,
-          0.075,
-          0.06,
-          'paper',
-          toggle.x - side * 0.08,
-          toggle.y + side * 0.1,
-          0.19,
-          14,
-          {
-            rotation: FACE,
-          },
-        );
-      }
+    menuFlower.visible = !!toggle;
+    if (toggle) menuFlower.position.set(toggle.x, toggle.y, 0.2);
     const enter = icon('enter');
     if (enter) {
       const tip: THREE.Vector3Tuple = [enter.x + 0.17, enter.y, 0.17];
@@ -500,6 +488,7 @@ export function createMenuBar(
     update(time: number) {
       shared.time.value = time;
       sunIcon.rotation.z = time * 0.25;
+      menuFlower.rotation.z = -time * 0.5;
       for (let i = 0; i < falling; i++) {
         const seed = i * 12.9898;
         const period = 6 + (i % 3) * 1.1;

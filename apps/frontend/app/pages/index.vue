@@ -198,9 +198,9 @@ onBeforeUnmount(() => {
         @click="expanded = !expanded"
       >
         <svg data-icon="toggle" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 7h16M4 17h16" />
-          <circle cx="9" cy="7" r="2" />
-          <circle cx="15" cy="17" r="2" />
+          <path
+            d="M12 11c-2-3-2-6 0-8 2 2 2 5 0 8Zm1 1c3-1.5 6-.6 7 2-2.8 1.3-5.5.6-7-2Zm-.4 1.2c1.8 2.8 1.6 5.8-.6 7.6-1.9-2.1-1.6-5 .6-7.6Zm-1.2 0c.4 3.3-1.2 5.9-4.1 6.5-.6-2.8.9-5.4 4.1-6.5ZM11 12c-1.5 3-4.4 3.9-7 2.5 1-2.6 4-3.6 7-2.5Z"
+          />
         </svg>
       </button>
     </nav>
