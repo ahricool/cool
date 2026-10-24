@@ -4,6 +4,9 @@ import { createDaylight, normalizeHour } from './daylight';
 import { createWelcomeGarden } from './garden';
 import { createGardenLife } from './life';
 import { createLandscape } from './landscape';
+import { createMenuBar } from './menu';
+import { createRain } from './rain';
+import type { SparkleModel } from './sparkle-model';
 import { createSparkle } from './sparkle';
 import { createSky } from './sky';
 import { createRamp, createSharedUniforms } from './toon';
@@ -40,14 +43,19 @@ export function createWelcomeCamera(aspect = 1) {
   return camera;
 }
 
+export type Weather = 'clear' | 'rain';
+
 export interface WelcomeWorld {
   dispose(): void;
   setHour(hour: number): void;
+  setWeather(weather: Weather): void;
 }
 
 export function mountWelcomeWorld(
   host: HTMLElement,
   unavailable: () => void,
+  /** Scene controls to dress as a wooden board drawn over the world. */
+  menuElement?: HTMLElement,
 ): WelcomeWorld {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const mobile = host.clientWidth < 700;
@@ -83,6 +91,12 @@ export function mountWelcomeWorld(
   function dispose() {
     if (disposed) return;
     disposed = true;
+    // The model owns its skeletons and textures; release it on its own path.
+    if (model) {
+      model.root.removeFromParent();
+      model.dispose();
+      model = undefined;
+    }
     cancelAnimationFrame(frame);
     observer.disconnect();
     document.removeEventListener('visibilitychange', visibility);
@@ -93,7 +107,7 @@ export function mountWelcomeWorld(
     const geometries = new Set<THREE.BufferGeometry>(),
       materials = new Set<THREE.Material>(),
       textures = new Set<THREE.Texture>();
-    scene.traverse((object) => {
+    const visit = (object: THREE.Object3D) => {
       if (object instanceof THREE.InstancedMesh) object.dispose();
       if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
         geometries.add(object.geometry);
@@ -102,7 +116,9 @@ export function mountWelcomeWorld(
           : [object.material])
           materials.add(material);
       }
-    });
+    };
+    scene.traverse(visit);
+    menu?.scene.traverse(visit);
     geometries.forEach((geometry) => geometry.dispose());
     materials.forEach((material) => {
       for (const value of Object.values(material))
@@ -124,10 +140,17 @@ export function mountWelcomeWorld(
   let sky: ReturnType<typeof createSky>,
     life: ReturnType<typeof createGardenLife>,
     landscape: ReturnType<typeof createLandscape>,
-    sparkle: ReturnType<typeof createSparkle>;
+    sparkle: ReturnType<typeof createSparkle>,
+    rain: ReturnType<typeof createRain>,
+    model: SparkleModel | undefined,
+    menu: ReturnType<typeof createMenuBar> | undefined;
   const glowing: THREE.MeshToonMaterial[] = [];
   let time = 0,
-    walker = false;
+    walker = false,
+    hourNow = 10.5,
+    // Eased towards the target over a few seconds so rain rolls in and out.
+    wet = 0,
+    wetTarget = 0;
   function animate(dt: number) {
     const state = daylight.state;
     shared.time.value = time;
@@ -146,6 +169,24 @@ export function mountWelcomeWorld(
         (material.name === 'lantern' ? 0.32 : 0.55) *
         flame;
     sparkle.update(dt, time, camera);
+    if (wet !== wetTarget) {
+      wet =
+        reducedMotion.matches || Math.abs(wetTarget - wet) < 0.005
+          ? wetTarget
+          : wet + (wetTarget - wet) * Math.min(1, dt * 0.6);
+      applyLight();
+    }
+    rain.update(time);
+    menu?.update(time);
+  }
+  /** The world, then the menu board on top with a fresh depth buffer. */
+  function present() {
+    renderer.render(scene, camera);
+    if (!menu) return;
+    renderer.autoClear = false;
+    renderer.clearDepth();
+    renderer.render(menu.scene, menu.camera);
+    renderer.autoClear = true;
   }
   function draw(now = 0) {
     frame = 0;
@@ -160,7 +201,7 @@ export function mountWelcomeWorld(
     animate(dt);
     if (walker) renderer.shadowMap.needsUpdate = true;
     const start = performance.now();
-    renderer.render(scene, camera);
+    present();
     if (performance.now() - start > 45) slowFrames++;
     else slowFrames = Math.max(0, slowFrames - 1);
     if (slowFrames >= 6 && !degraded) {
@@ -170,7 +211,7 @@ export function mountWelcomeWorld(
       life.setMotes(daylight.state.motes, 1);
       slowFrames = 0;
       // Resizing clears the drawing buffer. Redraw now, including on-demand reduced-motion frames.
-      renderer.render(scene, camera);
+      present();
     }
     if (!reducedMotion.matches) frame = requestAnimationFrame(draw);
   }
@@ -185,6 +226,7 @@ export function mountWelcomeWorld(
     if (!w || !h) return;
     renderer.setSize(w, h);
     fitWelcomeCamera(camera, w / h);
+    menu?.layout();
     requestRender();
   }
   function visibility() {
@@ -206,7 +248,15 @@ export function mountWelcomeWorld(
     unavailable();
   }
   function setHour(hour: number) {
-    daylight.setHour(normalizeHour(hour));
+    hourNow = normalizeHour(hour);
+    applyLight();
+    // Light treats 24:00 as midnight, but the thumb stays at the slider's end.
+    menu?.setHour(THREE.MathUtils.clamp(hour, 0, 24));
+  }
+  function applyLight() {
+    const hour = hourNow;
+    daylight.setHour(hour, wet);
+    rain.setWet(wet);
     sky.setDaylight(daylight.state);
     landscape.setDaylight(daylight.state);
     life.setMotes(daylight.state.motes, renderer.getPixelRatio());
@@ -216,8 +266,17 @@ export function mountWelcomeWorld(
     life = createGardenLife(shared, ramp, mobile);
     landscape = createLandscape(shared, ramp, mobile);
     sparkle = createSparkle(mobile);
+    rain = createRain(mobile);
     const garden = createWelcomeGarden(shared, ramp);
-    scene.add(sky.root, landscape.root, garden, life.root, sparkle.root);
+    scene.add(
+      sky.root,
+      landscape.root,
+      garden,
+      life.root,
+      sparkle.root,
+      rain.root,
+    );
+    if (menuElement) menu = createMenuBar(host, menuElement, ramp);
     scene.traverse((object) => {
       if (
         object instanceof THREE.Mesh &&
@@ -232,8 +291,10 @@ export function mountWelcomeWorld(
     setHour(10.5);
     animate(0);
     resize();
-    renderer.render(scene, camera);
+    present();
     observer.observe(host);
+    // Collapsing the daylight group or reflowing the controls reshapes the board.
+    if (menuElement) observer.observe(menuElement);
     controls.addEventListener('change', requestRender);
     document.addEventListener('visibilitychange', visibility);
     reducedMotion.addEventListener('change', motion);
@@ -241,9 +302,14 @@ export function mountWelcomeWorld(
     // Swap in the official model when it exists locally; keep the standee otherwise.
     import('./sparkle-model')
       .then(({ loadSparkleModel }) => loadSparkleModel(shared, ramp))
-      .then((model) => {
-        if (disposed) return;
-        sparkle.attachModel(model);
+      .then((loaded) => {
+        // Leaving while the GLB was still loading: nothing else will free it.
+        if (disposed) {
+          loaded.dispose();
+          return;
+        }
+        model = loaded;
+        sparkle.attachModel(loaded);
         walker = true;
         requestRender();
       })
@@ -254,6 +320,12 @@ export function mountWelcomeWorld(
       setHour(hour: number) {
         if (disposed || lost) return;
         setHour(hour);
+        requestRender();
+      },
+      setWeather(weather: Weather) {
+        if (disposed || lost) return;
+        wetTarget = weather === 'rain' ? 1 : 0;
+        menu?.setWeather(weather);
         requestRender();
       },
     };

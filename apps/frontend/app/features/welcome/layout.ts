@@ -43,7 +43,7 @@ export const bellRope = { x: 0, z: -0.84, top: 2.42, bottom: 1.05 };
 export const offeringBox = { x: 0, z: -1.3 };
 export const storehouse = { x: -5.0, z: -1.75 };
 
-/** Courtyard obstacles Sparkle steers around when choosing where to go next. */
+/** Rough courtyard obstacles that rain ripples keep clear of; walking uses walk.ts. */
 export const obstacles = [
   { x: -torii.half, z: torii.z, r: 0.45 },
   { x: torii.half, z: torii.z, r: 0.45 },
@@ -57,7 +57,7 @@ export const obstacles = [
   { x: sakuraTrees[1]!.x, z: sakuraTrees[1]!.z, r: 1.0 },
 ];
 
-/** Open places in the front court where Sparkle may stop and play. */
+/** Open places in the front court where fallen petals gather. */
 export const roamSpots: [number, number][] = [
   [1.55, 3.55],
   [-2.55, 2.3],

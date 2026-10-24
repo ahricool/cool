@@ -6,11 +6,14 @@ export const normalizeHour = (hour: number) =>
 
 const color = (hex: number) => new THREE.Color(hex);
 
+const overcast = color(0x9aa6b8);
+
 /**
  * Periodic solar cycle tuned for cel shading: lit faces stay near their painted
  * colour, shade comes from a cool sky light, and night is a readable blue.
+ * `wet` (0 to 1) veils it for light rain: a dimmer sun and a greyer sky.
  */
-export function daylightAt(hour: number) {
+export function daylightAt(hour: number, wet = 0) {
   const angle = ((normalizeHour(hour) - 6) / 24) * Math.PI * 2;
   const altitude = Math.sin(angle);
   const day = THREE.MathUtils.smoothstep(altitude, -0.12, 0.3);
@@ -18,6 +21,7 @@ export function daylightAt(hour: number) {
   const twilight = (1 - noon) * day;
   // Peaks at sunrise and sunset so dusk gets its own colours instead of grey midpoints.
   const dusk = Math.min(1, twilight * 3.2);
+  const veil = wet * day;
   return {
     day,
     sunPosition: new THREE.Vector3(
@@ -26,22 +30,25 @@ export function daylightAt(hour: number) {
       7,
     ),
     sunColor: color(0xffa463).lerp(color(0xfff3de), noon),
-    sunIntensity: day * (1.15 + noon * 0.5),
+    sunIntensity: day * (1.15 + noon * 0.5) * (1 - wet * 0.5),
     skyColor: color(0x7086cf)
       .lerp(color(0xc3d3ff), day)
-      .lerp(color(0xf2b9cf), dusk * 0.8),
+      .lerp(color(0xf2b9cf), dusk * 0.8)
+      .lerp(overcast, veil * 0.3),
     groundColor: color(0x403c6a).lerp(color(0xd9c4b3), day),
     ambientIntensity: 1.15 + day * 0.4,
     moonIntensity: (1 - day) * 0.75,
     lampIntensity: (1 - day) * 2.4,
     skyTop: color(0x0f1a3e)
       .lerp(color(0x5ab4f0), day)
-      .lerp(color(0x6d76d0), dusk * 0.75),
+      .lerp(color(0x6d76d0), dusk * 0.75)
+      .lerp(overcast, veil * 0.55),
     skyHorizon: color(0x2b3c78)
       .lerp(color(0xd4f0ff), day)
-      .lerp(color(0xffa58c), dusk),
-    haze: dusk,
-    stars: 1 - THREE.MathUtils.smoothstep(altitude, -0.3, 0.02),
+      .lerp(color(0xffa58c), dusk)
+      .lerp(color(0xc9d0da), veil * 0.5),
+    haze: dusk * (1 - wet * 0.6),
+    stars: (1 - THREE.MathUtils.smoothstep(altitude, -0.3, 0.02)) * (1 - wet),
     ink: 0.55 + day * 0.45,
     motes: 0.35 + (1 - day) * 0.65,
   };
@@ -81,8 +88,8 @@ export function createDaylight(
     get state() {
       return state;
     },
-    setHour(hour: number) {
-      state = daylightAt(hour);
+    setHour(hour: number, wet = 0) {
+      state = daylightAt(hour, wet);
       sun.position.copy(state.sunPosition);
       sun.color.copy(state.sunColor);
       sun.intensity = state.sunIntensity;

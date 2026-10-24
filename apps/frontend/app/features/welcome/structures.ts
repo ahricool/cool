@@ -14,6 +14,7 @@ import {
   terrace,
   torii,
 } from './layout';
+import { letterVertically } from './lettering';
 
 /** Places parts in a rotated local frame, e.g. a building facing sideways. */
 function frame(b: ToonBuilder, ox: number, oy: number, oz: number, ry = 0) {
@@ -804,7 +805,50 @@ export function buildTorii(b: ToonBuilder) {
     new THREE.Vector3(half - 0.12, H - 0.8, z + 0.08),
   ]);
   b.part(new THREE.TubeGeometry(rope, 16, 0.035, 6), 'straw', 0, 0, 0);
-  b.box(0.13, 0.42, 0.12, 'red', 0, H - 0.43, z);
+  // Gaku: a vertical name plaque between the nuki and the shimaki, framed in
+  // gold and hand-lettered 梦桜.
+  const plaque = { y: H - 0.43, w: 0.36, h: 0.66, front: z + 0.14 };
+  b.box(
+    plaque.w,
+    plaque.h,
+    0.05,
+    'roofEdge',
+    0,
+    plaque.y,
+    plaque.front - 0.025,
+  );
+  for (const side of [-1, 1]) {
+    b.box(
+      0.035,
+      plaque.h + 0.03,
+      0.06,
+      'gold',
+      (side * plaque.w) / 2,
+      plaque.y,
+      plaque.front - 0.025,
+      { outline: false },
+    );
+    b.box(
+      plaque.w + 0.03,
+      0.035,
+      0.06,
+      'gold',
+      0,
+      plaque.y + (side * plaque.h) / 2,
+      plaque.front - 0.025,
+      { outline: false },
+    );
+  }
+  letterVertically(
+    b,
+    '梦桜',
+    0,
+    plaque.y,
+    plaque.front + 0.006,
+    0.24,
+    0.05,
+    'blossomPaint',
+  );
   b.box(half * 2 + 0.7, 0.16, 0.2, 'red', 0, H - 0.12, z);
   // Kasagi: upswept lintel with a dark cap.
   const span = half + 0.72;
