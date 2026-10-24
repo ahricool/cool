@@ -8,7 +8,11 @@ const state = ref<'loading' | 'ready' | 'unavailable'>('loading');
 const { locale } = useCoolI18n();
 const english = computed(() => locale.value === 'en');
 const hour = ref(10.5);
-const expanded = ref(true);
+// The menu opens on demand; with no 3D scene it stays open so the way in remains.
+const expanded = ref(false);
+const menuOpen = computed(
+  () => expanded.value || state.value === 'unavailable',
+);
 const timeValue = computed(() => {
   const minutes = Math.round((hour.value % 24) * 60);
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
@@ -115,67 +119,82 @@ onBeforeUnmount(() => {
       :data-board="state === 'ready' || undefined"
       :aria-label="english ? 'Scene controls' : '场景控制'"
     >
-      <div v-show="expanded" id="daylight-controls" class="daylight-controls">
-        <svg data-icon="clock" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="8" />
-          <path d="M12 7v5l3 2" />
-        </svg>
-        <input
-          v-model.number="hour"
-          type="range"
-          min="0"
-          max="24"
-          step="0.1"
-          :disabled="state !== 'ready'"
-          :aria-label="english ? 'Time of day' : '一天中的时间'"
-          :aria-valuetext="timeValue"
-          @pointerdown="dragging = true"
-          @pointerup="dragging = false"
-          @pointercancel="dragging = false"
-        />
-        <svg
-          v-if="hour >= 6 && hour < 18"
-          data-icon="daylight"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="4" />
-          <path
-            d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"
+      <div v-show="menuOpen" id="scene-menu" class="scene-menu">
+        <div class="daylight-controls">
+          <svg data-icon="clock" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="8" />
+            <path d="M12 7v5l3 2" />
+          </svg>
+          <input
+            v-model.number="hour"
+            type="range"
+            min="0"
+            max="24"
+            step="0.1"
+            :disabled="state !== 'ready'"
+            :aria-label="english ? 'Time of day' : '一天中的时间'"
+            :aria-valuetext="timeValue"
+            @pointerdown="dragging = true"
+            @pointerup="dragging = false"
+            @pointercancel="dragging = false"
           />
-        </svg>
-        <svg v-else data-icon="daylight" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M19 15.5A8 8 0 0 1 8.5 5 8 8 0 1 0 19 15.5Z" />
-        </svg>
+          <svg
+            v-if="hour >= 6 && hour < 18"
+            data-icon="daylight"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"
+            />
+          </svg>
+          <svg
+            v-else
+            data-icon="daylight"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path d="M19 15.5A8 8 0 0 1 8.5 5 8 8 0 1 0 19 15.5Z" />
+          </svg>
+        </div>
+        <button
+          type="button"
+          :aria-label="
+            weather === 'rain'
+              ? english
+                ? 'Weather: light rain. Switch to clear skies'
+                : '天气：小雨，切换为晴天'
+              : english
+                ? 'Weather: clear. Switch to light rain'
+                : '天气：晴，切换为小雨'
+          "
+          :disabled="state !== 'ready'"
+          @click="toggleWeather"
+        >
+          <svg data-icon="weather" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M7 17h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 17Z"
+            />
+            <path v-if="weather === 'rain'" d="M9 20l-1 2m5-2-1 2m5-2-1 2" />
+          </svg>
+        </button>
+        <NuxtLink
+          class="welcome-enter"
+          to="/home"
+          :prefetch="false"
+          :aria-label="english ? 'Enter the site' : '进入网站'"
+        >
+          <svg data-icon="enter" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 12h14m-5-5 5 5-5 5" />
+          </svg>
+        </NuxtLink>
       </div>
       <button
         type="button"
-        :aria-label="
-          weather === 'rain'
-            ? english
-              ? 'Weather: light rain. Switch to clear skies'
-              : '天气：小雨，切换为晴天'
-            : english
-              ? 'Weather: clear. Switch to light rain'
-              : '天气：晴，切换为小雨'
-        "
-        :disabled="state !== 'ready'"
-        @click="toggleWeather"
-      >
-        <svg data-icon="weather" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M7 17h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 17Z"
-          />
-          <path v-if="weather === 'rain'" d="M9 20l-1 2m5-2-1 2m5-2-1 2" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        :aria-label="
-          english ? 'Toggle daylight controls' : '展开或收起光照控制'
-        "
-        :aria-expanded="expanded"
-        aria-controls="daylight-controls"
+        :aria-label="english ? 'Toggle scene menu' : '展开或收起菜单'"
+        :aria-expanded="menuOpen"
+        aria-controls="scene-menu"
         @click="expanded = !expanded"
       >
         <svg data-icon="toggle" viewBox="0 0 24 24" aria-hidden="true">
@@ -184,16 +203,6 @@ onBeforeUnmount(() => {
           <circle cx="15" cy="17" r="2" />
         </svg>
       </button>
-      <NuxtLink
-        class="welcome-enter"
-        to="/home"
-        :prefetch="false"
-        :aria-label="english ? 'Enter the site' : '进入网站'"
-      >
-        <svg data-icon="enter" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5 12h14m-5-5 5 5-5 5" />
-        </svg>
-      </NuxtLink>
     </nav>
   </main>
 </template>
@@ -274,6 +283,14 @@ html[data-surface='welcome'] body {
 .world-controls :focus-visible {
   outline: 2px solid #9d3d24;
   outline-offset: 3px;
+}
+.scene-menu {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.world-controls[data-board] .scene-menu {
+  gap: 2px;
 }
 .daylight-controls {
   display: flex;

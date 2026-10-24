@@ -337,14 +337,14 @@ export function createMenuBar(
       );
     }
     // Straw cords it hangs from, tied to brass pegs.
-    for (const px of [left + 0.45, right - 0.45]) {
+    // Kept apart on the narrow board the collapsed menu leaves.
+    const inset = Math.min(0.45, nav.w * 0.16);
+    for (const px of [left + inset, right - inset]) {
       b.beam([px, top - 0.12, 0.05], [px, 4, 0.05], 0.035, 'straw');
       b.ball(0.08, 'gold', px, top - 0.12, 0.08, [1, 1, 0.6]);
     }
     // Round wooden tokens behind each button.
-    for (const element of menu.querySelectorAll(
-      ':scope > button, :scope > a',
-    )) {
+    for (const element of menu.querySelectorAll('button, a')) {
       const token = measure(element, origin);
       if (!token) continue;
       b.cylinder(
