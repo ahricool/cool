@@ -4,15 +4,13 @@ import type { WelcomeWorld, Weather } from '~/features/welcome/world';
 definePageMeta({ layout: false });
 const host = ref<HTMLElement>();
 const menu = ref<HTMLElement>();
+const enter = ref<HTMLElement>();
 const state = ref<'loading' | 'ready' | 'unavailable'>('loading');
 const { locale } = useCoolI18n();
 const english = computed(() => locale.value === 'en');
 const hour = ref(10.5);
-// The menu opens on demand; with no 3D scene it stays open so the way in remains.
-const expanded = ref(false);
-const menuOpen = computed(
-  () => expanded.value || state.value === 'unavailable',
-);
+// The menu opens on demand and only exists once the scene is ready.
+const menuOpen = ref(false);
 const timeValue = computed(() => {
   const minutes = Math.round((hour.value % 24) * 60);
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
@@ -58,6 +56,7 @@ onMounted(async () => {
         state.value = 'unavailable';
       },
       menu.value,
+      enter.value,
     );
     world.setHour(hour.value);
     state.value = 'ready';
@@ -90,29 +89,6 @@ onBeforeUnmount(() => {
           : '草坪上的神社微缩庭院，花火在前院散步。拖动旋转，滚轮或双指缩放。'
       "
     />
-    <div v-if="state !== 'ready'" class="welcome-status" role="status">
-      <svg
-        v-if="state === 'loading'"
-        class="loading-orbit"
-        viewBox="0 0 48 48"
-        aria-hidden="true"
-      >
-        <circle cx="24" cy="24" r="17" />
-        <path d="M24 7a17 17 0 0 1 17 17" />
-      </svg>
-      <svg v-else viewBox="0 0 48 48" aria-hidden="true">
-        <path d="M8 16h32M5 10q19 5 38 0M14 12v28m20-28v28M7 41 41 7" />
-      </svg>
-      <span class="sr-only">{{
-        state === 'loading'
-          ? english
-            ? 'Loading the shrine'
-            : '庭院加载中'
-          : english
-            ? 'The 3D scene is unavailable. Use the arrow to enter the site.'
-            : '三维场景暂不可用，可通过箭头进入网站。'
-      }}</span>
-    </div>
     <nav
       ref="menu"
       class="world-controls"
@@ -185,29 +161,35 @@ onBeforeUnmount(() => {
               <path v-if="weather === 'rain'" d="M9 20l-1 2m5-2-1 2m5-2-1 2" />
             </svg>
           </button>
-          <NuxtLink
-            class="welcome-enter"
-            to="/home"
-            :prefetch="false"
-            :aria-label="english ? 'Enter the site' : '进入网站'"
-          >
-            <svg data-icon="enter" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 12h14m-5-5 5 5-5 5" />
-            </svg>
-          </NuxtLink>
         </div>
       </div>
       <button
-        v-show="state !== 'unavailable'"
         type="button"
         :aria-label="english ? 'Toggle scene menu' : '展开或收起菜单'"
         :aria-expanded="menuOpen"
         aria-controls="scene-menu"
-        @click="expanded = !expanded"
+        @click="menuOpen = !menuOpen"
       >
         <span data-icon="toggle" aria-hidden="true" />
       </button>
     </nav>
+    <!-- Always at hand once the scene is up; drawn as a small plaque of the same wood. -->
+    <div
+      ref="enter"
+      class="world-controls world-enter"
+      :data-board="state === 'ready' || undefined"
+    >
+      <NuxtLink
+        class="welcome-enter"
+        to="/home"
+        :prefetch="false"
+        :aria-label="english ? 'Enter the site' : '进入网站'"
+      >
+        <svg data-icon="enter" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 17 17 7M9 7h8v8" />
+        </svg>
+      </NuxtLink>
+    </div>
   </main>
 </template>
 
@@ -254,7 +236,21 @@ html[data-surface='welcome'] body {
   box-shadow: 0 4px 24px #243b3b14;
   backdrop-filter: blur(16px);
 }
-.welcome-world[data-state='loading'] .world-controls {
+.world-enter {
+  top: auto;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  padding: 4px;
+  border-radius: 50%;
+}
+.world-controls.world-enter[data-board] {
+  padding: 4px;
+}
+.world-controls.world-enter[data-board] .welcome-enter {
+  width: 40px;
+  height: 40px;
+}
+/* Nothing shows until the scene is ready; a failed scene leaves the bare background. */
+.welcome-world:not([data-state='ready']) .world-controls {
   visibility: hidden;
 }
 /* Keep a measurable anchor for the Three.js blossom without a fallback icon. */
@@ -392,45 +388,14 @@ html[data-surface='welcome'] body {
   border: 0;
   opacity: 0;
 }
-.welcome-status {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-content: center;
-  pointer-events: none;
-}
-.welcome-status svg {
-  width: 48px;
-  height: 48px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.5;
-}
-.loading-orbit circle {
-  opacity: 0.15;
-}
-.loading-orbit {
-  animation: orbit 2s linear infinite;
-}
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-@keyframes orbit {
-  to {
-    transform: rotate(360deg);
-  }
-}
 @media (max-width: 600px) {
   .world-controls {
     top: max(16px, env(safe-area-inset-top));
     right: max(16px, env(safe-area-inset-right));
+  }
+  .world-enter {
+    top: auto;
+    bottom: max(16px, env(safe-area-inset-bottom));
   }
   .daylight-controls {
     gap: 8px;
@@ -440,9 +405,6 @@ html[data-surface='welcome'] body {
 @media (prefers-reduced-motion: reduce) {
   .scene-menu-reveal {
     transition: none;
-  }
-  .loading-orbit {
-    animation: none;
   }
 }
 </style>

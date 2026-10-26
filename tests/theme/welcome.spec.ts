@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { themeFixture } from './fixture';
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -19,6 +19,33 @@ const worldChunk = readdirSync(assets).find(
 if (!worldChunk)
   throw new Error('Build the welcome scene before running browser tests');
 
+/** Controls and the enter token only exist once the scene has rendered. */
+async function sceneReady(page: Page) {
+  const supportsWebGL = await page.evaluate(() => {
+    const probe = document.createElement('canvas').getContext('webgl2');
+    if (!probe) return false;
+    probe.getExtension('WEBGL_lose_context')?.loseContext();
+    return true;
+  });
+  test.skip(!supportsWebGL, 'This browser does not expose WebGL2');
+  await expect(page.locator('.welcome-world')).toHaveAttribute(
+    'data-state',
+    'ready',
+    { timeout: 20000 },
+  );
+}
+
+/** Nothing but the pink background: no icon, status, menu or enter token. */
+async function expectBareBackground(page: Page) {
+  const world = page.locator('.welcome-world');
+  await expect(world).toHaveCSS('background-color', 'rgb(255, 241, 246)');
+  await expect(page.getByRole('status')).toHaveCount(0);
+  await expect(page.locator('.welcome-world svg:visible')).toHaveCount(0);
+  for (const controls of await page.locator('.world-controls').all())
+    await expect(controls).toBeHidden();
+  await expect(page.getByRole('link', { name: '进入网站' })).toHaveCount(0);
+}
+
 for (const themeId of ['default', 'ury']) {
   test(`welcome is independent and Enter preserves ${themeId}`, async ({
     page,
@@ -29,6 +56,7 @@ for (const themeId of ['default', 'ury']) {
       'data-surface',
       'welcome',
     );
+    await sceneReady(page);
     await expect(
       page.locator('[data-theme-root], .site-header, .ury-masthead'),
     ).toHaveCount(0);
@@ -43,13 +71,14 @@ for (const themeId of ['default', 'ury']) {
       'data-surface',
       'welcome',
     );
+    await sceneReady(page);
     await expect(enter).toBeVisible();
     await page.goForward();
     await expect(page.locator(`[data-theme-root="${themeId}"]`)).toBeVisible();
   });
 }
 
-test('WebGL failure leaves a keyboard-accessible Enter, including narrow screens', async ({
+test('WebGL failure leaves only the pink background, including narrow screens', async ({
   page,
 }) => {
   await themeFixture(page);
@@ -69,20 +98,40 @@ test('WebGL failure leaves a keyboard-accessible Enter, including narrow screens
     'data-state',
     'unavailable',
   );
-  await expect(page.getByRole('status')).toContainText('三维场景暂不可用');
+  await expectBareBackground(page);
+  // Nothing on the page takes keyboard focus either.
   await page.keyboard.press('Tab');
-  await expect(
-    page.getByRole('button', { name: '展开或收起光照控制' }),
-  ).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(page.getByRole('link', { name: '进入网站' })).toBeFocused();
-  await page.keyboard.press('Enter');
-  await expect(page.locator('.story-card')).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      document.activeElement?.closest('.welcome-world') ? 'world' : 'outside',
+    ),
+  ).toBe('outside');
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+});
+
+test('the scene shows only the pink background while it loads', async ({
+  page,
+}) => {
+  await themeFixture(page);
+  let release!: () => void;
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(`**/_nuxt/${worldChunk}`, async (route) => {
+    await waiting;
+    await route.continue();
+  });
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('.welcome-world')).toHaveAttribute(
+    'data-state',
+    'loading',
+  );
+  await expectBareBackground(page);
+  release();
 });
 
 test('direct traditional entry does not fetch the welcome Three.js chunk', async ({
@@ -102,7 +151,7 @@ test('direct traditional entry does not fetch the welcome Three.js chunk', async
   await expect(page.locator('.post-header')).toBeVisible();
 });
 
-test('a delayed scene import cannot mount after Enter navigation', async ({
+test('a delayed scene import cannot mount after leaving the welcome page', async ({
   page,
 }) => {
   await themeFixture(page);
@@ -118,7 +167,10 @@ test('a delayed scene import cannot mount after Enter navigation', async ({
   });
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect.poll(() => requested).toBe(true);
-  await page.getByRole('link', { name: '进入网站' }).click();
+  // The enter token is hidden while loading; follow its link in-app anyway.
+  await page.locator('.welcome-enter').evaluate((link) => {
+    (link as HTMLAnchorElement).click();
+  });
   await expect(page.locator('.story-card')).toBeVisible();
   release();
   await page.waitForLoadState('networkidle');
@@ -135,6 +187,7 @@ test('welcome entry follows the persisted reader language', async ({
     { name: 'cool_locale', value: 'en', url: 'http://127.0.0.1:43871' },
   ]);
   await page.goto('/');
+  await sceneReady(page);
   const enter = page.getByRole('link', { name: 'Enter the site' });
   await expect(enter).toHaveText('');
   await enter.click();
@@ -142,7 +195,7 @@ test('welcome entry follows the persisted reader language', async ({
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 });
 
-test('rendered garden rotates, zooms and keeps Enter after context loss', async ({
+test('rendered garden rotates, zooms and falls back to the bare background after context loss', async ({
   page,
 }) => {
   await themeFixture(page);
@@ -181,9 +234,8 @@ test('rendered garden rotates, zooms and keeps Enter after context loss', async 
     extension.loseContext();
   });
   await expect(world).toHaveAttribute('data-state', 'unavailable');
-  await page.getByRole('link', { name: '进入网站' }).click();
-  await expect(page.locator('.story-card')).toBeVisible();
-  await expect(canvas).toHaveCount(0);
+  await expect(canvas).toBeHidden();
+  await expectBareBackground(page);
 });
 
 test('icon-only controls change daylight, support keyboard and fit portrait screens', async ({
@@ -193,14 +245,18 @@ test('icon-only controls change daylight, support keyboard and fit portrait scre
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
-  await expect(page.locator('.welcome-world')).toHaveAttribute(
-    'data-state',
-    'ready',
-  );
+  await sceneReady(page);
   const canvas = page.locator('.welcome-canvas canvas');
   const capture = () =>
     canvas.screenshot({ mask: [page.locator('.world-controls')] });
   const slider = page.getByRole('slider', { name: '一天中的时间' });
+  const toggle = page.getByRole('button', { name: '展开或收起菜单' });
+  // The board starts collapsed; the enter token stays out on its own.
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(slider).toHaveCount(0);
+  await expect(page.getByRole('link', { name: '进入网站' })).toBeVisible();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(slider).toHaveAttribute('aria-valuetext', '10:30');
   expect(await page.locator('.welcome-world').innerText()).toBe('');
   const morning = await capture();
@@ -220,14 +276,18 @@ test('icon-only controls change daylight, support keyboard and fit portrait scre
   await expect(slider).toHaveValue('24');
   await expect.poll(async () => (await capture()).equals(night)).toBe(true);
   await page.setViewportSize({ width: 320, height: 844 });
-  const controls = page.locator('.world-controls');
-  const bounds = await controls.boundingBox();
-  expect(
-    bounds && bounds.x >= 0 && bounds.x + bounds.width <= 320,
-  ).toBeTruthy();
-  const toggle = page.getByRole('button', { name: '展开或收起光照控制' });
+  for (const controls of await page.locator('.world-controls').all()) {
+    const bounds = await controls.boundingBox();
+    expect(
+      bounds &&
+        bounds.x >= 0 &&
+        bounds.x + bounds.width <= 320 &&
+        bounds.y >= 0 &&
+        bounds.y + bounds.height <= 844,
+    ).toBeTruthy();
+  }
   await toggle.click();
-  await expect(slider).toBeHidden();
+  await expect(slider).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.press('Enter');
   await expect(slider).toBeVisible();

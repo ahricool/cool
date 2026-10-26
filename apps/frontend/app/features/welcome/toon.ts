@@ -44,16 +44,19 @@ export const palette = {
   cloud: 0xffffff,
   glow: 0xffd98a,
   lantern: 0xff7a5a,
+  /** Paper panes in the halls: painted like paper, lit warm from inside at night. */
+  shoji: 0xfff4dc,
   // Late-summer meadow, shrubs and far mountains around the plinth.
   meadow: 0xa8d06a,
   meadowDry: 0xd3cf6e,
   meadowDeep: 0x86bf5c,
-  shrubGold: 0xe6c45a,
   shrubAmber: 0xdc9b4c,
   shrubOlive: 0xb0c75e,
   shrubGreen: 0x72b158,
-  mountain: 0x6f9e88,
-  mountainFar: 0x8eabc9,
+  shrubDeep: 0x5c9a52,
+  shrubLight: 0x94c866,
+  mountain: 0x6b8d7f,
+  mountainFar: 0x8a9db3,
 };
 export type Tone = keyof typeof palette;
 
@@ -68,7 +71,11 @@ const swaying = new Set<Tone>([
   'blossomDeep',
 ]);
 /** Emissive tones keep their own material so lanterns can glow and flicker. */
-const glowing = new Set<Tone>(['glow', 'lantern']);
+const glowing = new Set<Tone>(['glow', 'lantern', 'shoji']);
+/** Warm lamplight behind paper rather than the paper's own white. */
+const emissiveFor: Partial<Record<Tone, number>> = { shoji: 0xffb866 };
+/** Blossoms share one material that keeps a faint pink of its own after dark. */
+const blossoms = new Set<Tone>(['blossom', 'blossomLight', 'blossomDeep']);
 
 export interface SharedUniforms {
   time: { value: number };
@@ -76,11 +83,14 @@ export interface SharedUniforms {
   ink: { value: number };
   /** Soft sky-coloured edge light that separates silhouettes, anime style. */
   rim: { value: THREE.Color };
+  /** Self-lit share of blossom colour, so sakura stays pink rather than grey-violet at night. */
+  blossom: { value: number };
 }
 export const createSharedUniforms = (): SharedUniforms => ({
   time: { value: 0 },
   ink: { value: 1 },
   rim: { value: new THREE.Color(0xffffff).multiplyScalar(0.12) },
+  blossom: { value: 0 },
 });
 
 /** Soft two-tone cel ramp: a narrow blended terminator, like hand-painted shading. */
@@ -134,9 +144,18 @@ function toonMaterial(
     material.emissive.setHex(emissive);
     material.emissiveIntensity = 0;
   }
+  const blossom = name === 'blossom';
   material.onBeforeCompile = (shader) => {
     shader.uniforms.time = shared.time;
     shader.uniforms.rim = shared.rim;
+    shader.uniforms.blossomGlow = shared.blossom;
+    if (blossom)
+      shader.fragmentShader =
+        `uniform float blossomGlow;\n${shader.fragmentShader}`.replace(
+          '#include <emissivemap_fragment>',
+          `#include <emissivemap_fragment>
+        totalEmissiveRadiance += diffuseColor.rgb * blossomGlow;`,
+        );
     shader.vertexShader =
       `uniform float time;\nattribute vec4 dangle;\n${shader.vertexShader}`.replace(
         '#include <begin_vertex>',
@@ -151,7 +170,8 @@ function toonMaterial(
       #include <opaque_fragment>`,
       );
   };
-  material.customProgramCacheKey = () => `welcome-${motion}`;
+  material.customProgramCacheKey = () =>
+    `welcome-${motion}${blossom ? '-blossom' : ''}`;
   return material;
 }
 
@@ -285,7 +305,11 @@ export class ToonBuilder {
       : swaying.has(tone)
         ? 'sway'
         : 'still';
-    const fill = glowing.has(tone) ? `${motion}|${tone}` : motion;
+    const fill = glowing.has(tone)
+      ? `${motion}|${tone}`
+      : blossoms.has(tone)
+        ? `${motion}|blossom`
+        : motion;
     paint(piece, new THREE.Color(palette[tone]));
     (this.fills.get(fill) ?? this.fills.set(fill, []).get(fill)!).push(piece);
     if (outline) {
@@ -415,6 +439,7 @@ export class ToonBuilder {
     };
     for (const [key, pieces] of this.fills) {
       const [motion, tone] = key.split('|') as [Motion, Tone | undefined];
+      const lit = tone && glowing.has(tone);
       const mesh = new THREE.Mesh(
         merge(pieces),
         toonMaterial(
@@ -422,7 +447,7 @@ export class ToonBuilder {
           ramp,
           shared,
           motion,
-          tone && palette[tone],
+          lit ? (emissiveFor[tone] ?? palette[tone]) : undefined,
         ),
       );
       mesh.name = mesh.material.name;
