@@ -3,7 +3,7 @@ import type { Daylight } from './daylight';
 import { groundAt, roamSpots, terrace } from './layout';
 import type { SparkleModel } from './sparkle-model';
 import { seeded } from './toon';
-import { randomSpot, routeBetween, surfaceAt } from './walk';
+import { canStand, randomSpot, routeBetween, surfaceAt } from './walk';
 
 /** Soft disc for the contact blob; red channel is the alpha map. */
 function softDisc() {
@@ -150,7 +150,9 @@ export function createSparkle(mobile: boolean) {
     blinkAt = 1.2,
     yaw = random() * Math.PI * 2,
     look = 0,
-    lookTimer = 0;
+    lookTimer = 0,
+    // A visitor picked this spot: linger there before wandering on.
+    summoned = false;
 
   /** Somewhere new anywhere she can reach, usually a short stroll away. */
   function chooseRoute() {
@@ -162,7 +164,8 @@ export function createSparkle(mobile: boolean) {
     phase = next;
     elapsed = 0;
     if (next === 'idle') {
-      idleFor = 2.4 + random() * 2.6;
+      idleFor = summoned ? 10 + random() * 3 : 2.4 + random() * 2.6;
+      summoned = false;
       blinkAt = 0.6 + random() * 1.2;
     }
   }
@@ -175,6 +178,16 @@ export function createSparkle(mobile: boolean) {
 
   return {
     root,
+    /** Walk straight to a clicked spot if she can reach it; false otherwise. */
+    goTo(x: number, z: number) {
+      if (!canStand(x, z)) return false;
+      const next = routeBetween(position.x, position.y, x, z);
+      if (!next.length) return false;
+      route = next;
+      summoned = true;
+      enter('walk');
+      return true;
+    },
     attachModel(next: SparkleModel) {
       model = next;
       root.add(next.root);

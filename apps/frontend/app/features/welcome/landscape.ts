@@ -1,9 +1,27 @@
 import * as THREE from 'three';
 import type { Daylight } from './daylight';
-import { meadow, plinth } from './layout';
+import { groundAt, lanterns, meadow, plinth } from './layout';
+import {
+  streamClearance,
+  streamEdges,
+  streamGeometry,
+  streamPoints,
+} from './stream';
 import { palette, seeded, ToonBuilder, type SharedUniforms } from './toon';
 
 const color = (tone: keyof typeof palette) => new THREE.Color(palette[tone]);
+
+interface HazeOptions {
+  near: number;
+  far: number;
+  strength: number;
+  /** Broad light and dark drifts across the ground, independent of mesh density. */
+  patches?: boolean;
+  /** Sun-coloured edge light along the upper slopes of the ridges. */
+  crest?: { value: THREE.Color };
+  /** Scene clock for running water: light streaks drift down the brook. */
+  flow?: { value: number };
+}
 
 /**
  * Cel material that fades into the horizon colour with distance, so the meadow
@@ -13,9 +31,7 @@ function hazeMaterial(
   name: string,
   ramp: THREE.Texture,
   haze: { value: THREE.Color },
-  near: number,
-  far: number,
-  strength: number,
+  { near, far, strength, patches = false, crest, flow }: HazeOptions,
 ) {
   const material = new THREE.MeshToonMaterial({
     gradientMap: ramp,
@@ -24,23 +40,148 @@ function hazeMaterial(
   material.name = name;
   material.onBeforeCompile = (shader) => {
     shader.uniforms.haze = haze;
+    if (crest) shader.uniforms.crest = crest;
+    if (flow) shader.uniforms.flowTime = flow;
     shader.vertexShader =
-      `varying vec3 vHazeWorld;\n${shader.vertexShader}`.replace(
+      `varying vec3 vHazeWorld;\n${flow ? 'attribute vec3 flow;\nvarying vec3 vFlow;\n' : ''}${shader.vertexShader}`.replace(
         '#include <begin_vertex>',
         `#include <begin_vertex>
-      vHazeWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;`,
+      vHazeWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;${flow ? '\n      vFlow = flow;' : ''}`,
       );
-    shader.fragmentShader =
-      `uniform vec3 haze;\nvarying vec3 vHazeWorld;\n${shader.fragmentShader}`.replace(
-        '#include <opaque_fragment>',
-        `outgoingLight = mix(outgoingLight, haze,
+    let fragment = `uniform vec3 haze;\n${crest ? 'uniform vec3 crest;\n' : ''}${flow ? 'uniform float flowTime;\nvarying vec3 vFlow;\n' : ''}varying vec3 vHazeWorld;
+      float hazeHash(vec2 p) {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+      }
+      float hazeNoise(vec2 p) {
+        vec2 i = floor(p), f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hazeHash(i), hazeHash(i + vec2(1.0, 0.0)), f.x),
+          mix(hazeHash(i + vec2(0.0, 1.0)), hazeHash(i + vec2(1.0, 1.0)), f.x), f.y);
+      }
+      ${shader.fragmentShader}`;
+    if (patches)
+      fragment = fragment.replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+        vec2 drift = vHazeWorld.xz * 0.065;
+        float patchy = hazeNoise(drift) * 0.65 + hazeNoise(drift * 2.3 + 7.1) * 0.35;
+        diffuseColor.rgb *= mix(0.76, 1.12, smoothstep(0.25, 0.75, patchy));`,
+      );
+    if (flow)
+      fragment = fragment.replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+        if (vFlow.z > 0.5) {
+          // Pale shallows along both edges, a deeper middle and light streaks
+          // drifting downstream; hard steps keep it in the cel style.
+          float across = abs(vFlow.y * 2.0 - 1.0);
+          float shallow = step(0.72, across);
+          float streak = step(0.74, hazeNoise(vec2(vFlow.x * 0.32 - flowTime * 0.5, vFlow.y * 4.0)))
+            * step(across, 0.6);
+          diffuseColor.rgb *= mix(0.86, 1.0, step(0.38, across));
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.97, 1.0),
+            max(shallow * 0.45, streak * 0.6));
+        }`,
+      );
+    shader.fragmentShader = fragment.replace(
+      '#include <opaque_fragment>',
+      `${
+        crest
+          ? `float crestEdge = pow(1.0 - saturate(dot(normal, normalize(vViewPosition))), 2.0);
+        outgoingLight += crest * crestEdge * smoothstep(3.0, 14.0, vHazeWorld.y);`
+          : ''
+      }
+        outgoingLight = mix(outgoingLight, haze,
           smoothstep(${near.toFixed(1)}, ${far.toFixed(1)}, length(vHazeWorld.xz)) * ${strength.toFixed(2)});
         #include <opaque_fragment>`,
-      );
+    );
   };
   material.customProgramCacheKey = () =>
-    `welcome-haze-${near}-${far}-${strength}`;
+    `welcome-haze-${near}-${far}-${strength}-${patches}-${!!crest}-${!!flow}`;
   return material;
+}
+
+/** Soft dark ring where the stone base meets the grass. */
+function contactShadow() {
+  const reach = 2.2;
+  const size = (plinth.half + reach) * 2;
+  const geometry = new THREE.PlaneGeometry(size, size);
+  geometry.rotateX(-Math.PI / 2);
+  const mesh = new THREE.Mesh(
+    geometry,
+    new THREE.ShaderMaterial({
+      name: 'plinth-contact',
+      transparent: true,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+      uniforms: { tint: { value: new THREE.Color(0x26381f) } },
+      vertexShader: /* glsl */ `
+        varying vec2 local;
+        void main() {
+          local = position.xz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`,
+      fragmentShader: /* glsl */ `
+        uniform vec3 tint;
+        varying vec2 local;
+        void main() {
+          // Distance to the rounded square of the plinth footprint.
+          vec2 q = abs(local) - vec2(${(plinth.half - plinth.radius).toFixed(2)});
+          float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - ${plinth.radius.toFixed(2)};
+          float shade = 1.0 - smoothstep(0.0, ${reach.toFixed(1)}, d);
+          gl_FragColor = vec4(tint, shade * shade * 0.42);
+          #include <colorspace_fragment>
+        }`,
+    }),
+  );
+  mesh.name = 'plinth-contact';
+  mesh.position.y = meadow.y + 0.01;
+  mesh.renderOrder = 1;
+  return mesh;
+}
+
+/** Warm pools of lamplight on the ground below each stone lantern. */
+function lanternPools() {
+  const glow = { value: 0 };
+  const material = new THREE.ShaderMaterial({
+    name: 'lantern-pool',
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -2,
+    uniforms: { glow, warm: { value: new THREE.Color(0xffa850) } },
+    vertexShader: /* glsl */ `
+      varying vec2 local;
+      void main() {
+        local = position.xz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }`,
+    fragmentShader: /* glsl */ `
+      uniform float glow;
+      uniform vec3 warm;
+      varying vec2 local;
+      void main() {
+        float falloff = 1.0 - smoothstep(0.0, 1.0, length(local) / 1.5);
+        gl_FragColor = vec4(warm * falloff * falloff * glow, 1.0);
+        #include <colorspace_fragment>
+      }`,
+  });
+  const geometry = new THREE.CircleGeometry(1.5, 32);
+  geometry.rotateX(-Math.PI / 2);
+  const root = new THREE.Group();
+  root.name = 'lantern-pools';
+  for (const { x, z } of lanterns) {
+    const pool = new THREE.Mesh(geometry, material);
+    pool.position.set(x, groundAt(x, z) + 0.03, z);
+    pool.renderOrder = 2;
+    root.add(pool);
+  }
+  root.visible = false;
+  return { root, glow };
 }
 
 /** Soft late-summer patches: green lawn drying to straw in broad drifts. */
@@ -138,12 +279,20 @@ export function createLandscape(
 ) {
   const root = new THREE.Group();
   root.name = 'welcome-landscape';
-  const haze = { value: new THREE.Color(0xd4f0ff) };
+  // The meadow edge meets the low pink mist; the ridges fade towards the horizon.
+  const haze = { value: new THREE.Color(0xffd8e2) };
+  const ridgeHaze = { value: new THREE.Color(0xf8e8cc) };
+  const crest = { value: new THREE.Color() };
   const random = seeded(2024);
 
   // Inner disc sits in the sun shadow camera; the far field only needs colour.
   const split = 28;
-  const paint = hazeMaterial('meadow', ramp, haze, 24, meadow.radius, 0.85);
+  const paint = hazeMaterial('meadow', ramp, haze, {
+    near: 24,
+    far: meadow.radius,
+    strength: 0.85,
+    patches: true,
+  });
   const lawn = new THREE.Mesh(meadowRing(0.01, split + 0.2, 16, 64), paint);
   lawn.name = 'meadow';
   lawn.position.y = meadow.y;
@@ -154,17 +303,36 @@ export function createLandscape(
   );
   farLawn.name = 'meadow-far';
   farLawn.position.y = meadow.y;
-  root.add(lawn, farLawn);
+  const pools = lanternPools();
+  // The brook: flat cel strips laid on the lawn, fading into the mist with it.
+  const brook = new THREE.Mesh(
+    streamGeometry({
+      water: new THREE.Color(0x6ccbe0),
+      sand: new THREE.Color(0xdccb98),
+      bank: color('meadowDeep'),
+    }),
+    hazeMaterial('brook', ramp, haze, {
+      near: 24,
+      far: meadow.radius,
+      strength: 0.85,
+      flow: shared.time,
+    }),
+  );
+  brook.name = 'brook';
+  brook.material.polygonOffset = true;
+  brook.material.polygonOffsetFactor = -1;
+  brook.material.polygonOffsetUnits = -1;
+  root.add(lawn, farLawn, brook, contactShadow(), pools.root);
 
-  // Low shrubs in gold, amber, olive and green — the turn from summer to autumn.
+  // Low shrubs in light and deep greens, so they read as bushes on the lawn.
   const b = new ToonBuilder();
   const tones = [
-    'shrubGold',
-    'shrubOlive',
     'shrubGreen',
-    'shrubAmber',
+    'shrubDeep',
+    'shrubLight',
     'shrubOlive',
-    'shrubGold',
+    'shrubDeep',
+    'shrubGreen',
   ] as const;
   const shrubCount = mobile ? 34 : 60;
   for (let i = 0; i < shrubCount; i++) {
@@ -172,6 +340,7 @@ export function createLandscape(
     const r = plinth.half * 1.55 + random() ** 1.4 * 22;
     const x = Math.cos(a) * r,
       z = Math.sin(a) * r;
+    if (streamClearance(x, z) < 0.6) continue;
     const size = 0.22 + random() * 0.32;
     const tone = tones[i % tones.length]!;
     const puffs = 2 + Math.floor(random() * 3);
@@ -181,7 +350,7 @@ export function createLandscape(
       const s = size * (0.7 + random() * 0.5);
       b.ball(
         s,
-        j === puffs - 1 && random() < 0.4 ? 'shrubGreen' : tone,
+        j === puffs - 1 && random() < 0.4 ? 'shrubLight' : tone,
         x + ox,
         meadow.y + s * 0.45,
         z + oz,
@@ -191,18 +360,172 @@ export function createLandscape(
       );
     }
   }
-  // Dry grass tufts close to the base.
+  // Where the stone base meets the lawn: a few bushes and mossy rocks, each
+  // with a small tuft of grass, rather than a continuous fringe.
+  const edge = plinth.half + 0.02;
+  const tuft = (x: number, z: number) => {
+    for (let j = 0; j < 3; j++) {
+      const height = 0.14 + random() * 0.16;
+      b.cylinder(
+        0.03,
+        0,
+        height,
+        j ? 'meadowDeep' : 'shrubGreen',
+        x + (random() - 0.5) * 0.16,
+        meadow.y + height / 2 - 0.02,
+        z + (random() - 0.5) * 0.16,
+        4,
+        {
+          rotation: [(random() - 0.5) * 0.5, 0, (random() - 0.5) * 0.5],
+          outline: false,
+        },
+      );
+    }
+  };
+  const perSide = mobile ? 3 : 4;
+  for (let side = 0; side < 4; side++)
+    for (let i = 0; i < perSide; i++) {
+      const along = -edge + ((i + 0.2 + random() * 0.6) / perSide) * edge * 2;
+      const out = 0.22 + random() * 0.3;
+      const place = (offset: number, spread = 0): [number, number] =>
+        side === 0
+          ? [along + spread, edge + offset]
+          : side === 1
+            ? [along + spread, -edge - offset]
+            : side === 2
+              ? [edge + offset, along + spread]
+              : [-edge - offset, along + spread];
+      const [x, z] = place(out);
+      if ((i + side) % 2 === 0) {
+        // A low bush hugging the wall.
+        const size = 0.3 + random() * 0.14;
+        for (let j = 0; j < 4; j++) {
+          const s = size * (0.7 + random() * 0.4);
+          b.ball(
+            s,
+            j === 3 ? 'shrubLight' : j % 2 ? 'shrubGreen' : 'shrubDeep',
+            x + (random() - 0.5) * size * 1.8,
+            meadow.y + s * 0.5,
+            z + (random() - 0.5) * size * 1.2,
+            [1.2, 0.78, 1.05],
+            {},
+            1,
+          );
+        }
+      } else {
+        // One or two faceted rocks, some with a cap of moss.
+        const stones = 1 + Math.floor(random() * 2);
+        for (let j = 0; j < stones; j++) {
+          const s = (j ? 0.14 : 0.22) + random() * 0.08;
+          const [rx, rz] = place(out + j * 0.12, j ? 0.32 : 0);
+          b.part(
+            new THREE.DodecahedronGeometry(s, 0),
+            random() < 0.4 ? 'stoneDark' : 'stone',
+            rx,
+            meadow.y + s * 0.3,
+            rz,
+            {
+              scale: [1.2, 0.7, 1],
+              rotation: [random(), random() * 3, random() * 0.3],
+            },
+          );
+          if (random() < 0.6)
+            b.ball(
+              s * 0.55,
+              'moss',
+              rx + s * 0.2,
+              meadow.y + s * 0.62,
+              rz,
+              [1.4, 0.35, 1.2],
+              { outline: false },
+            );
+        }
+      }
+      const [tx, tz] = place(out * 0.6, (random() < 0.5 ? -1 : 1) * 0.45);
+      tuft(tx, tz);
+    }
+  // Along the brook: mossy stones and clumps of reeds on the near banks.
+  const rock = (x: number, z: number, size: number) => {
+    b.part(
+      new THREE.DodecahedronGeometry(size, 0),
+      random() < 0.4 ? 'stoneDark' : 'stone',
+      x,
+      meadow.y + size * 0.3,
+      z,
+      {
+        scale: [1.2, 0.7, 1],
+        rotation: [random(), random() * 3, random() * 0.3],
+      },
+    );
+    if (random() < 0.5)
+      b.ball(
+        size * 0.55,
+        'moss',
+        x + size * 0.2,
+        meadow.y + size * 0.62,
+        z,
+        [1.4, 0.35, 1.2],
+        { outline: false },
+      );
+  };
+  const reeds = (x: number, z: number) => {
+    for (let j = 0; j < 5; j++) {
+      const height = 0.35 + random() * 0.35;
+      b.cylinder(
+        0.028,
+        0,
+        height,
+        j % 2 ? 'shrubOlive' : 'meadowDeep',
+        x + (random() - 0.5) * 0.3,
+        meadow.y + height / 2,
+        z + (random() - 0.5) * 0.3,
+        4,
+        {
+          rotation: [(random() - 0.5) * 0.3, 0, (random() - 0.5) * 0.3],
+          outline: false,
+        },
+      );
+    }
+  };
+  const every = mobile ? 9 : 6;
+  for (let i = every; i + 1 < streamPoints.length; i += every) {
+    const point = streamPoints[i]!,
+      next = streamPoints[i + 1]!;
+    if (Math.hypot(point.x, point.z) > 32) continue;
+    const length = Math.hypot(next.x - point.x, next.z - point.z);
+    const sx = -(next.z - point.z) / length,
+      sz = (next.x - point.x) / length;
+    const side = random() < 0.5 ? -1 : 1;
+    const out = streamEdges(point.width).sand + 0.05 + random() * 0.3;
+    const x = point.x + sx * side * out,
+      z = point.z + sz * side * out;
+    const pick = random();
+    if (pick < 0.45) rock(x, z, 0.16 + random() * 0.14);
+    else if (pick < 0.8) reeds(x, z);
+  }
+  // A few stones breaking the water where the brook passes the front.
+  for (const at of [0.53, 0.56, 0.6]) {
+    const point = streamPoints[Math.round(streamPoints.length * at)]!;
+    if (Math.hypot(point.x, point.z) < 20)
+      rock(
+        point.x + (random() - 0.5) * point.width,
+        point.z + (random() - 0.5) * point.width,
+        0.13 + random() * 0.08,
+      );
+  }
+  // Grass tufts scattered further out.
   for (let i = 0; i < (mobile ? 40 : 80); i++) {
     const a = random() * Math.PI * 2;
     const r = plinth.half * 1.45 + random() * 9;
     const x = Math.cos(a) * r,
       z = Math.sin(a) * r;
+    if (streamClearance(x, z) < 0.2) continue;
     for (let j = 0; j < 3; j++)
       b.cylinder(
         0.035,
         0,
         0.3 + random() * 0.25,
-        j ? 'meadowDry' : 'shrubOlive',
+        j ? 'meadowDeep' : 'shrubOlive',
         x + (random() - 0.5) * 0.2,
         meadow.y + 0.15,
         z + (random() - 0.5) * 0.2,
@@ -259,7 +582,12 @@ export function createLandscape(
   const merged = mergeAll(ranges);
   const mountains = new THREE.Mesh(
     merged,
-    hazeMaterial('mountains', ramp, haze, 40, 95, 0.8),
+    hazeMaterial('mountains', ramp, ridgeHaze, {
+      near: 30,
+      far: 90,
+      strength: 0.9,
+      crest,
+    }),
   );
   mountains.name = 'mountains';
   root.add(mountains);
@@ -267,7 +595,16 @@ export function createLandscape(
   return {
     root,
     setDaylight(state: Daylight) {
-      haze.value.copy(state.skyHorizon).lerp(state.skyTop, 0.15);
+      haze.value.copy(state.skyMist).lerp(state.skyHorizon, 0.25);
+      ridgeHaze.value.copy(state.skyHorizon).lerp(state.skyMist, 0.3);
+      crest.value
+        .copy(state.sunColor)
+        .multiplyScalar(state.sunIntensity * 0.32);
+    },
+    /** Lamplight on the ground, 0 by day; follows the lantern flicker. */
+    setLamps(intensity: number) {
+      pools.glow.value = Math.min(1, intensity / 2.4) * 0.5;
+      pools.root.visible = pools.glow.value > 0.005;
     },
   };
 }

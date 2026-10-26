@@ -111,6 +111,7 @@ function sprig(
   y: number,
   angle: number,
   length: number,
+  blooms = 3,
 ) {
   const tip: THREE.Vector3Tuple = [
     x + Math.cos(angle) * length,
@@ -130,19 +131,19 @@ function sprig(
     0.3,
   ];
   b.beam(mid, twig, 0.035, 'bark', 0.02);
-  const blooms: [THREE.Vector3Tuple, number][] = [
-    [tip, 0.34],
-    [twig, 0.28],
+  const flowers: [THREE.Vector3Tuple, number][] = [
+    [tip, 0.26],
+    [twig, 0.21],
     [
       [
         x + Math.cos(angle) * length * 0.72,
         y + Math.sin(angle) * length * 0.72,
         0.32,
       ],
-      0.24,
+      0.18,
     ],
   ];
-  for (const [[fx, fy, fz], r] of blooms)
+  for (const [[fx, fy, fz], r] of flowers.slice(0, blooms))
     flower(
       b,
       fx,
@@ -194,6 +195,73 @@ function hand(
   return b.build(shared, ramp, { castShadow: false });
 }
 
+/** A plank with a sunlit top edge, a ledge along the bottom and faint grain. */
+function plank(b: ToonBuilder, random: () => number, box: Box) {
+  const cx = box.x + box.w / 2,
+    cy = box.y - box.h / 2,
+    top = box.y,
+    bottom = box.y - box.h;
+  b.slab(box.w + 0.12, box.h + 0.12, 0.3, cy, 'wood', cx, 0, 0.24, {
+    rotation: FACE,
+  });
+  b.slab(box.w - 0.3, 0.07, 0.04, top - 0.1, 'woodLight', cx, 0.03, 0.03, {
+    rotation: FACE,
+    outline: false,
+  });
+  b.slab(box.w + 0.3, 0.16, 0.42, bottom + 0.02, 'woodDark', cx, 0.14, 0.06, {
+    rotation: FACE,
+  });
+  // Faint grain along the upper and lower edges, clear of the icons.
+  for (let i = 0; i < 5; i++) {
+    const length = Math.min(0.4 + random() * 0.7, box.w - 0.6);
+    if (length < 0.15) continue;
+    b.box(
+      length,
+      0.025,
+      0.02,
+      'bark',
+      box.x + 0.3 + random() * Math.max(0, box.w - 0.6 - length) + length / 2,
+      cy + (i % 2 ? 1 : -1) * box.h * (0.3 + random() * 0.08),
+      0.01,
+      { outline: false },
+    );
+  }
+}
+
+/** A round wooden token: dark rim, plain face and one carved ring. */
+function roundel(b: ToonBuilder, box: Box) {
+  const x = box.x + box.w / 2,
+    y = box.y - box.h / 2,
+    r = Math.min(box.w, box.h) / 2;
+  b.cylinder(r + 0.07, r + 0.07, 0.24, 'woodDark', x, y, -0.04, 32, {
+    rotation: FACE,
+  });
+  b.cylinder(r, r, 0.24, 'wood', x, y, 0, 32, { rotation: FACE });
+  b.cylinder(r * 0.84, r * 0.84, 0.01, 'bark', x, y, 0.125, 32, {
+    rotation: FACE,
+    outline: false,
+  });
+  b.cylinder(r * 0.79, r * 0.79, 0.01, 'wood', x, y, 0.13, 32, {
+    rotation: FACE,
+    outline: false,
+  });
+  // Sunlit upper lip, like the plank's top edge.
+  b.cylinder(r * 0.5, r * 0.5, 0.01, 'woodLight', x, y + r * 0.42, 0.12, 24, {
+    rotation: FACE,
+    scale: [1, 1, 0.22],
+    outline: false,
+  });
+}
+
+/** A red arrow pointing up and to the right, out of the scene. */
+function exitArrow(b: ToonBuilder, x: number, y: number) {
+  const tip: THREE.Vector3Tuple = [x + 0.19, y + 0.19, 0.17];
+  const options = { outline: false };
+  b.beam([x - 0.2, y - 0.2, 0.17], tip, 0.05, 'redDark', 0.05, options);
+  b.beam(tip, [x - 0.08, y + 0.19, 0.17], 0.05, 'redDark', 0.05, options);
+  b.beam(tip, [x + 0.19, y - 0.08, 0.17], 0.05, 'redDark', 0.05, options);
+}
+
 /** Flat petal outline shared by the resting and falling petals. */
 function petalGeometry(size: number) {
   const shape = new THREE.Shape();
@@ -215,6 +283,8 @@ export function createMenuBar(
   host: HTMLElement,
   menu: HTMLElement,
   ramp: THREE.Texture,
+  /** The floating enter button, drawn as its own plaque. */
+  enter?: HTMLElement,
 ) {
   const shared = createSharedUniforms();
   const scene = new THREE.Scene();
@@ -388,37 +458,12 @@ export function createMenuBar(
 
     const b = new ToonBuilder();
     const random = seeded(41);
-    const cx = nav.x + nav.w / 2,
-      cy = nav.y - nav.h / 2,
+    const cy = nav.y - nav.h / 2,
       top = nav.y,
       bottom = nav.y - nav.h,
       left = nav.x,
       right = nav.x + nav.w;
-    // Plank, with a sunlit top edge and a ledge along the bottom.
-    b.slab(nav.w + 0.12, nav.h + 0.12, 0.3, cy, 'wood', cx, 0, 0.24, {
-      rotation: FACE,
-    });
-    b.slab(nav.w - 0.3, 0.07, 0.04, top - 0.1, 'woodLight', cx, 0.03, 0.03, {
-      rotation: FACE,
-      outline: false,
-    });
-    b.slab(nav.w + 0.3, 0.16, 0.42, bottom + 0.02, 'woodDark', cx, 0.14, 0.06, {
-      rotation: FACE,
-    });
-    // Faint grain along the upper and lower edges, clear of the icons.
-    for (let i = 0; i < 5; i++) {
-      const length = 0.4 + random() * 0.7;
-      b.box(
-        length,
-        0.025,
-        0.02,
-        'bark',
-        left + 0.3 + random() * Math.max(0, nav.w - 0.6 - length) + length / 2,
-        cy + (i % 2 ? 1 : -1) * nav.h * (0.3 + random() * 0.08),
-        0.01,
-        { outline: false },
-      );
-    }
+    plank(b, random, nav);
     // Straw cords it hangs from, tied to brass pegs.
     // Kept apart on the narrow board the collapsed menu leaves.
     const inset = Math.min(0.45, nav.w * 0.16);
@@ -485,30 +530,32 @@ export function createMenuBar(
     const toggle = icon('toggle');
     menuFlower.visible = !!toggle;
     if (toggle) menuFlower.position.set(toggle.x, toggle.y, 0.2);
-    const enter = icon('enter');
-    if (enter) {
-      const tip: THREE.Vector3Tuple = [enter.x + 0.17, enter.y, 0.17];
-      b.beam([enter.x - 0.18, enter.y, 0.17], tip, 0.04, 'redDark', 0.04, {
-        outline: false,
-      });
-      for (const side of [1, -1])
-        b.beam(
-          tip,
-          [enter.x + 0.03, enter.y + side * 0.15, 0.17],
-          0.04,
-          'redDark',
-          0.04,
-          {
-            outline: false,
-          },
-        );
+    // The way into the site: its own small plaque floating bottom right.
+    const door = measure(enter ?? null, origin);
+    const mark = measure(
+      enter?.querySelector('[data-icon="enter"]') ?? null,
+      origin,
+    );
+    if (door && mark) {
+      roundel(b, door);
+      exitArrow(b, mark.x + mark.w / 2, mark.y - mark.h / 2);
+      flower(
+        b,
+        door.x + door.w * 0.15,
+        door.y - door.h * 0.15,
+        0.32,
+        0.17,
+        random() * Math.PI,
+        'blossomLight',
+      );
     }
     // Blossom sprigs over the top-left corner and hanging off the bottom right.
     sprig(b, random, left + 0.1, top - 0.2, Math.PI * 0.9, 0.95);
     sprig(b, random, left + 0.3, top - 0.05, Math.PI * 0.62, 0.55);
-    sprig(b, random, right - 0.15, bottom + 0.1, -Math.PI * 0.42, 0.8);
+    // Kept short and sparse so it never crowds the enter arrow.
+    sprig(b, random, right - 0.1, bottom + 0.1, -Math.PI * 0.42, 0.6, 2);
     // Petals already fallen onto the ledge.
-    for (let i = 0; i < 9; i++)
+    for (let i = 0; i < 6; i++)
       b.ball(
         0.07 + random() * 0.03,
         random() > 0.5 ? 'blossom' : 'blossomLight',

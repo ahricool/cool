@@ -39,14 +39,21 @@ export function daylightAt(hour: number, wet = 0) {
     ambientIntensity: 1.15 + day * 0.4,
     moonIntensity: (1 - day) * 0.75,
     lampIntensity: (1 - day) * 2.4,
+    // Three bands: pale blue zenith, warm cream horizon, a pink mist at ground level.
     skyTop: color(0x0f1a3e)
-      .lerp(color(0x5ab4f0), day)
+      .lerp(color(0x74c0f0), day)
       .lerp(color(0x6d76d0), dusk * 0.75)
       .lerp(overcast, veil * 0.55),
     skyHorizon: color(0x2b3c78)
-      .lerp(color(0xd4f0ff), day)
+      .lerp(color(0xf8e8cc), day)
       .lerp(color(0xffa58c), dusk)
       .lerp(color(0xc9d0da), veil * 0.5),
+    skyMist: color(0x3a3a72)
+      .lerp(color(0xffd8e2), day)
+      .lerp(color(0xff9fb0), dusk * 0.85)
+      .lerp(color(0xc8c6d2), veil * 0.6),
+    /** Faint self-light on blossoms once the sun is down. */
+    blossomGlow: (1 - day) * 0.24,
     haze: dusk * (1 - wet * 0.6),
     stars: (1 - THREE.MathUtils.smoothstep(altitude, -0.3, 0.02)) * (1 - wet),
     ink: 0.55 + day * 0.45,

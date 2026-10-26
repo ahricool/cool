@@ -15,6 +15,11 @@ import {
 } from '../../apps/frontend/app/features/welcome/layout';
 import { createSparkle } from '../../apps/frontend/app/features/welcome/sparkle';
 import {
+  streamEdges,
+  streamGeometry,
+  streamPoints,
+} from '../../apps/frontend/app/features/welcome/stream';
+import {
   createWelcomeCamera,
   createWelcomeGarden,
   welcomePixelRatio,
@@ -249,5 +254,40 @@ test('Sparkle keeps a contact blob instead of a shadow-map caster', () => {
         if (value instanceof THREE.Texture) value.dispose();
       material.dispose();
     });
+  }
+});
+
+test('the brook bends around the plinth clear of its contact shadow and stays on the meadow', () => {
+  const widths = streamPoints.map((point) => point.width);
+  // Pools and narrows, but never pinched shut.
+  assert.ok(Math.min(...widths) >= 0.55 && Math.max(...widths) > 1.6);
+  for (const { x, z, width } of streamPoints) {
+    const outside = Math.hypot(
+      Math.max(Math.abs(x) - plinth.half, 0),
+      Math.max(Math.abs(z) - plinth.half, 0),
+    );
+    assert.ok(
+      outside > 2.2 + streamEdges(width).bank,
+      `brook too close at ${x}, ${z}`,
+    );
+    assert.ok(Math.hypot(x, z) < 90);
+  }
+  const tint = new THREE.Color();
+  const geometry = streamGeometry({ water: tint, sand: tint, bank: tint });
+  try {
+    const position = geometry.getAttribute('position');
+    const flow = geometry.getAttribute('flow');
+    assert.equal(position.count, flow.count);
+    for (let i = 0; i < position.count; i++)
+      assert.ok(
+        [position.getX(i), position.getY(i), position.getZ(i)].every(
+          Number.isFinite,
+        ),
+      );
+    // The ribbon faces up so the cel light reads it as lit ground.
+    geometry.computeVertexNormals();
+    assert.ok(geometry.getAttribute('normal').getY(0) > 0.99);
+  } finally {
+    geometry.dispose();
   }
 });
