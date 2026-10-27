@@ -36,19 +36,21 @@ useHead(() => ({ title: store.site.title }));
       </button>
     </div>
     <div id="ury-menu" class="ury-menu">
-      <p
-        v-if="store.site.description"
-        class="ury-tagline"
-        :lang="contentLang(store.site.contentLocale)"
-      >
-        {{ store.site.description }}
-      </p>
-      <nav class="ury-nav" :aria-label="t('主导航')">
-        <NuxtLink to="/home">{{ t('首页') }}</NuxtLink>
-        <NuxtLink to="/tags">{{ t('标签') }}</NuxtLink>
-        <NuxtLink to="/search">{{ t('搜索') }}</NuxtLink>
-        <NuxtLink to="/about">{{ t('我') }}</NuxtLink>
-      </nav>
+      <div class="ury-menu-inner">
+        <p
+          v-if="store.site.description"
+          class="ury-tagline"
+          :lang="contentLang(store.site.contentLocale)"
+        >
+          {{ store.site.description }}
+        </p>
+        <nav class="ury-nav" :aria-label="t('主导航')">
+          <NuxtLink to="/home">{{ t('首页') }}</NuxtLink>
+          <NuxtLink to="/tags">{{ t('标签') }}</NuxtLink>
+          <NuxtLink to="/search">{{ t('搜索') }}</NuxtLink>
+          <NuxtLink to="/about">{{ t('我') }}</NuxtLink>
+        </nav>
+      </div>
     </div>
   </header>
   <div class="ury-content-column">

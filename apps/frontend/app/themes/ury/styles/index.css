@@ -704,12 +704,32 @@ h2 {
     align-items: baseline;
     letter-spacing: -0.035em;
   }
+  /* The menu fades and unfolds; hidden content stays out of tab order. */
   .ury-menu {
-    display: none;
-    padding-bottom: 20px;
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      grid-template-rows 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.24s ease,
+      visibility 0s linear 0.32s;
+  }
+  .ury-menu-inner {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .ury-menu-inner > :last-child {
+    margin-bottom: 20px;
   }
   .ury-masthead.is-open .ury-menu {
-    display: block;
+    grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+    transition:
+      grid-template-rows 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.28s ease 0.04s,
+      visibility 0s;
   }
   .ury-tagline {
     margin: 0 0 16px;
