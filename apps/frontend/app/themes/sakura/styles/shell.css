@@ -26,11 +26,18 @@
   align-items: center;
   flex-shrink: 0;
 }
+.page-pattern {
+  --sakura-pattern-opacity: var(--sakura-page-pattern-opacity);
+}
 .page-content {
   max-width: 1040px;
   margin: 0 auto;
   padding: 48px 40px;
   min-height: 30vh;
+  /* A quiet column under the reading content; the pattern stays at the sides. */
+  background: color-mix(in srgb, var(--sakura-page) 88%, transparent);
+  border-radius: 24px;
+  box-shadow: var(--sakura-column-shadow);
 }
 .page-content.post,
 .page-content.page {
@@ -38,9 +45,6 @@
 }
 .page-content.page {
   background: var(--sakura-page);
-}
-.page-content.post {
-  background: transparent;
 }
 .reading-banner {
   position: relative;
@@ -58,6 +62,10 @@
 }
 .reading-banner--home .banner-artwork {
   min-height: 100svh;
+}
+/* Without the wave, the home artwork still fades into the page instead of a hard edge. */
+.reading-banner--home:not(.reading-banner--wave) .banner-artwork {
+  mask-image: linear-gradient(#000 calc(100% - 110px), transparent);
 }
 .banner-image {
   position: absolute;
@@ -93,40 +101,50 @@
   margin: 0;
   max-width: 540px;
   line-height: 1.9;
+  font-size: calc(clamp(17px, 1.6vw, 20px) * var(--sakura-font-scale));
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 10px #0009;
 }
 .hero-description p > span:not(.desc) {
   display: none;
 }
-.banner-wave {
-  position: absolute;
-  inset: auto 0 0;
-  height: 65px;
-  opacity: 1;
-  overflow: hidden;
-  background: linear-gradient(transparent 60%, var(--sakura-page));
-  pointer-events: none;
-}
-.banner-wave > div {
-  position: absolute;
-  inset: 0;
-  width: 200%;
-  height: 65px;
-  background: var(--sakura-page);
-  mask-repeat: repeat-x;
-  mask-size: auto 65px;
-  animation: hero-wave 24s linear infinite;
-}
-.banner-wave .wave-1 {
-  mask-image: url('/sakura/images/wave/wave1.png');
-}
-.banner-wave .wave-2 {
-  mask-image: url('/sakura/images/wave/wave2.png');
-  animation-direction: reverse;
-  opacity: 0.5;
+/* The wave cuts the artwork instead of painting the page colour over it,
+   so the page pattern runs right up to the wavy edge. wave1.png is opaque
+   below its curve; excluding it from a full mask removes that part. */
+.reading-banner--wave .banner-artwork {
+  --wave-height: 65px;
+  /* wave1.png is 997×85; one tile at the wave height. */
+  --wave-tile: calc(var(--wave-height) * 997 / 85);
+  -webkit-mask-image:
+    linear-gradient(#000 0 0), url('/sakura/images/wave/wave1.png');
+  mask-image: linear-gradient(#000 0 0), url('/sakura/images/wave/wave1.png');
+  -webkit-mask-size:
+    100% 100%,
+    var(--wave-tile) var(--wave-height);
+  mask-size:
+    100% 100%,
+    var(--wave-tile) var(--wave-height);
+  -webkit-mask-repeat: no-repeat, repeat-x;
+  mask-repeat: no-repeat, repeat-x;
+  -webkit-mask-position:
+    0 0,
+    0 100%;
+  mask-position:
+    0 0,
+    0 100%;
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: hero-wave 13s linear infinite;
 }
 @keyframes hero-wave {
+  /* One tile: 65px × 997 / 85. Literal, since var() here does not interpolate. */
   to {
-    transform: translateX(-50%);
+    -webkit-mask-position:
+      0 0,
+      -762.41px 100%;
+    mask-position:
+      0 0,
+      -762.41px 100%;
   }
 }
 
@@ -181,6 +199,9 @@
   }
   .page-content {
     padding: 32px 20px;
+    /* Full-width on phones: no card edge to lift. */
+    border-radius: 0;
+    box-shadow: none;
   }
   .site-footer {
     margin-inline: 20px;
@@ -209,9 +230,9 @@
   font-weight: 700;
   margin-bottom: 28px;
   --wordmark-width: clamp(148px, 16vw, 220px);
-  --wordmark-shadow-offset: 3px;
-  --wordmark-shadow-blur: 8px;
-  --wordmark-shadow-color: #0009;
+  --wordmark-shadow-offset: 2px;
+  --wordmark-shadow-blur: 14px;
+  --wordmark-shadow-color: #2a0f1fcc;
 }
 .over-banner:not(.header-solid) {
   --wordmark-shadow-color: #0009;
@@ -223,7 +244,7 @@
 .reading-controls {
   display: flex;
 }
-.about-link {
+.header-link {
   min-height: 44px;
   display: inline-flex;
   align-items: center;
@@ -231,18 +252,18 @@
   border-radius: 10px;
   font-size: calc(14px * var(--sakura-font-scale));
 }
-.about-link:hover,
-.about-link.router-link-active {
+.header-link:hover,
+.header-link.router-link-active {
   color: var(--reading-interaction, var(--sakura-accent-strong));
 }
-.about-link:focus-visible {
+.header-link:focus-visible {
   outline: 2px solid var(--reading-interaction, var(--sakura-accent-strong));
 }
 .header-actions {
   gap: 8px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .banner-wave > div {
+  .reading-banner--wave .banner-artwork {
     animation: none;
   }
 }

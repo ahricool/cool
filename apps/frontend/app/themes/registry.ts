@@ -41,7 +41,8 @@ export const siteThemes = [
     },
     error: () => import('./ury/pages/Error.vue'),
     colorModes: ['light', 'dark'],
-    assets: { icon: '/themes/ury/mark.svg' },
+    // The site mark; Ury draws no logo of its own.
+    assets: { icon: '/favicon.svg' },
   },
 ] as const satisfies readonly SiteTheme[];
 export type SiteThemeId = (typeof siteThemes)[number]['id'];

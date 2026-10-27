@@ -1,60 +1,56 @@
 <script setup lang="ts">
-import mark from '../assets/mark.svg';
-import { resolveCustomImage } from '~/utils/custom-image';
-import { useUryAppearance } from '../composables/useUryAppearance';
 const store = useSiteStore();
-const { settings, preference } = useUryAppearance();
+const route = useRoute();
 const { t, locale, setLocale, contentLang } = useCoolI18n();
+const year = new Date().getFullYear();
+// Phones fold the masthead into one line; the menu opens the navigation.
+const menuOpen = ref(false);
+watch(
+  () => route.fullPath,
+  () => {
+    menuOpen.value = false;
+  },
+);
 useHead(() => ({ title: store.site.title }));
 </script>
 <template>
   <a class="ury-skip" href="#content">{{ t('跳到正文') }}</a>
-  <header class="ury-masthead">
-    <div :lang="contentLang(store.site.contentLocale)">
-      <img
-        v-if="settings.showAvatar"
-        class="ury-avatar"
-        :src="resolveCustomImage(store.site.author.avatarUrl) ?? mark"
-        width="64"
-        height="64"
-        :alt="store.site.author.displayName"
-      />
-      <NuxtLink class="ury-brand" to="/home">{{ store.site.title }}</NuxtLink>
-      <p class="ury-tagline">{{ store.site.description }}</p>
+  <header class="ury-masthead" :class="{ 'is-open': menuOpen }">
+    <div class="ury-masthead-bar">
+      <NuxtLink
+        class="ury-brand ury-brand-link"
+        to="/home"
+        :lang="contentLang(store.site.contentLocale)"
+        >{{ store.site.title }}</NuxtLink
+      >
+      <!-- Phones: the title itself opens and closes the navigation. -->
+      <button
+        type="button"
+        class="ury-brand ury-brand-toggle"
+        :lang="contentLang(store.site.contentLocale)"
+        :aria-expanded="menuOpen"
+        aria-controls="ury-menu"
+        @click="menuOpen = !menuOpen"
+      >
+        {{ store.site.title }}
+      </button>
     </div>
-    <nav class="ury-nav" :aria-label="t('主导航')">
-      <NuxtLink to="/home">{{ t('首页') }}</NuxtLink>
-      <NuxtLink to="/tags">{{ t('标签') }}</NuxtLink>
-      <NuxtLink to="/search">{{ t('搜索') }}</NuxtLink>
-      <NuxtLink to="/about">{{ t('我') }}</NuxtLink>
-    </nav>
-    <div class="ury-preferences">
-      <label>
-        <span id="ury-language-label">Language / 语言</span>
-        <select
-          aria-labelledby="ury-language-label"
-          :value="locale"
-          @change="setLocale(($event.target as HTMLSelectElement).value)"
+    <div id="ury-menu" class="ury-menu">
+      <div class="ury-menu-inner">
+        <p
+          v-if="store.site.description"
+          class="ury-tagline"
+          :lang="contentLang(store.site.contentLocale)"
         >
-          <option value="zh">中文</option>
-          <option value="en">English</option>
-        </select>
-      </label>
-      <label>
-        <span id="ury-palette-label">{{ t('配色') }}</span>
-        <select
-          aria-labelledby="ury-palette-label"
-          :value="preference ?? ''"
-          @change="
-            preference = ($event.target as HTMLSelectElement).value || null
-          "
-        >
-          <option value="">{{ t('网站默认') }}</option>
-          <option value="light">{{ t('浅色') }}</option>
-          <option value="sepia">{{ t('暖纸色') }}</option>
-          <option value="dark">{{ t('深色') }}</option>
-        </select>
-      </label>
+          {{ store.site.description }}
+        </p>
+        <nav class="ury-nav" :aria-label="t('主导航')">
+          <NuxtLink to="/home">{{ t('首页') }}</NuxtLink>
+          <NuxtLink to="/tags">{{ t('标签') }}</NuxtLink>
+          <NuxtLink to="/search">{{ t('搜索') }}</NuxtLink>
+          <NuxtLink to="/about">{{ t('我') }}</NuxtLink>
+        </nav>
+      </div>
     </div>
   </header>
   <div class="ury-content-column">
@@ -65,8 +61,32 @@ useHead(() => ({ title: store.site.title }));
       </div>
       <slot />
     </main>
-    <footer class="ury-footer" :lang="contentLang(store.site.contentLocale)">
-      {{ store.site.title }} · {{ store.site.author.displayName }}
+    <footer class="ury-footer">
+      <p class="ury-wish" lang="zh-CN">
+        愿你的天空永远星光灿烂，<br />愿你的舞台永远明光幻彩。
+      </p>
+      <div class="ury-languages" role="group" aria-label="Language / 语言">
+        <button
+          type="button"
+          lang="zh-CN"
+          :aria-pressed="locale === 'zh'"
+          @click="setLocale('zh')"
+        >
+          中文</button
+        ><span aria-hidden="true">·</span
+        ><button
+          type="button"
+          lang="en"
+          :aria-pressed="locale === 'en'"
+          @click="setLocale('en')"
+        >
+          English
+        </button>
+      </div>
+      <p class="ury-colophon" :lang="contentLang(store.site.contentLocale)">
+        © {{ year }} {{ store.site.title }} ·
+        {{ store.site.author.displayName }}
+      </p>
     </footer>
   </div>
 </template>

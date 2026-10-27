@@ -169,20 +169,18 @@ function restoreImageFocus() {
     <div v-if="groups.length" class="media-layout-controls">
       <label v-for="(group, index) in groups" :key="index"
         >{{ t('素材组') }} {{ index + 1 }} · {{ group.group.assets.length
-        }}<select
-          :value="group.group.layout"
+        }}<el-radio-group
+          size="small"
+          :model-value="group.group.layout"
           :disabled="readOnly || disabled"
           :aria-label="t('排列')"
-          @change="
-            changeLayout(
-              index,
-              ($event.target as HTMLSelectElement).value as 'vertical' | 'grid',
-            )
+          @update:model-value="
+            changeLayout(index, $event as 'vertical' | 'grid')
           "
         >
-          <option value="vertical">{{ t('纵向') }}</option>
-          <option value="grid">{{ t('网格') }}</option>
-        </select></label
+          <el-radio-button value="vertical">{{ t('纵向') }}</el-radio-button>
+          <el-radio-button value="grid">{{ t('网格') }}</el-radio-button>
+        </el-radio-group></label
       >
     </div>
     <div class="editor-status">

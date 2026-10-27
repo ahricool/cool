@@ -21,7 +21,9 @@
 }
 @supports (mask-image: linear-gradient(black, transparent)) {
   .navigation-surface--top::before {
-    inset-block-end: -48px;
+    /* Ends above the page header row: a backdrop blur reaching the first
+       buttons smears a faint copy of them up under the bar. */
+    inset-block-end: -32px;
     mask-image: linear-gradient(
       to bottom,
       black calc(100% - 64px),

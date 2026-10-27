@@ -14,7 +14,7 @@ const { contentLang } = useCoolI18n();
       <p class="footer-wish" lang="zh-CN">
         <em>愿你的天空永远星光灿烂，<br />愿你的舞台永远明光幻彩。</em>
       </p>
-      <LanguageSelector variant="text" />
+      <LanguageSelector />
       <p class="footer-copyright">
         ©
         <span :lang="contentLang(store.site.contentLocale)">{{
@@ -36,8 +36,12 @@ const { contentLang } = useCoolI18n();
 }
 .footer-wish {
   margin: 12px 0;
+  line-height: 2;
+  letter-spacing: 0.08em;
 }
+/* CJK has no italic face; keep the wish upright and soft instead. */
 .footer-wish em {
-  font-style: italic;
+  font-style: normal;
+  opacity: 0.85;
 }
 </style>

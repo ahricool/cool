@@ -18,6 +18,14 @@
   --el-color-primary-light-9: var(--sakura-soft);
   --el-color-primary-dark-2: var(--sakura-accent-strong);
   --el-color-danger: var(--sakura-danger);
+  /* el-alert and el-message use "error", which Element keeps separate from danger. */
+  --el-color-error: var(--el-color-danger);
+  --el-color-error-light-3: var(--el-color-danger-light-3);
+  --el-color-error-light-5: var(--el-color-danger-light-5);
+  --el-color-error-light-7: var(--el-color-danger-light-7);
+  --el-color-error-light-8: var(--el-color-danger-light-8);
+  --el-color-error-light-9: var(--el-color-danger-light-9);
+  --el-color-error-dark-2: var(--sakura-danger-solid);
   --el-color-success: var(--sakura-success);
   --el-color-warning: var(--sakura-warning);
   --el-color-info: var(--sakura-muted);

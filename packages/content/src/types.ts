@@ -172,17 +172,14 @@ export interface Comment {
 }
 export type PatternShape = 'heart' | 'star' | 'dot';
 export type SiteFont = 'default' | 'bubble-candy';
+/** Ury is always serif and follows the device's light/dark setting. */
 export interface UryAppearance {
-  palette: 'light' | 'sepia' | 'dark';
-  font: 'serif' | 'sans';
   fontSize: number;
   readingWidth: 'comfortable' | 'wide';
   showAvatar: boolean;
   showCovers: boolean;
 }
 export const defaultUryAppearance: UryAppearance = {
-  palette: 'light',
-  font: 'serif',
   fontSize: 100,
   readingWidth: 'comfortable',
   showAvatar: true,
@@ -193,11 +190,6 @@ export function normalizeUryAppearance(
   value?: Partial<UryAppearance> | null,
 ): UryAppearance {
   return {
-    palette:
-      value?.palette === 'sepia' || value?.palette === 'dark'
-        ? value.palette
-        : 'light',
-    font: value?.font === 'sans' ? 'sans' : 'serif',
     fontSize: normalizeFontSize(value?.fontSize),
     readingWidth: value?.readingWidth === 'wide' ? 'wide' : 'comfortable',
     showAvatar:

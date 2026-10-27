@@ -1,16 +1,8 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ variant?: 'select' | 'text' }>(), {
-  variant: 'select',
-});
 const { locale, setLocale } = useCoolI18n();
 </script>
 <template>
-  <div
-    v-if="variant === 'text'"
-    class="language-links"
-    role="group"
-    aria-label="Language / 语言"
-  >
+  <div class="language-links" role="group" aria-label="Language / 语言">
     <button
       type="button"
       lang="en"
@@ -28,18 +20,6 @@ const { locale, setLocale } = useCoolI18n();
       中文
     </button>
   </div>
-  <label v-else class="language-selector">
-    <span aria-hidden="true">◎</span>
-    <select
-      data-testid="language-select"
-      :value="locale"
-      aria-label="Language / 语言"
-      @change="setLocale(($event.target as HTMLSelectElement).value)"
-    >
-      <option value="en" lang="en">English</option>
-      <option value="zh" lang="zh-CN">简体中文</option>
-    </select>
-  </label>
 </template>
 <style scoped>
 .language-links {
@@ -69,32 +49,5 @@ const { locale, setLocale } = useCoolI18n();
 .language-links button:focus-visible {
   outline: 1px solid currentColor;
   outline-offset: 3px;
-}
-
-.language-selector {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: inherit;
-  font-size: calc(13px * var(--sakura-font-scale));
-}
-.language-selector select {
-  min-height: 36px;
-  padding: 6px 24px 6px 8px;
-  border: 0;
-  box-shadow: var(--sakura-button-shadow);
-  border-radius: 8px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.language-selector select:focus-visible {
-  outline: 2px solid #e58aa3;
-  outline-offset: 3px;
-}
-.language-selector option {
-  color: var(--sakura-text-regular);
-  background: var(--sakura-surface);
 }
 </style>

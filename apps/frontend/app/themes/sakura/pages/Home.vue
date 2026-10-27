@@ -57,13 +57,16 @@ onBeforeUnmount(() => observer?.disconnect());
         <button
           v-if="nextCursor && !pending && !error"
           type="button"
-          class="button-normal"
+          class="timeline-more"
           @click="loadMore()"
         >
           {{ t('加载更多') }}
         </button>
-        <p v-else-if="started && items.length && !pending && !error">
-          {{ t('已读到最后') }}
+        <p
+          v-else-if="started && items.length && !pending && !error"
+          class="timeline-end"
+        >
+          <SakuraFlower />{{ t('已读到最后') }}
         </p>
       </div>
     </section>

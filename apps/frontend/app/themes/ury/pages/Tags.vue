@@ -39,14 +39,15 @@ useHead(() => ({ title: t('标签') }));
       :empty="terms?.length === 0"
       @retry="refreshTerms"
     />
-    <div class="ury-tags">
+    <div class="ury-tag-index">
       <NuxtLink
         v-for="tag in terms"
         :key="tag.id"
         :lang="contentLang(tag.contentLocale)"
         :aria-current="slug === tag.slug ? 'page' : undefined"
         :to="`/tags/${encodeURIComponent(tag.slug)}`"
-        >{{ tag.name }}</NuxtLink
+        ><span>{{ tag.name }}</span
+        ><span aria-hidden="true">→</span></NuxtLink
       >
     </div>
     <template v-if="slug"

@@ -175,17 +175,19 @@ test('an unsaved Admin choice does not affect public content; save persists with
   ).toBe(true);
 });
 
-test('Admin color mode and public color mode have separate cookies and retain the same layout', async ({
+test('Ury follows the device while Admin keeps its own color mode cookie', async ({
   page,
 }) => {
   await themeFixture(page, { themeId: 'ury' });
+  await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto('/home');
   await surface(page, 'ury');
-  await page.getByLabel('配色', { exact: true }).selectOption('dark');
   await expect(page.locator('body')).toHaveCSS(
     'background-color',
     'rgb(34, 35, 31)',
   );
+  await expect(page.locator('html')).not.toHaveClass('dark');
+  await expect(page.locator('select')).toHaveCount(0);
   await expect(page.locator('.ury-masthead')).toBeVisible();
   await spa(page, '/admin/settings');
   await expect(page.locator('body')).toHaveCSS(
@@ -194,15 +196,20 @@ test('Admin color mode and public color mode have separate cookies and retain th
   );
   await page.getByRole('button', { name: '切换深色', exact: true }).click();
   await expect(page.locator('html')).toHaveClass('dark');
+  await page.emulateMedia({ colorScheme: 'light' });
   await spa(page, '/home');
   await surface(page, 'ury');
-  await page.getByLabel('配色', { exact: true }).selectOption('light');
+  await expect(page.locator('body')).toHaveCSS(
+    'background-color',
+    'rgb(253, 252, 249)',
+  );
+  await expect(page.locator('html')).not.toHaveClass('dark');
   await spa(page, '/admin/settings');
   await expect(page.locator('html')).toHaveClass('dark');
   const cookies = await page.context().cookies();
-  expect(
-    cookies.find((cookie) => cookie.name === 'cool_ury_palette')?.value,
-  ).toBe('light');
+  expect(cookies.some((cookie) => cookie.name === 'cool_ury_palette')).toBe(
+    false,
+  );
   expect(
     cookies.find((cookie) => cookie.name === 'cool_admin_theme')?.value,
   ).toBe('dark');
@@ -219,8 +226,7 @@ test('missing, unknown and retired IDs fall back without writes; Admin offers on
     background: 'none',
     ury: {
       ...defaultUryAppearance,
-      palette: 'sepia',
-      font: 'sans',
+      readingWidth: 'wide',
       fontSize: 125,
     },
   });
@@ -313,7 +319,7 @@ for (const themeId of ['default', 'ury'] as const) {
           ],
           [
             '/tags',
-            themeId === 'default' ? '.taxonomy-terms' : `.${themeId}-tags`,
+            themeId === 'default' ? '.taxonomy-terms' : `.${themeId}-tag-index`,
           ],
           [
             '/tags/spring?page=2',
@@ -447,14 +453,15 @@ test('a failed site API does not repeatedly retry while recovering from an error
 });
 
 for (const themeId of ['default', 'ury'] as const) {
-  test(`${themeId} narrow content retains media and all font/size/palette choices`, async ({
+  test(`${themeId} narrow content retains media and all font/size/color choices`, async ({
     page,
   }, info) => {
     const state = await themeFixture(page, { themeId });
     await page.setViewportSize({ width: 390, height: 844 });
+    // Ury is always serif; it has a single font choice.
     for (const font of themeId === 'default'
       ? (['default', 'bubble-candy'] as const)
-      : (['serif', 'sans'] as const)) {
+      : (['serif'] as const)) {
       for (const fontSize of [80, 150]) {
         for (const mode of ['light', 'dark']) {
           if (themeId === 'default') {
@@ -465,17 +472,22 @@ for (const themeId of ['default', 'ury'] as const) {
             state.settings.site.appearance.ury = {
               ...defaultUryAppearance,
               ...state.settings.site.appearance.ury,
-              font: font as 'serif' | 'sans',
               fontSize,
             };
           }
-          await page.context().addCookies([
-            {
-              name: themeId === 'default' ? 'cool_theme' : 'cool_ury_palette',
-              value: mode,
-              url: 'http://127.0.0.1:43871',
-            },
-          ]);
+          // Sakura reads its reader cookie; Ury follows the device.
+          if (themeId === 'default')
+            await page.context().addCookies([
+              {
+                name: 'cool_theme',
+                value: mode,
+                url: 'http://127.0.0.1:43871',
+              },
+            ]);
+          else
+            await page.emulateMedia({
+              colorScheme: mode as 'light' | 'dark',
+            });
           await page.goto('/posts/fixture-post');
           await surface(page, themeId);
           await expect(

@@ -211,20 +211,20 @@ test('reader palette state shares a namespace but isolates Ury from public and A
   const value = scope.run(() => ({
     blog: useCoolTheme(),
     admin: useCoolTheme('admin'),
-    ury: useReaderPalette('cool_ury_palette'),
-    secondUry: useReaderPalette('cool_ury_palette'),
+    other: useReaderPalette('cool_other_palette'),
+    secondOther: useReaderPalette('cool_other_palette'),
   }))!;
   assert.equal(value.blog.value, true);
   assert.equal(value.admin.value, false);
-  value.ury.value = 'sepia';
+  value.other.value = 'dark';
   await nextTick();
-  assert.equal(value.secondUry.value, 'sepia');
-  assert.equal(cookies.get('cool_ury_palette')!.value, 'sepia');
+  assert.equal(value.secondOther.value, 'dark');
+  assert.equal(cookies.get('cool_other_palette')!.value, 'dark');
   assert.equal(cookies.get('cool_theme')!.value, 'dark');
   assert.equal(cookies.get('cool_admin_theme')!.value, 'light');
-  value.ury.value = null;
+  value.other.value = null;
   await nextTick();
-  assert.equal(cookies.get('cool_ury_palette')!.value, null);
+  assert.equal(cookies.get('cool_other_palette')!.value, null);
   value.blog.value = false;
   await nextTick();
   assert.equal(cookies.get('cool_theme')!.value, 'light');
