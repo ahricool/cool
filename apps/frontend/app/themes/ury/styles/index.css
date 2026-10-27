@@ -179,7 +179,7 @@ h2 {
   background: none;
   color: inherit;
 }
-/* Like Sakura's logo: the title opens the menu with no visible affordance. */
+/* The title itself opens the menu, with no visible affordance. */
 .ury-brand-toggle:hover:not(:disabled) {
   border-color: transparent;
   background: none;
