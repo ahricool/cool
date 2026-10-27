@@ -33,7 +33,10 @@ useHead(() => ({ title: store.site.title }));
       <div class="header-inner">
         <ReadingBrand placement="header" class="header-brand" />
         <nav class="header-actions" :aria-label="t('主导航')">
-          <NuxtLink to="/about" class="about-link">{{ t('我') }}</NuxtLink>
+          <NuxtLink to="/tags" class="header-link">{{ t('标签') }}</NuxtLink>
+          <NuxtLink to="/about" class="header-link about-link">{{
+            t('我')
+          }}</NuxtLink>
           <ReadingControls />
         </nav>
       </div>

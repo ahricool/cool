@@ -244,7 +244,7 @@
 .reading-controls {
   display: flex;
 }
-.about-link {
+.header-link {
   min-height: 44px;
   display: inline-flex;
   align-items: center;
@@ -252,11 +252,11 @@
   border-radius: 10px;
   font-size: calc(14px * var(--sakura-font-scale));
 }
-.about-link:hover,
-.about-link.router-link-active {
+.header-link:hover,
+.header-link.router-link-active {
   color: var(--reading-interaction, var(--sakura-accent-strong));
 }
-.about-link:focus-visible {
+.header-link:focus-visible {
   outline: 2px solid var(--reading-interaction, var(--sakura-accent-strong));
 }
 .header-actions {
