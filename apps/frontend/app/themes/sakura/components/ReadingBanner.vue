@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import ReadingWave from '~/themes/sakura/components/ReadingWave.vue';
 import PatternSurface from '~/themes/sakura/components/PatternSurface.vue';
 import { readingShellKey } from '~/themes/sakura/utils/reading-shell';
 import { resolveCustomImage } from '~/utils/custom-image';
@@ -36,7 +35,7 @@ onBeforeUnmount(() => unregister?.());
   <section
     ref="element"
     class="reading-banner"
-    :class="`reading-banner--${variant}`"
+    :class="[`reading-banner--${variant}`, { 'reading-banner--wave': wave }]"
   >
     <div
       class="banner-artwork"
@@ -62,7 +61,6 @@ onBeforeUnmount(() => unregister?.());
       />
       <div class="banner-content"><slot /></div>
     </div>
-    <ReadingWave v-if="wave" />
   </section>
 </template>
 
