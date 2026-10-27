@@ -13,12 +13,22 @@ export function usePublicDocument<T extends Page | Post>(
   const result = useAsyncData(
     () => `${kind}-${locale.value}-${slug.value}`,
     () =>
-      api<T>(
-        kind === 'about'
-          ? '/public/about'
-          : `/public/${kind === 'post' ? 'posts' : 'pages'}/${encodeURIComponent(slug.value)}`,
-      ),
+      kind === 'about'
+        ? // An unwritten or unpublished About page is just empty, not a 404.
+          api<T>('/public/about').catch((cause: unknown) => {
+            if (statusOf(cause) === 404) return null;
+            throw cause;
+          })
+        : api<T>(
+            `/public/${kind === 'post' ? 'posts' : 'pages'}/${encodeURIComponent(slug.value)}`,
+          ),
   );
   usePublicNotFound(result.error);
   return result;
+}
+
+function statusOf(cause: unknown) {
+  return cause && typeof cause === 'object' && 'statusCode' in cause
+    ? cause.statusCode
+    : undefined;
 }

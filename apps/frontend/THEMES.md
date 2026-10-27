@@ -63,7 +63,7 @@ Sakura 原页面主要是移动并补上显式本地组件 import，没有重新
 
 不复制 Nuxt 路由，不添加隐藏业务入口。后续完整主题只实现这些页面，不需要修改公共路由。新增全站业务 URL 才需要增加一份公共路由和对应页面契约；本次没有主题特有路由或插件机制。
 
-`usePublicDocument` / `usePublicNotFound` 只加载内容和处理 HTTP 404；请求 thenable 在组件作用域内同步注册 watcher，再由页面 await，卸载页面不会保留旧 404 监听。网络/其他 API 错误保留主题自己的重试 UI。`useTimeline`、API client、数据类型、Markdown/媒体解析、语言/日期及公共状态可共享；文章卡片、正文 DOM、导航、布局和视觉反馈由主题拥有。
+`usePublicDocument` / `usePublicNotFound` 只加载内容和处理 HTTP 404（关于页未写或未发布时返回空数据，主题显示空白页，不显示 404）；请求 thenable 在组件作用域内同步注册 watcher，再由页面 await，卸载页面不会保留旧 404 监听。网络/其他 API 错误保留主题自己的重试 UI。`useTimeline`、API client、数据类型、Markdown/媒体解析、语言/日期及公共状态可共享；文章卡片、正文 DOM、导航、布局和视觉反馈由主题拥有。
 
 ## CSS、资源与 SPA 隔离
 
