@@ -18,19 +18,24 @@ useHead(() => ({ title: store.site.title }));
   <header class="ury-masthead" :class="{ 'is-open': menuOpen }">
     <div class="ury-masthead-bar">
       <NuxtLink
-        class="ury-brand"
+        class="ury-brand ury-brand-link"
         to="/home"
         :lang="contentLang(store.site.contentLocale)"
         >{{ store.site.title }}</NuxtLink
       >
+      <!-- Phones: the title itself opens and closes the navigation. -->
       <button
         type="button"
-        class="ury-menu-toggle"
+        class="ury-brand ury-brand-toggle"
+        :lang="contentLang(store.site.contentLocale)"
         :aria-expanded="menuOpen"
         aria-controls="ury-menu"
         @click="menuOpen = !menuOpen"
       >
-        {{ menuOpen ? t('关闭菜单') : t('菜单') }}
+        {{ store.site.title
+        }}<span class="ury-brand-mark" aria-hidden="true">{{
+          menuOpen ? '−' : '+'
+        }}</span>
       </button>
     </div>
     <div id="ury-menu" class="ury-menu">

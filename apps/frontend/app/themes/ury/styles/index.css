@@ -128,7 +128,7 @@ h2 {
 }
 /* Quiet text buttons: underline on hover, no box. */
 :is(
-  .ury-menu-toggle,
+  .ury-brand-toggle,
   .ury-languages button,
   .ury-share button,
   .ury-error button
@@ -141,11 +141,14 @@ h2 {
   text-underline-offset: 0.22em;
 }
 :is(
-  .ury-menu-toggle,
-  .ury-languages button,
-  .ury-share button,
-  .ury-error button
-):hover {
+    .ury-brand-toggle,
+    .ury-languages button,
+    .ury-share button,
+    .ury-error button
+  ):hover:not(:disabled) {
+  /* Stay boxless: outranks the outlined hover of ordinary buttons. */
+  border-color: transparent;
+  background: none;
   text-decoration: underline;
 }
 
@@ -173,8 +176,16 @@ h2 {
   text-decoration: none;
   letter-spacing: -0.035em;
 }
-.ury-menu-toggle {
+.ury-brand-toggle {
   display: none;
+}
+.ury-brand-mark {
+  /* Inline-block keeps the hover underline on the title only. */
+  display: inline-block;
+  margin-left: 12px;
+  color: var(--ury-muted);
+  font-size: 0.7em;
+  vertical-align: 0.15em;
 }
 .ury-tagline {
   margin: 20px 0 38px;
@@ -690,11 +701,13 @@ h2 {
   .ury-brand {
     font-size: 1.35em;
   }
-  .ury-menu-toggle {
+  .ury-brand-link {
+    display: none;
+  }
+  .ury-brand-toggle {
     display: inline-flex;
-    align-items: center;
-    font-size: 0.85em;
-    letter-spacing: 0.08em;
+    align-items: baseline;
+    letter-spacing: -0.035em;
   }
   .ury-menu {
     display: none;
