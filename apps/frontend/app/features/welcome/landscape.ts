@@ -23,6 +23,31 @@ interface HazeOptions {
   flow?: { value: number };
 }
 
+/** Value noise shared by the meadow patches and running water. */
+export const noiseGlsl = /* glsl */ `
+  float hazeHash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+  float hazeNoise(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hazeHash(i), hazeHash(i + vec2(1.0, 0.0)), f.x),
+      mix(hazeHash(i + vec2(0.0, 1.0)), hazeHash(i + vec2(1.0, 1.0)), f.x), f.y);
+  }
+`;
+/** Brook water, also used for the purification basin. */
+export const waterColor = 0x6ccbe0;
+/**
+ * Cel water: pale shallows at the edges, a deeper middle and light streaks;
+ * hard steps keep it in the cel style. Expects `across` (0 at the middle,
+ * 1 at the edge) and `streak` (noise drifting with the current) in scope.
+ */
+export const waterGlsl = /* glsl */ `
+  diffuseColor.rgb *= mix(0.86, 1.0, step(0.38, across));
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.97, 1.0),
+    max(step(0.72, across) * 0.45, step(0.74, streak) * step(across, 0.6) * 0.6));
+`;
+
 /**
  * Cel material that fades into the horizon colour with distance, so the meadow
  * edge and far ridges melt into the sky dome like aerial perspective.
@@ -49,15 +74,7 @@ function hazeMaterial(
       vHazeWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;${flow ? '\n      vFlow = flow;' : ''}`,
       );
     let fragment = `uniform vec3 haze;\n${crest ? 'uniform vec3 crest;\n' : ''}${flow ? 'uniform float flowTime;\nvarying vec3 vFlow;\n' : ''}varying vec3 vHazeWorld;
-      float hazeHash(vec2 p) {
-        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-      }
-      float hazeNoise(vec2 p) {
-        vec2 i = floor(p), f = fract(p);
-        f = f * f * (3.0 - 2.0 * f);
-        return mix(mix(hazeHash(i), hazeHash(i + vec2(1.0, 0.0)), f.x),
-          mix(hazeHash(i + vec2(0.0, 1.0)), hazeHash(i + vec2(1.0, 1.0)), f.x), f.y);
-      }
+      ${noiseGlsl}
       ${shader.fragmentShader}`;
     if (patches)
       fragment = fragment.replace(
@@ -72,15 +89,10 @@ function hazeMaterial(
         '#include <color_fragment>',
         `#include <color_fragment>
         if (vFlow.z > 0.5) {
-          // Pale shallows along both edges, a deeper middle and light streaks
-          // drifting downstream; hard steps keep it in the cel style.
+          // Streaks drift downstream.
           float across = abs(vFlow.y * 2.0 - 1.0);
-          float shallow = step(0.72, across);
-          float streak = step(0.74, hazeNoise(vec2(vFlow.x * 0.32 - flowTime * 0.5, vFlow.y * 4.0)))
-            * step(across, 0.6);
-          diffuseColor.rgb *= mix(0.86, 1.0, step(0.38, across));
-          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.97, 1.0),
-            max(shallow * 0.45, streak * 0.6));
+          float streak = hazeNoise(vec2(vFlow.x * 0.32 - flowTime * 0.5, vFlow.y * 4.0));
+          ${waterGlsl}
         }`,
       );
     shader.fragmentShader = fragment.replace(
@@ -307,7 +319,7 @@ export function createLandscape(
   // The brook: flat cel strips laid on the lawn, fading into the mist with it.
   const brook = new THREE.Mesh(
     streamGeometry({
-      water: new THREE.Color(0x6ccbe0),
+      water: new THREE.Color(waterColor),
       sand: new THREE.Color(0xdccb98),
       bank: color('meadowDeep'),
     }),
@@ -603,7 +615,7 @@ export function createLandscape(
     },
     /** Lamplight on the ground, 0 by day; follows the lantern flicker. */
     setLamps(intensity: number) {
-      pools.glow.value = Math.min(1, intensity / 2.4) * 0.5;
+      pools.glow.value = Math.min(1, intensity / 2.4) * 0.3;
       pools.root.visible = pools.glow.value > 0.005;
     },
   };

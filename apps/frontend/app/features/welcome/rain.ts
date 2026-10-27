@@ -4,7 +4,7 @@ import { seeded } from './toon';
 
 /** Drop height range and fall speed, in scene units. */
 const CEILING = 13;
-const SPEED = 9;
+const SPEED = 4.5;
 
 /** Thin light-rain streaks over the plinth, animated entirely in the shader. */
 function buildStreaks(count: number) {
@@ -77,8 +77,8 @@ function rippleSpot(random: () => number) {
 export function createRain(mobile: boolean) {
   const root = new THREE.Group();
   root.name = 'weather';
-  const { streaks, uniforms } = buildStreaks(mobile ? 350 : 700);
-  const count = 20;
+  const { streaks, uniforms } = buildStreaks(mobile ? 175 : 350);
+  const count = 10;
   const ripples = new THREE.InstancedMesh(
     new THREE.RingGeometry(0.92, 1, 28).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({

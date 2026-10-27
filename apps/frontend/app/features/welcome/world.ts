@@ -19,10 +19,11 @@ import { createRamp, createSharedUniforms } from './toon';
 export { createWelcomeGarden } from './garden';
 
 export const welcomeFocus = new THREE.Vector3(0, 0.75, -0.2);
+/** From straight overhead down to just above the focus's height. */
 export const welcomeCameraLimits = {
   minDistance: 9,
   maxDistance: 34,
-  minPolarAngle: Math.PI * 0.17,
+  minPolarAngle: 0,
   maxPolarAngle: Math.PI * 0.47,
 };
 const focus = welcomeFocus;
@@ -199,10 +200,11 @@ export function mountWelcomeWorld(
           ? 0.62
           : material.name === 'shoji'
             ? 0.3
-            : 0.6) *
+            : 0.36) *
         flame;
     landscape.setLamps(state.lampIntensity * flame);
     sparkle.update(dt, time, camera, state);
+    refreshSparkleShadow();
     if (wet !== wetTarget) {
       wet =
         reducedMotion.matches || Math.abs(wetTarget - wet) < 0.005
@@ -212,6 +214,24 @@ export function mountWelcomeWorld(
     }
     rain.update(time);
     menu?.update(time);
+  }
+  // The sun's shadow map is otherwise static; redraw it as Sparkle walks or
+  // turns, but no more than a dozen times a second.
+  let shadowAt = -1;
+  const shadowPose = new THREE.Vector4();
+  function refreshSparkleShadow() {
+    if (!model || !renderer.shadowMap.enabled || time - shadowAt < 1 / 12)
+      return;
+    const { position, rotation } = model.root;
+    const moved =
+      Math.abs(position.x - shadowPose.x) +
+      Math.abs(position.y - shadowPose.y) +
+      Math.abs(position.z - shadowPose.z) +
+      Math.abs(rotation.y - shadowPose.w);
+    if (moved < 0.004) return;
+    shadowPose.set(position.x, position.y, position.z, rotation.y);
+    shadowAt = time;
+    renderer.shadowMap.needsUpdate = true;
   }
   function bloomComposer() {
     if (composer) return composer;

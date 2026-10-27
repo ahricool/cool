@@ -57,6 +57,13 @@ export const palette = {
   shrubLight: 0x94c866,
   mountain: 0x6b8d7f,
   mountainFar: 0x8a9db3,
+  // Courtyard cats.
+  catGinger: 0xf4a259,
+  catCream: 0xfff1de,
+  catGrey: 0x9a97a8,
+  catCharcoal: 0x4f4652,
+  catBlack: 0x2e2934,
+  catPink: 0xff9fb2,
 };
 export type Tone = keyof typeof palette;
 

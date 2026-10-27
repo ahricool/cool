@@ -1,6 +1,7 @@
 import {
   canopy,
   bellRope,
+  cats,
   emaRack,
   groundAt,
   hall,
@@ -101,6 +102,8 @@ export const blockers: Blocker[] = [
   { shape: 'ellipse', x: mound.x, z: mound.z, rx: 1.95, rz: 1.8 },
   // Torii pillars at their plinths, stone lanterns at their bases.
   circle(-torii.half, torii.z, 0.2),
+  // Cats lying about the courtyard: she steps round them.
+  ...cats.map(({ x, z }) => circle(x, z, 0.16)),
   circle(torii.half, torii.z, 0.2),
   ...lanterns.map(({ x, z }) => circle(x, z, 0.26)),
   // Komainu on their pedestals.

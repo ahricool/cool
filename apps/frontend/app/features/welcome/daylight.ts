@@ -11,7 +11,8 @@ const overcast = color(0x9aa6b8);
 /**
  * Periodic solar cycle tuned for cel shading: lit faces stay near their painted
  * colour, shade comes from a cool sky light, and night is a readable blue.
- * `wet` (0 to 1) veils it for light rain: a dimmer sun and a greyer sky.
+ * `wet` (0 to 1) veils it for rain: an overcast sky, a much dimmer sun and
+ * no cast shadows.
  */
 export function daylightAt(hour: number, wet = 0) {
   const angle = ((normalizeHour(hour) - 6) / 24) * Math.PI * 2;
@@ -22,15 +23,24 @@ export function daylightAt(hour: number, wet = 0) {
   // Peaks at sunrise and sunset so dusk gets its own colours instead of grey midpoints.
   const dusk = Math.min(1, twilight * 3.2);
   const veil = wet * day;
+  // Progress across the sky: 0 at rising, 1 at setting, on to 2 below the
+  // horizon. The moon keeps half a day behind the sun.
+  const sunArc = ((normalizeHour(hour) - 6 + 24) % 24) / 12;
   return {
     day,
+    sunArc,
+    moonArc: (sunArc + 1) % 2,
+    /** Rain clouds hide the sun and moon discs. */
+    clearSky: 1 - wet,
     sunPosition: new THREE.Vector3(
       -Math.cos(angle) * 13,
       Math.max(0.5, altitude * 15),
       7,
     ),
     sunColor: color(0xffa463).lerp(color(0xfff3de), noon),
-    sunIntensity: day * (1.15 + noon * 0.5) * (1 - wet * 0.5),
+    sunIntensity: day * (1.15 + noon * 0.5) * (1 - wet * 0.65),
+    /** Cast shadows fade out as the clouds close in. */
+    shadowStrength: 1 - wet,
     skyColor: color(0x7086cf)
       .lerp(color(0xc3d3ff), day)
       .lerp(color(0xf2b9cf), dusk * 0.8)
@@ -87,6 +97,8 @@ export function createDaylight(
   const sky = new THREE.HemisphereLight();
   const moon = new THREE.DirectionalLight(0x9db8ff, 0);
   moon.position.set(6, 10, -5);
+  /** Stone lantern light at full night: a soft glow, not a floodlight. */
+  const lampStrength = 0.55;
   const lamps = lanterns.map(({ x, y, z }) => {
     const light = new THREE.PointLight(0xffb45e, 0, 3.6, 1.6);
     light.position.set(x, y, z);
@@ -107,7 +119,9 @@ export function createDaylight(
       sun.color.copy(state.sunColor);
       sun.intensity = state.sunIntensity;
       sun.visible = state.sunIntensity > 0.02;
-      sun.castShadow = sun.visible && state.day > 0.04;
+      sun.castShadow =
+        sun.visible && state.day > 0.04 && state.shadowStrength > 0.02;
+      sun.shadow.intensity = state.shadowStrength;
       sky.color.copy(state.skyColor);
       sky.groundColor.copy(state.groundColor);
       sky.intensity = state.ambientIntensity;
@@ -115,7 +129,7 @@ export function createDaylight(
       moon.visible = state.moonIntensity > 0.02;
       const lamplit = state.lampIntensity > 0.02;
       lamps.forEach((light) => {
-        light.intensity = state.lampIntensity;
+        light.intensity = state.lampIntensity * lampStrength;
         // Hidden lights drop out of the toon shader. Daytime otherwise pays for
         // four point lights on every fragment of the meadow.
         light.visible = lamplit;
@@ -136,6 +150,7 @@ export function createDaylight(
       lamps.forEach((light, i) => {
         light.intensity =
           state.lampIntensity *
+          lampStrength *
           (0.9 +
             Math.sin(time * 7.3 + i * 2.1) * 0.05 +
             Math.sin(time * 13.7 + i) * 0.05);

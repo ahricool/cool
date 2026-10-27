@@ -147,7 +147,10 @@ export function createSparkle(mobile: boolean) {
     idleFor = 2.5,
     stride = 0,
     stepping = 0,
-    blinkAt = 1.2,
+    blinkIn = 1.2,
+    blinkTime = -1,
+    gaze = 0,
+    gazeIn = 0.8,
     yaw = random() * Math.PI * 2,
     look = 0,
     lookTimer = 0,
@@ -166,7 +169,6 @@ export function createSparkle(mobile: boolean) {
     if (next === 'idle') {
       idleFor = summoned ? 10 + random() * 3 : 2.4 + random() * 2.6;
       summoned = false;
-      blinkAt = 0.6 + random() * 1.2;
     }
   }
   /** Face the way she travels, in world terms. */
@@ -233,8 +235,9 @@ export function createSparkle(mobile: boolean) {
       height += (ground - height) * Math.min(1, dt * 10);
       blob.position.set(position.x, height + 0.004, position.y);
       blob.scale.set(1.15, 1, 0.85);
+      // A faint contact shade grounding her feet under the real shadow.
       (blob.material as THREE.MeshBasicMaterial).opacity =
-        0.22 + light.day * 0.1;
+        0.16 + light.day * 0.04;
 
       // Turn to travel, then settle facing the viewer with idle glances.
       toCamera.set(
@@ -254,10 +257,27 @@ export function createSparkle(mobile: boolean) {
         lookTimer = 1.5 + random() * 2.5;
         look = phase === 'idle' ? (random() - 0.5) * 0.7 : 0;
       }
-      const blink =
-        phase === 'idle' && elapsed > blinkAt && elapsed < blinkAt + 0.16
-          ? Math.sin(((elapsed - blinkAt) / 0.16) * Math.PI)
-          : 0;
+      // Quick eye darts between the slower glances.
+      gazeIn -= dt;
+      if (gazeIn <= 0) {
+        gazeIn = 0.4 + random() * 1.4;
+        gaze = (random() - 0.5) * 0.25;
+      }
+      // Blinks every few seconds, now and then a double blink.
+      blinkIn -= dt;
+      if (blinkIn <= 0) {
+        blinkTime = 0;
+        blinkIn = random() < 0.2 ? 0.25 : 2 + random() * 3;
+      }
+      let blink = 0;
+      if (blinkTime >= 0) {
+        blinkTime += dt;
+        blink = Math.sin((blinkTime / 0.16) * Math.PI);
+        if (blinkTime >= 0.16) {
+          blinkTime = -1;
+          blink = 0;
+        }
+      }
       model.pose({
         x: position.x,
         y: height,
@@ -268,6 +288,8 @@ export function createSparkle(mobile: boolean) {
         time,
         blink,
         look,
+        gaze,
+        mood: 'calm',
       });
     },
   };
