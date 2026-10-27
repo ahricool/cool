@@ -27,10 +27,10 @@ export const sakuraTrees = [
 
 /** Stone lanterns: `y` is where the flame sits. */
 export const lanterns = [
-  { x: -1.75, z: 2.55, base: 0, y: 1.08 },
-  { x: 1.75, z: 2.55, base: 0, y: 1.08 },
-  { x: -2.45, z: -1.0, base: terrace.top, y: terrace.top + 1.08 },
-  { x: 2.45, z: -1.0, base: terrace.top, y: terrace.top + 1.08 },
+  { x: -1.75, z: 2.55, base: 0, y: 0.88 },
+  { x: 1.75, z: 2.55, base: 0, y: 0.88 },
+  { x: -2.45, z: -1.0, base: terrace.top, y: terrace.top + 0.88 },
+  { x: 2.45, z: -1.0, base: terrace.top, y: terrace.top + 0.88 },
 ];
 
 export const temizuya = { x: -3.95, z: 3.35 };
@@ -42,6 +42,22 @@ export const canopy = { half: 0.95, z: -1.15, top: 2.95 };
 export const bellRope = { x: 0, z: -0.84, top: 2.42, bottom: 1.05 };
 export const offeringBox = { x: 0, z: -1.3 };
 export const storehouse = { x: -5.0, z: -1.75 };
+
+export type CatPose = 'sit' | 'loaf' | 'curl' | 'sprawl' | 'stretch';
+/** Shrine cats, each settled somewhere in its own pose; `yaw` 0 faces +z. */
+export const cats: {
+  pose: CatPose;
+  x: number;
+  z: number;
+  yaw: number;
+  coat: 'ginger' | 'cream' | 'grey' | 'black' | 'calico';
+}[] = [
+  { pose: 'sit', x: -0.95, z: 1.6, yaw: 0.7, coat: 'ginger' },
+  { pose: 'loaf', x: 1.55, z: -1.7, yaw: 0.5, coat: 'black' },
+  { pose: 'curl', x: -3.35, z: 1.95, yaw: 0, coat: 'calico' },
+  { pose: 'sprawl', x: 1.3, z: 4.35, yaw: 1.3, coat: 'grey' },
+  { pose: 'stretch', x: 2.25, z: 3.45, yaw: 0.9, coat: 'cream' },
+];
 
 /** Rough courtyard obstacles that rain ripples keep clear of; walking uses walk.ts. */
 export const obstacles = [

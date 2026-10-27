@@ -4,7 +4,7 @@ import { seeded } from './toon';
 
 /** Drop height range and fall speed, in scene units. */
 const CEILING = 13;
-const SPEED = 9;
+const SPEED = 6;
 
 /** Thin light-rain streaks over the plinth, animated entirely in the shader. */
 function buildStreaks(count: number) {

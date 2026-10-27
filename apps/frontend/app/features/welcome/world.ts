@@ -199,7 +199,7 @@ export function mountWelcomeWorld(
           ? 0.62
           : material.name === 'shoji'
             ? 0.3
-            : 0.6) *
+            : 0.36) *
         flame;
     landscape.setLamps(state.lampIntensity * flame);
     sparkle.update(dt, time, camera, state);

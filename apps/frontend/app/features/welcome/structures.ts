@@ -4,6 +4,7 @@ import {
   bellRope,
   canopy,
   emaRack,
+  groundAt,
   hall,
   noticeBoard,
   office,
@@ -903,11 +904,12 @@ export function buildLantern(
       rotation: [0, ry, 0],
       outline: false,
     });
-  b.cylinder(0.33, 0.05, 0.17, 'stoneLight', x, base + 1.07, z, 6);
+  b.cylinder(0.33, 0.07, 0.17, 'stoneLight', x, base + 1.07, z, 6);
   b.cylinder(0.31, 0.31, 0.04, 'stone', x, base + 0.99, z, 6, {
     outline: false,
   });
-  b.ball(0.07, 'stone', x, base + 1.2, z, [1, 1.3, 1]);
+  // Seated into the roof tip so the flame below never lights its underside.
+  b.ball(0.07, 'stone', x, base + 1.18, z, [1, 1.3, 1]);
 }
 
 function smallGable(
@@ -933,6 +935,15 @@ function smallGable(
   });
 }
 
+/** A flat, pointed leaf lying on the ground, about 9cm long. */
+function fallenLeaf() {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, -0.046);
+  shape.quadraticCurveTo(0.028, -0.005, 0, 0.046);
+  shape.quadraticCurveTo(-0.028, -0.005, 0, -0.046);
+  return new THREE.ShapeGeometry(shape).rotateX(-Math.PI / 2);
+}
+
 export function buildTemizuya(b: ToonBuilder) {
   const { x, z } = temizuya;
   b.slab(1.6, 1.25, 0.06, 0.08, 'slabDark', x, z, 0.06);
@@ -942,13 +953,72 @@ export function buildTemizuya(b: ToonBuilder) {
   b.box(1.4, 0.1, 0.12, 'woodDark', x, 1.48, z + 0.42);
   b.box(1.4, 0.1, 0.12, 'woodDark', x, 1.48, z - 0.42);
   b.slab(1.0, 0.56, 0.42, 0.5, 'stone', x, z, 0.08);
-  b.slab(0.84, 0.4, 0.04, 0.47, 'water', x, z, 0.06, { outline: false });
+  // The water itself is animated in basin.ts.
+  // Kakehi: an upright bamboo pipe standing on the base carries the
+  // spout out over the basin, with darker nodes along both.
+  b.cylinder(0.045, 0.045, 0.84, 'leafLight', x - 0.66, 0.5, z - 0.1);
+  for (const y of [0.32, 0.6, 0.9])
+    b.cylinder(0.05, 0.05, 0.02, 'leaf', x - 0.66, y, z - 0.1);
   b.beam(
-    [x - 0.55, 0.85, z - 0.1],
+    [x - 0.66, 0.84, z - 0.1],
     [x - 0.3, 0.62, z - 0.05],
     0.04,
     'leafLight',
   );
+  b.beam(
+    [x - 0.55, 0.773, z - 0.085],
+    [x - 0.535, 0.764, z - 0.083],
+    0.045,
+    'leaf',
+  );
+  // Stones set just in front of the pipe's foot hide where it meets the
+  // base, with a drift of fallen leaves around them, some blown off onto
+  // the ground.
+  const px = x - 0.66,
+    pz = z - 0.1;
+  b.part(
+    new THREE.DodecahedronGeometry(0.13, 0),
+    'stone',
+    px + 0.08,
+    0.11,
+    pz + 0.15,
+    { scale: [1.2, 0.8, 0.85], rotation: [0.1, 0.5, 0.05] },
+  );
+  b.part(
+    new THREE.DodecahedronGeometry(0.075, 0),
+    'stoneDark',
+    px - 0.08,
+    0.095,
+    pz + 0.12,
+    { scale: [1.1, 0.7, 0.9], rotation: [0.3, 2, 0.1] },
+  );
+  for (const [dx, dz, turn, tone] of [
+    [0.2, 0.12, 0.4, 'shrubAmber'],
+    [0.24, -0.05, 2.1, 'meadowDry'],
+    [-0.18, 0.16, 1.2, 'shrubOlive'],
+    [0.05, 0.24, 2.8, 'woodLight'],
+    [-0.22, -0.14, 0.7, 'shrubAmber'],
+    [0.31, 0.22, 1.9, 'shrubOlive'],
+    [-0.3, 0.05, 3.0, 'meadowDry'],
+    [0.12, -0.22, 0.2, 'woodLight'],
+    [-0.08, 0.33, 1.6, 'shrubAmber'],
+    [0.38, -0.12, 2.5, 'meadowDry'],
+  ] as const) {
+    const lx = px + dx,
+      lz = pz + dz;
+    const onBase = Math.abs(lx - x) < 0.8 && Math.abs(lz - z) < 0.625;
+    b.part(
+      fallenLeaf(),
+      tone,
+      lx,
+      (onBase ? 0.08 : groundAt(lx, lz)) + 0.004,
+      lz,
+      {
+        rotation: [0.08 * Math.sin(turn * 3), turn, 0],
+        outline: false,
+      },
+    );
+  }
   for (let i = 0; i < 3; i++) {
     b.beam(
       [x - 0.25 + i * 0.25, 0.52, z + 0.16],

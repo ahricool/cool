@@ -38,6 +38,14 @@ const unlined = new Set([
   '头饰内侧',
 ]);
 
+export type Mood = 'calm' | 'happy' | 'smug';
+/** Expression morphs per mood; the GLB only carries these few. */
+const moods: Record<Mood, Record<string, number>> = {
+  calm: { にこり: 0.35, 笑い: 0, にやり２: 0 },
+  happy: { にこり: 0.6, 笑い: 0.85, にやり２: 0 },
+  smug: { にこり: 0.15, 笑い: 0.2, にやり２: 0.9 },
+};
+
 export interface ModelPose {
   x: number;
   y: number;
@@ -53,6 +61,9 @@ export interface ModelPose {
   blink: number;
   /** Look left/right, radians. */
   look: number;
+  /** Small eye darts on top of `look`, radians. */
+  gaze: number;
+  mood: Mood;
 }
 
 export async function loadSparkleModel(
@@ -221,7 +232,7 @@ export async function loadSparkleModel(
     return [{ root: chain[0]!, shoulder, aim, droop, bends }];
   });
   const parent = new THREE.Quaternion();
-  const sway = new THREE.Quaternion();
+  const trail = new THREE.Quaternion();
   const morph = (name: string, value: number) => {
     for (const part of parts) {
       const index = part.morphTargetDictionary?.[name];
@@ -229,7 +240,14 @@ export async function loadSparkleModel(
         part.morphTargetInfluences[index] = value;
     }
   };
-  morph('にこり', 0.35);
+  const expression: Record<string, number> = { ...moods.calm };
+  /** Finger names and how far each folds relative to the others. */
+  const fingers = [
+    ['人指', 0.9],
+    ['中指', 1],
+    ['薬指', 1.05],
+    ['小指', 1.15],
+  ] as const;
 
   // Twin tails: each bone chain bends a little more towards its tip, driven
   // by damped springs so the hair lags, overshoots and settles.
@@ -301,6 +319,10 @@ export async function loadSparkleModel(
       const breath = Math.sin(p.time * 2.1);
       // One gait cycle per 2π: the left leg leads while sin(stride) > 0.
       const swing = Math.sin(p.stride) * p.walk;
+      // Weight drifts gently from foot to foot while she stands.
+      const shift = Math.sin(p.time * 0.32 * Math.PI * 2) * (1 - p.walk);
+      // Hips and shoulders counter-twist with each stride.
+      const twist = -swing * 0.1;
       // Hips ride highest as the legs pass each other, twice per cycle.
       const bob = (Math.cos(p.stride * 2) - 1) * p.walk * 0.008;
       if (center)
@@ -309,13 +331,16 @@ export async function loadSparkleModel(
           centerRest.y + bob * unit,
           centerRest.z,
         );
-      // Weight drifts gently from foot to foot while she stands.
-      const shift = Math.sin(p.time * 0.32 * Math.PI * 2) * (1 - p.walk);
-      turn('下半身', 0, 0, shift * 0.025);
-      turn('上半身', 0.04 * p.walk, 0, -shift * 0.02);
-      turn('上半身2', breath * 0.012, 0, 0);
-      turn('首', 0, p.look * 0.5, 0);
-      turn('頭', -0.04, p.look * 0.5, shift * 0.03);
+      turn('下半身', 0, swing * 0.12, shift * 0.025);
+      turn('上半身', 0.04 * p.walk, twist, -shift * 0.02);
+      turn('上半身2', breath * 0.012, twist * 0.5, 0);
+      turn('首', 0, p.look * 0.25, 0);
+      // A slight, curious tilt of the head.
+      turn('頭', -0.04, p.look * 0.25, 0.07 + shift * 0.03);
+      // Eyes lead the head: they reach the glance first and dart about.
+      const eyeYaw = THREE.MathUtils.clamp(p.look * 0.45 + p.gaze, -0.3, 0.3);
+      turn('左目', 0, eyeYaw, 0);
+      turn('右目', 0, eyeYaw, 0);
 
       // Arms down from the rest A-pose at the shoulder (so the frills on 肩C
       // follow), held a little forward of the hips and swung with the walk.
@@ -323,55 +348,82 @@ export async function loadSparkleModel(
       const forward = 0.08;
       const shoulders = {
         左肩C: new THREE.Quaternion()
-          .setFromEuler(euler.set(swing * 0.2 - forward, 0, 0))
+          .setFromEuler(euler.set(swing * 0.32 - forward, 0, 0))
           .multiply(delta.setFromEuler(euler.set(0, 0, -down))),
         右肩C: new THREE.Quaternion()
-          .setFromEuler(euler.set(-swing * 0.2 - forward, 0, 0))
+          .setFromEuler(euler.set(-swing * 0.32 - forward, 0, 0))
           .multiply(delta.setFromEuler(euler.set(0, 0, down))),
       };
+      // Elbows fold a little more at the ends of each swing; fingers rest
+      // half curled and close a touch while walking.
+      const bend = 0.22 + Math.abs(swing) * 0.15;
+      const curl = 0.35 + p.walk * 0.1;
       rotate('左肩C', shoulders.左肩C);
       rotate('右肩C', shoulders.右肩C);
       // Cancel the shoulder turn above each long sleeve tail, then hang it
       // straight down, trailing slightly with the walk.
       for (const sleeve of sleeves) {
         parent.copy(shoulders[sleeve.shoulder]);
-        sway.setFromEuler(euler.set(-Math.abs(swing) * 0.15, 0, 0));
+        trail.setFromEuler(euler.set(-Math.abs(swing) * 0.15, 0, 0));
         rotate(
           sleeve.root,
-          parent.invert().multiply(sway).multiply(sleeve.aim),
+          parent.invert().multiply(trail).multiply(sleeve.aim),
         );
         for (const name of sleeve.bends) rotate(name, sleeve.droop);
       }
-      // Elbows bend forward in the lowered arm's own frame.
-      const bend = 0.22;
-      for (const [elbow, shoulder] of [
-        ['左ひじ', shoulders.左肩C],
-        ['右ひじ', shoulders.右肩C],
-      ] as const)
+      // Elbows bend forward in model space, after the shoulder.
+      for (const [side, sign, shoulder] of [
+        ['左', 1, shoulders.左肩C],
+        ['右', -1, shoulders.右肩C],
+      ] as const) {
         rotate(
-          elbow,
+          `${side}ひじ`,
           parent
             .copy(shoulder)
             .invert()
             .multiply(delta.setFromEuler(euler.set(-bend, 0, 0)))
             .multiply(shoulder),
         );
+        // Fingers fold towards the palm, the middle joint most.
+        for (const [finger, scale] of fingers)
+          [0.5, 0.95, 0.7].forEach((share, i) =>
+            turn(
+              `${side}${finger}${'１２３'[i]}`,
+              0,
+              0,
+              -sign * curl * share * scale,
+            ),
+          );
+        turn(`${side}親指１`, 0, sign * curl * 0.3, -sign * curl * 0.2);
+        turn(`${side}親指２`, 0, sign * curl * 0.4, 0);
+      }
 
       // Legs: the skin follows the MMD "D" bones (their link to 足/ひざ/足首
       // is an MMD-only constraint), so drive those directly. Each knee folds
       // while its leg swings forward and the ankle keeps the sole level.
-      for (const [side, phase] of [
-        ['左', 0],
-        ['右', Math.PI],
+      // Standing, the toes turn in a touch and the knee off her
+      // weight bends softly.
+      for (const [side, phase, sign] of [
+        ['左', 0, 1],
+        ['右', Math.PI, -1],
       ] as const) {
         const hip = -Math.sin(p.stride + phase) * 0.28 * p.walk;
+        const rest = Math.max(0, -sign * shift) * 0.12;
         const knee =
-          (Math.max(0, Math.cos(p.stride + phase)) * 0.55 + 0.04) * p.walk;
-        turn(`${side}足D`, hip, 0, 0);
+          (Math.max(0, Math.cos(p.stride + phase)) * 0.55 + 0.04) * p.walk +
+          rest;
+        turn(`${side}足D`, hip - rest * 0.5, -sign * 0.06 * (1 - p.walk), 0);
         turn(`${side}ひざD`, knee, 0, 0);
         turn(`${side}足首D`, -(hip + knee) * 0.7, 0, 0);
       }
-      morph('まばたき', p.blink);
+      // Ease the face towards the mood rather than snapping between them.
+      const ease = Math.min(1, dt * 6);
+      for (const [name, value] of Object.entries(moods[p.mood])) {
+        expression[name] =
+          (expression[name] ?? 0) + (value - (expression[name] ?? 0)) * ease;
+        morph(name, expression[name]!);
+      }
+      morph('まばたき', p.blink * (1 - expression['笑い']!));
 
       // Tails trail back while walking, bounce with each step, swing out
       // against her turns and sway in a breeze. Sized to read at the default

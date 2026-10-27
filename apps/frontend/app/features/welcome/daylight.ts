@@ -87,6 +87,8 @@ export function createDaylight(
   const sky = new THREE.HemisphereLight();
   const moon = new THREE.DirectionalLight(0x9db8ff, 0);
   moon.position.set(6, 10, -5);
+  /** Stone lantern light at full night: a soft glow, not a floodlight. */
+  const lampStrength = 0.55;
   const lamps = lanterns.map(({ x, y, z }) => {
     const light = new THREE.PointLight(0xffb45e, 0, 3.6, 1.6);
     light.position.set(x, y, z);
@@ -115,7 +117,7 @@ export function createDaylight(
       moon.visible = state.moonIntensity > 0.02;
       const lamplit = state.lampIntensity > 0.02;
       lamps.forEach((light) => {
-        light.intensity = state.lampIntensity;
+        light.intensity = state.lampIntensity * lampStrength;
         // Hidden lights drop out of the toon shader. Daytime otherwise pays for
         // four point lights on every fragment of the meadow.
         light.visible = lamplit;
@@ -136,6 +138,7 @@ export function createDaylight(
       lamps.forEach((light, i) => {
         light.intensity =
           state.lampIntensity *
+          lampStrength *
           (0.9 +
             Math.sin(time * 7.3 + i * 2.1) * 0.05 +
             Math.sin(time * 13.7 + i) * 0.05);

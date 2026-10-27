@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createBasinWater } from './basin';
 import {
   bellRope,
   canopy,
@@ -416,11 +417,13 @@ export function createGardenLife(
   root.name = 'welcome-life';
   const falling = buildPetals(mobile ? 18 : 36);
   const { motes, uniforms } = buildMotes(shared, mobile ? 26 : 48);
+  const basin = createBasinWater(shared, ramp);
   root.add(
     buildDangling(shared, ramp),
     buildGrass(shared, ramp, mobile ? 260 : 520),
     falling.petals,
     motes,
+    basin.root,
   );
   return {
     root,
@@ -430,6 +433,7 @@ export function createGardenLife(
     },
     update(time: number) {
       falling.update(time);
+      basin.update(time);
     },
   };
 }

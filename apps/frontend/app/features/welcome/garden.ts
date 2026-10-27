@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { buildCats } from './cats';
 import {
   gravel,
   groundAt,
@@ -767,6 +768,7 @@ export function createWelcomeGarden(
   ] as const)
     rock(b, random, x, groundAt(x, z), z, s);
   scatter(b, random);
+  buildCats(b);
   const root = b.build(shared, ramp);
   root.name = 'welcome-garden';
   return root;
