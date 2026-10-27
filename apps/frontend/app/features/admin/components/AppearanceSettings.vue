@@ -144,32 +144,13 @@ const fields = [
     </el-tab-pane>
     <el-tab-pane label="ury" name="ury">
       <p class="muted">
-        {{ t('Ury 独立保存以下设置，不使用 Sakura 的背景、图案或首页横幅。') }}
+        {{
+          t(
+            'Ury 独立保存以下设置，始终使用衬线字体并跟随设备的浅色或深色，不使用 Sakura 的背景、图案或首页横幅。',
+          )
+        }}
       </p>
       <section class="appearance-setting">
-        <h3 id="ury-palette-label">{{ t('默认配色') }}</h3>
-        <el-radio-group
-          :model-value="ury.palette"
-          aria-labelledby="ury-palette-label"
-          @update:model-value="
-            updateUry('palette', $event as UryAppearance['palette'])
-          "
-        >
-          <el-radio-button value="light">{{ t('浅色') }}</el-radio-button>
-          <el-radio-button value="sepia">{{ t('暖纸色') }}</el-radio-button>
-          <el-radio-button value="dark">{{ t('深色') }}</el-radio-button>
-        </el-radio-group>
-        <h3 id="ury-font-label">{{ t('正文字体') }}</h3>
-        <el-radio-group
-          :model-value="ury.font"
-          aria-labelledby="ury-font-label"
-          @update:model-value="
-            updateUry('font', $event as UryAppearance['font'])
-          "
-        >
-          <el-radio-button value="serif">{{ t('衬线') }}</el-radio-button>
-          <el-radio-button value="sans">{{ t('无衬线') }}</el-radio-button>
-        </el-radio-group>
         <div class="font-size-setting">
           <label>{{ t('字体大小') }}</label>
           <el-slider

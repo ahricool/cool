@@ -18,17 +18,19 @@ export function useSiteAppearanceHead() {
   const isWelcome = computed(() => route.path === '/');
   const isAdmin = computed(() => /^\/admin(?:\/|$)/.test(route.path));
   const theme = computed(() => resolveSiteTheme(appearance.value.themeId));
+  const cookies = siteThemes.flatMap(({ appearance }) =>
+    appearance.readerCookie ? [appearance.readerCookie] : [],
+  );
   const preferences = Object.fromEntries(
-    [...new Set(siteThemes.map((entry) => entry.appearance.readerCookie))].map(
-      (cookie) => [cookie, useReaderPalette(cookie)],
-    ),
+    [...new Set(cookies)].map((cookie) => [cookie, useReaderPalette(cookie)]),
   );
-  const publicAppearance = computed(() =>
-    theme.value.appearance.resolve(
+  const publicAppearance = computed(() => {
+    const cookie = theme.value.appearance.readerCookie;
+    return theme.value.appearance.resolve(
       appearance.value,
-      preferences[theme.value.appearance.readerCookie]!.value,
-    ),
-  );
+      cookie ? preferences[cookie]!.value : null,
+    );
+  });
   const dark = computed(() =>
     isAdmin.value
       ? adminDark.value

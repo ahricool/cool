@@ -14,7 +14,7 @@ const { contentLang } = useCoolI18n();
       <p class="footer-wish" lang="zh-CN">
         <em>愿你的天空永远星光灿烂，<br />愿你的舞台永远明光幻彩。</em>
       </p>
-      <LanguageSelector variant="text" />
+      <LanguageSelector />
       <p class="footer-copyright">
         ©
         <span :lang="contentLang(store.site.contentLocale)">{{

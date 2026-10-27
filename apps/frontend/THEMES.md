@@ -32,7 +32,6 @@ app/
       layouts/Shell.vue
       components/            # 独立 ArticleCard、ApiState、Pagination
       styles/index.css
-      assets/mark.svg
   features/admin/            # 原有业务页面、上传与设置；不放进主题目录
     visuals/                 # 保留 Admin 的固定品牌、图案和明暗按钮
     assets/                  # Admin 固定字标
@@ -41,7 +40,6 @@ app/
   assets/admin/              # 独立固定样式与原有配色
 public/
   sakura/                    # Sakura 现有资源 URL 保持兼容
-  themes/ury/mark.svg    # Ury 独立 favicon
   fonts/                     # 既有可选用户字体
 ```
 
@@ -84,15 +82,15 @@ Sakura 原页面主要是移动并补上显式本地组件 import，没有重新
 
 选择仅修改 Admin 表单草稿，保存成功并重新读取公共配置后生效；PUT 成功但读取失败时提示“配置已保存，但当前页面更新失败”，重试仅重新 GET，不重放 PUT。`store.load()` 返回最新有效请求是否已应用的 boolean；旧调用方可以继续忽略结果。其他浏览器标签页刷新/重新读取后生效，不增加实时广播。主题代码在构建时注册，切换已注册主题不用重新部署或重启；添加新的主题源码需要正常构建发布。
 
-| 配置                             | 行为                                                                                                                                                                                                                                                                                     |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| light/dark                       | Sakura 使用 `cool_theme`，Ury 使用独立 `cool_ury_palette`（light/sepia/dark），Admin 使用 `cool_admin_theme`；Admin 第一次从旧 cookie 继承原偏好，之后独立。`colorModes` 声明主题支持的模式；`usePublicColorMode` 提供实际 `dark` 与 `canToggle`，单配色不显示切换按钮，也不改写原偏好。 |
-| font/fontSize                    | 原数据保留。根提供 `data-font` 和可选 `--site-font-scale`；主题选择是否使用，无强制视觉 token。Sakura/Admin 保持原字体及 80–150%字号；Ury 只读取嵌套 `appearance.ury` 的 serif/sans 字体及 80–150% 字号，不读取 Sakura 字段。                                                            |
-| avatar/cover/background 图案     | 数据保留，Sakura/Admin 沿用原效果；Ury 使用自己的默认标识与无图案背景；showAvatar/showCovers 独立控制内容头像和封面。                                                                                                                                                                    |
-| 首页背景/账户头像/文章和媒体图片 | 原值保留。Sakura 原行为；Ury 展示内容、封面和账户上传图片，首页采用文字介绍，不继承 Sakura hero 背景或动画。                                                                                                                                                                             |
-| 语言                             | 保留 `cool_locale`、zh/en UI、内容译文及后端回退，无语言 URL。                                                                                                                                                                                                                           |
+| 配置                             | 行为                                                                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| light/dark                       | Sakura 使用 `cool_theme`，Admin 使用 `cool_admin_theme`；Ury 不提供手动配色，通过 `prefers-color-scheme` 跟随设备的浅色/深色（`resolve` 返回 `palette: 'system'`，不写根 `.dark`，也不读写任何配色 cookie）；Admin 第一次从旧 cookie 继承原偏好，之后独立。`colorModes` 声明主题支持的模式；`usePublicColorMode` 提供实际 `dark` 与 `canToggle`，单配色不显示切换按钮，也不改写原偏好。 |
+| font/fontSize                    | 原数据保留。根提供 `data-font` 和可选 `--site-font-scale`；主题选择是否使用，无强制视觉 token。Sakura/Admin 保持原字体及 80–150%字号；Ury 中英文始终使用衬线字体（代码使用同为衬线的 Courier），只读取嵌套 `appearance.ury` 的 80–150% 字号，不读取 Sakura 字段；旧数据里遗留的 `ury.palette`/`ury.font` 由后端读取时剔除，保存时校验拒绝。                                             |
+| avatar/cover/background 图案     | 数据保留，Sakura/Admin 沿用原效果；Ury 不显示侧栏头像和任何自有标识（favicon 使用站点图标），无图案背景；showAvatar 只控制文章末尾的作者头像（未上传时不显示），showCovers 控制封面。                                                                                                                                                                                                   |
+| 首页背景/账户头像/文章和媒体图片 | 原值保留。Sakura 原行为；Ury 展示内容、封面和账户上传图片，首页采用文字介绍，不继承 Sakura hero 背景或动画。                                                                                                                                                                                                                                                                            |
+| 语言                             | 保留 `cool_locale`、zh/en UI、内容译文及后端回退，无语言 URL。                                                                                                                                                                                                                                                                                                                          |
 
-Sakura 保留导航、搜索、关于我、Footer、文章列表/详情、时间线瞬间、明暗、响应式、品牌/图案、字号、双语与媒体展示。Ury 使用阅读侧栏、衬线正文、独立留白与内嵌目录，提供 light/sepia/dark、serif/sans、80–150% 字号、comfortable/wide 阅读宽度及头像/封面开关。首页支持自动加载和手动重试，不继承 Sakura hero。
+Sakura 保留导航、搜索、关于我、Footer、文章列表/详情、时间线瞬间、明暗、响应式、品牌/图案、字号、双语与媒体展示。Ury 极简文艺：阅读侧栏（手机折叠为站名加菜单）、全衬线、居中正文列、宽屏右侧目录，Footer 放祝福语、语言切换与署名；配色跟随设备，提供 80–150% 字号、comfortable/wide 阅读宽度及头像/封面开关。首页支持自动加载和手动重试，不继承 Sakura hero。
 
 ## 新增完整主题
 

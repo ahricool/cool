@@ -48,8 +48,6 @@ test('retired theme IDs roundtrip and old clients preserve independent appearanc
     cover: 'heart',
     background: 'none',
     ury: {
-      palette: 'sepia',
-      font: 'sans',
       fontSize: 125,
       readingWidth: 'wide',
       showAvatar: false,
@@ -155,8 +153,6 @@ test('actual settings DTO accepts safe IDs and rejects invalid values', async ()
 test('Ury nested saves preserve omitted profiles and partial fields across real DTO roundtrips', async () => {
   const initial = structuredClone(defaultSettings);
   initial.site.appearance.ury = {
-    palette: 'sepia',
-    font: 'serif',
     fontSize: 125,
     readingWidth: 'wide',
     showAvatar: false,
@@ -175,12 +171,12 @@ test('Ury nested saves preserve omitted profiles and partial fields across real 
     );
   }
   const partial = structuredClone(initial);
-  partial.site.appearance.ury = { palette: 'dark' };
+  partial.site.appearance.ury = { readingWidth: 'comfortable' };
   await controller.save(await transformSettings(partial));
   const saved = await readSettings(db);
   assert.deepEqual(saved.site.appearance, {
     ...initial.site.appearance,
-    ury: { ...initial.site.appearance.ury, palette: 'dark' },
+    ury: { ...initial.site.appearance.ury, readingWidth: 'comfortable' },
   });
   await controller.save(await transformSettings(saved));
   assert.deepEqual(await readSettings(db), saved);
@@ -190,9 +186,11 @@ test('Ury rejects arrays, malformed objects and invalid fields before saving', a
   for (const ury of [
     null,
     [],
-    [{ palette: 'sepia' }],
-    { palette: 'pink' },
-    { font: 'remote' },
+    [{ fontSize: 100 }],
+    // Ury's light/dark follows the device and it is always serif.
+    { palette: 'sepia' },
+    { palette: 'dark' },
+    { font: 'sans' },
     { fontSize: 79 },
     { fontSize: 151 },
     { fontSize: 100.5 },
@@ -210,7 +208,7 @@ test('Ury rejects arrays, malformed objects and invalid fields before saving', a
 test('settings object boundaries reject nonobjects before any database writes', async () => {
   const initial = structuredClone(defaultSettings);
   initial.site.appearance.themeId = 'ury';
-  initial.site.appearance.ury = { palette: 'sepia', fontSize: 125 };
+  initial.site.appearance.ury = { readingWidth: 'wide', fontSize: 125 };
   const db = memoryDatabase(initial);
   const controller = new SettingsController(db);
   let writes = 0;
@@ -259,4 +257,30 @@ test('settings object boundaries reject nonobjects before any database writes', 
   }
   assert.equal(writes, 0);
   assert.deepEqual(await db.siteSetting.findMany(), before);
+});
+
+test('retired Ury palette and font in stored JSON are never echoed back or resaved', async () => {
+  const initial = structuredClone(defaultSettings);
+  initial.site.appearance.ury = {
+    palette: 'sepia',
+    font: 'sans',
+    fontSize: 110,
+    showCovers: false,
+  };
+  const db = memoryDatabase(initial);
+  const controller = new SettingsController(db);
+  const read = await readSettings(db);
+  assert.deepEqual(read.site.appearance.ury, {
+    fontSize: 110,
+    showCovers: false,
+  });
+  // An Admin save of what it read passes validation and drops the old keys.
+  await controller.save(await transformSettings(structuredClone(read)));
+  const [site] = (await db.siteSetting.findMany()).filter(
+    (row) => row.key === 'site',
+  );
+  assert.deepEqual(site.value.appearance.ury, {
+    fontSize: 110,
+    showCovers: false,
+  });
 });

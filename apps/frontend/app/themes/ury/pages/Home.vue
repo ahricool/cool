@@ -15,7 +15,7 @@ useTimelineAutoload(sentinel, {
 });
 </script>
 <template>
-  <h1 class="ury-feed-title">{{ t('时间线') }}</h1>
+  <h1>{{ t('时间线') }}</h1>
   <section class="ury-feed" :aria-label="t('时间线')">
     <template v-for="item in items" :key="`${item.kind}:${item.id}`">
       <ArticleCard v-if="item.kind === 'post'" :post="item" featured />
@@ -40,7 +40,7 @@ useTimelineAutoload(sentinel, {
       </button>
       <p
         v-else-if="started && items.length && !pending && !error"
-        class="ury-byline"
+        class="ury-feed-end"
       >
         {{ t('已读到最后') }}
       </p>

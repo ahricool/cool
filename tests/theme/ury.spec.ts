@@ -51,7 +51,7 @@ for (const from of ['default', 'ury'] as const) {
         font: 'bubble-candy',
         fontSize: 150,
         background: 'heart',
-        ury: { ...defaultUryAppearance, palette: 'sepia' },
+        ury: { ...defaultUryAppearance, readingWidth: 'wide' },
       });
       const saved = structuredClone(state.settings.site.appearance);
       await page.goto('/home');
@@ -64,7 +64,7 @@ for (const from of ['default', 'ury'] as const) {
           'data-site-theme',
         );
         await expect(page.locator('html')).not.toHaveAttribute(
-          'data-ury-palette',
+          'data-ury-width',
         );
         await expect(page.locator('body')).toHaveCSS('font-size', '24px');
         await page
@@ -139,7 +139,10 @@ test('Ury settings save/reload independently, while an unsaved choice never appl
   await page.getByRole('tab', { name: '外观', exact: true }).click();
   await page.getByRole('tab', { name: 'ury', exact: true }).click();
   const panel = page.getByRole('tabpanel', { name: 'ury', exact: true });
-  for (const name of ['暖纸色', '无衬线', '宽幅']) {
+  // Ury has no palette or font choice: it is serif and follows the device.
+  await expect(panel.getByRole('radio', { name: '暖纸色' })).toHaveCount(0);
+  await expect(panel.getByRole('radio', { name: '无衬线' })).toHaveCount(0);
+  for (const name of ['宽幅']) {
     const choice = panel.getByRole('radio', { name, exact: true });
     await choice.focus();
     await choice.press('Space');
@@ -158,8 +161,6 @@ test('Ury settings save/reload independently, while an unsaved choice never appl
   expect(state.settings.site.appearance).toEqual({
     ...sakura,
     ury: {
-      palette: 'sepia',
-      font: 'sans',
       fontSize: 150,
       readingWidth: 'wide',
       showAvatar: false,
@@ -177,16 +178,10 @@ test('Ury settings save/reload independently, while an unsaved choice never appl
   await spa(page, '/posts/fixture-post');
   await page.reload();
   await expect(page.locator('.ury-document')).toBeVisible();
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-ury-palette',
-    'sepia',
-  );
-  await expect(page.locator('html')).toHaveAttribute('data-font', 'sans');
+  await expect(page.locator('html')).toHaveAttribute('data-font', 'serif');
   await expect(page.locator('body')).toHaveCSS('font-size', '27px');
   await expect(page.locator('html')).toHaveAttribute('data-ury-width', 'wide');
-  await expect(
-    page.locator('.ury-avatar, .ury-author img, .ury-cover'),
-  ).toHaveCount(0);
+  await expect(page.locator('.ury-author img, .ury-cover')).toHaveCount(0);
   await expect(page.locator('.ury-prose img')).toBeVisible();
   await selectTheme(page, 'default');
   await spa(page, '/home');
@@ -197,42 +192,30 @@ test('Ury settings save/reload independently, while an unsaved choice never appl
   await expect(page.locator('body')).toHaveCSS('font-size', '24px');
 });
 
-test('Ury palettes persist per reader, restore site default and never change other cookies', async ({
+test('Ury follows the device light/dark setting and never sets or reads palette cookies', async ({
   page,
 }) => {
-  const state = await themeFixture(page, {
-    themeId: 'ury',
-    ury: { ...defaultUryAppearance, palette: 'sepia' },
-  });
+  await themeFixture(page, { themeId: 'ury' });
   await page.context().addCookies([
     { name: 'cool_theme', value: 'light', url: origin },
     { name: 'cool_admin_theme', value: 'dark', url: origin },
+    // A cookie left by the retired reader palette is ignored.
+    { name: 'cool_ury_palette', value: 'sepia', url: origin },
   ]);
-  await page.goto('/home');
-  await expect(page.locator('html')).toHaveAttribute(
-    'data-ury-palette',
-    'sepia',
-  );
-  for (const palette of ['light', 'sepia', 'dark'] as const) {
-    await page.getByLabel('配色', { exact: true }).selectOption(palette);
-    await page.reload();
-    await expect(page.locator('html')).toHaveAttribute(
-      'data-ury-palette',
-      palette,
+  for (const [scheme, background] of [
+    ['light', 'rgb(253, 252, 249)'],
+    ['dark', 'rgb(34, 35, 31)'],
+  ] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto('/home');
+    await expect(page.locator('body')).toHaveCSS(
+      'background-color',
+      background,
     );
-    state.settings.site.appearance.ury!.palette =
-      palette === 'dark' ? 'light' : 'dark';
-    await page.reload();
-    await expect(page.locator('html')).toHaveAttribute(
-      'data-ury-palette',
-      palette,
-    );
-    await page.getByLabel('配色', { exact: true }).selectOption('');
-    await expect(page.locator('html')).toHaveAttribute(
-      'data-ury-palette',
-      state.settings.site.appearance.ury!.palette,
-    );
+    await expect(page.locator('html')).not.toHaveClass('dark');
+    await expect(page.locator('html')).not.toHaveAttribute('data-ury-palette');
   }
+  await expect(page.locator('select')).toHaveCount(0);
   const cookies = await page.context().cookies();
   expect(cookies.find((c) => c.name === 'cool_theme')?.value).toBe('light');
   expect(cookies.find((c) => c.name === 'cool_admin_theme')?.value).toBe(
@@ -240,12 +223,11 @@ test('Ury palettes persist per reader, restore site default and never change oth
   );
   await spa(page, '/admin/settings');
   await expect(page.locator('html')).toHaveClass('dark');
-  await expect(page.locator('html')).not.toHaveAttribute('data-ury-palette');
 });
 
 for (const width of [1440, 390])
   for (const language of ['zh', 'en']) {
-    test(`Ury media, type sizes, reading widths and palettes ${width} ${language}`, async ({
+    test(`Ury media, type sizes, reading widths and color schemes ${width} ${language}`, async ({
       page,
     }, info) => {
       test.setTimeout(120000);
@@ -258,77 +240,76 @@ for (const width of [1440, 390])
       await page
         .context()
         .addCookies([{ name: 'cool_locale', value: language, url: origin }]);
-      for (const font of ['serif', 'sans'] as const)
-        for (const fontSize of [80, 150])
-          for (const readingWidth of ['comfortable', 'wide'] as const)
-            for (const palette of ['light', 'sepia', 'dark'] as const) {
-              state.settings.site.appearance.ury = {
-                ...defaultUryAppearance,
-                font,
-                fontSize,
-                readingWidth,
-                palette,
-              };
-              await page.goto('/posts/fixture-post');
-              await expect(page.locator('.ury-document')).toContainText(
-                'Synthetic heading',
-              );
-              await expect(page.locator('html')).toHaveAttribute(
-                'data-font',
-                font,
-              );
-              await expect(page.locator('html')).toHaveAttribute(
-                'data-ury-palette',
-                palette,
-              );
-              await expect(page.locator('html')).toHaveAttribute(
-                'data-ury-width',
-                readingWidth,
-              );
-              await expect(page.locator('body')).toHaveCSS(
-                'font-size',
-                `${(18 * fontSize) / 100}px`,
-              );
-              await expect(page.locator('.ury-masthead')).toHaveCSS(
-                'position',
-                width === 1440 ? 'fixed' : 'static',
-              );
-              await expect(page.locator('html')).toHaveAttribute(
-                'lang',
-                language === 'zh' ? 'zh-CN' : 'en',
-              );
-              await expect(page.locator('.ury-prose table')).toContainText(
-                'Width',
-              );
-              await expect(page.locator('.ury-prose pre code')).toContainText(
-                'const theme = true',
-              );
-              await expect(page.locator('.ury-prose video')).toHaveAttribute(
-                'controls',
-                '',
-              );
+      for (const fontSize of [80, 150])
+        for (const readingWidth of ['comfortable', 'wide'] as const)
+          for (const scheme of ['light', 'dark'] as const) {
+            await page.emulateMedia({ colorScheme: scheme });
+            state.settings.site.appearance.ury = {
+              ...defaultUryAppearance,
+              fontSize,
+              readingWidth,
+            };
+            await page.goto('/posts/fixture-post');
+            await expect(page.locator('.ury-document')).toContainText(
+              'Synthetic heading',
+            );
+            await expect(page.locator('html')).toHaveAttribute(
+              'data-font',
+              'serif',
+            );
+            await expect(page.locator('html')).toHaveAttribute(
+              'data-ury-width',
+              readingWidth,
+            );
+            await expect(page.locator('body')).toHaveCSS(
+              'font-size',
+              `${(18 * fontSize) / 100}px`,
+            );
+            await expect(page.locator('.ury-masthead')).toHaveCSS(
+              'position',
+              width === 1440 ? 'fixed' : 'sticky',
+            );
+            await expect(page.locator('html')).toHaveAttribute(
+              'lang',
+              language === 'zh' ? 'zh-CN' : 'en',
+            );
+            await expect(page.locator('.ury-prose table')).toContainText(
+              'Width',
+            );
+            await expect(page.locator('.ury-prose pre code')).toContainText(
+              'const theme = true',
+            );
+            await expect(page.locator('.ury-prose video')).toHaveAttribute(
+              'controls',
+              '',
+            );
+            await expect(page.locator('.ury-prose video')).not.toHaveAttribute(
+              'autoplay',
+            );
+            const image = page.locator('.ury-prose img').first();
+            await expect(image).toBeVisible();
+            await expect
+              .poll(() =>
+                image.evaluate((el) => (el as HTMLImageElement).naturalWidth),
+              )
+              .toBeGreaterThan(0);
+            // Wide screens list the contents beside a comfortable column.
+            if (width === 1440 && readingWidth === 'comfortable')
               await expect(
-                page.locator('.ury-prose video'),
-              ).not.toHaveAttribute('autoplay');
-              const image = page.locator('.ury-prose img').first();
-              await expect(image).toBeVisible();
-              await expect
-                .poll(() =>
-                  image.evaluate((el) => (el as HTMLImageElement).naturalWidth),
-                )
-                .toBeGreaterThan(0);
+                page.locator('.ury-toc-aside a').first(),
+              ).toHaveAttribute('href', /#.+/);
+            else {
               await page.locator('.ury-toc summary').click();
               await expect(page.locator('.ury-toc a').first()).toHaveAttribute(
                 'href',
                 /#.+/,
               );
-              await noOverflow(page);
             }
-      for (const palette of ['light', 'sepia', 'dark'] as const) {
-        state.settings.site.appearance.ury = {
-          ...defaultUryAppearance,
-          palette,
-        };
+            await noOverflow(page);
+          }
+      for (const scheme of ['light', 'dark'] as const) {
+        await page.emulateMedia({ colorScheme: scheme });
+        state.settings.site.appearance.ury = { ...defaultUryAppearance };
         for (const route of ['/home', '/posts/fixture-post']) {
           await page.goto(route);
           await expect(
@@ -342,7 +323,7 @@ for (const width of [1440, 390])
           });
           await page.screenshot({
             path: info.outputPath(
-              `ury-${width}-${language}-${palette}-${route === '/home' ? 'home' : 'post'}.png`,
+              `ury-${width}-${language}-${scheme}-${route === '/home' ? 'home' : 'post'}.png`,
             ),
             fullPage: true,
           });
@@ -351,7 +332,7 @@ for (const width of [1440, 390])
     });
   }
 
-test('Ury avatar uses upload, owned fallback, or no image on sidebar and post', async ({
+test('Ury shows no sidebar avatar; the post author shows an upload or nothing', async ({
   page,
 }) => {
   const state = await themeFixture(page, {
@@ -363,22 +344,29 @@ test('Ury avatar uses upload, owned fallback, or no image on sidebar and post', 
   for (const uploaded of [true, false]) {
     state.avatarUrl = uploaded ? '/api/v1/media/fixture.webp' : null;
     await page.goto('/posts/fixture-post');
-    for (const selector of ['.ury-avatar', '.ury-author img']) {
-      const image = page.locator(selector);
-      await expect(image).toBeVisible();
-      await expect(image).toHaveAttribute(
-        'src',
-        uploaded ? /\/api\/v1\/media\/fixture.webp/ : /mark[^/]*\.svg/,
-      );
-      const bounds = await image.boundingBox();
-      expect(bounds!.width).toBe(bounds!.height);
-      await expect(image).toHaveCSS('object-fit', 'cover');
+    await expect(page.locator('.ury-document')).toBeVisible();
+    await expect(page.locator('.ury-masthead img')).toHaveCount(0);
+    const image = page.locator('.ury-author img');
+    if (!uploaded) {
+      await expect(image).toHaveCount(0);
+      continue;
     }
+    await expect(image).toBeVisible();
+    await expect(image).toHaveAttribute(
+      'src',
+      /\/api\/v1\/media\/fixture.webp/,
+    );
+    const bounds = await image.boundingBox();
+    expect(bounds!.width).toBe(bounds!.height);
+    await expect(image).toHaveCSS('object-fit', 'cover');
   }
+  state.avatarUrl = '/api/v1/media/fixture.webp';
   state.settings.site.appearance.ury!.showAvatar = false;
   await page.reload();
-  await expect(page.locator('.ury-avatar, .ury-author img')).toHaveCount(0);
-  expect(urls.some((url) => /\/sakura\/|bubble-candy/.test(url))).toBe(false);
+  await expect(page.locator('.ury-author img')).toHaveCount(0);
+  expect(
+    urls.some((url) => /\/sakura\/|bubble-candy|mark[^/]*\.svg/.test(url)),
+  ).toBe(false);
 });
 
 test('Ury near-bottom loading stops at exhaustion and failure; explicit retry recovers', async ({
@@ -445,7 +433,10 @@ test('Ury repeated cursor cannot auto-loop and abandoned feed cannot append stal
   await expect(page.locator('.ury-story-featured')).toHaveCount(2);
   await page.waitForTimeout(300);
   expect(state.timelineQueries.map((q) => q.cursor)).toEqual([null, '1']);
-  await page.getByLabel('Language / 语言').selectOption('en');
+  await page
+    .getByRole('group', { name: 'Language / 语言' })
+    .getByRole('button', { name: 'English', exact: true })
+    .click();
   await expect(page.locator('.ury-story-featured').first()).toContainText(
     'Synthetic article',
   );
@@ -524,7 +515,10 @@ test('Ury delayed page cannot overwrite a newer language or survive a theme swit
   await expect(page.locator('.ury-story-featured')).toHaveCount(1);
   await page.getByRole('button', { name: '加载更多', exact: true }).click();
   await expect.poll(() => entered.has('zh')).toBe(true);
-  await page.getByLabel('Language / 语言').selectOption('en');
+  await page
+    .getByRole('group', { name: 'Language / 语言' })
+    .getByRole('button', { name: 'English', exact: true })
+    .click();
   await expect(page.locator('.ury-story-featured')).toHaveCount(1);
   await expect(page.locator('.ury-story-featured')).toContainText(
     'Synthetic article',
@@ -542,7 +536,10 @@ test('Ury delayed page cannot overwrite a newer language or survive a theme swit
   await page.getByRole('button', { name: 'Load more', exact: true }).click();
   await expect.poll(() => entered.has('en')).toBe(true);
   // Change UI language before navigating so the shared Admin helper uses Chinese labels.
-  await page.getByLabel('Language / 语言').selectOption('zh');
+  await page
+    .getByRole('group', { name: 'Language / 语言' })
+    .getByRole('button', { name: '中文', exact: true })
+    .click();
   // Sakura requires the native observer; the no-observer case above is Ury-only.
   await page.evaluate(() => {
     const state = window as Window & {

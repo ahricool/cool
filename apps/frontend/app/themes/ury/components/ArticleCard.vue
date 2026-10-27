@@ -46,14 +46,13 @@ const { t, formatDate, contentLang } = useCoolI18n();
         }}</time
         ><span v-if="featured"> · {{ post.author.displayName }}</span>
       </p>
-      <template v-if="featured">
-        <p class="ury-excerpt">{{ post.excerpt }}</p>
-        <NuxtLink
-          class="ury-read-more"
-          :to="`/posts/${encodeURIComponent(post.slug)}`"
-          >{{ t('继续阅读') }} <span aria-hidden="true">↗</span></NuxtLink
-        >
-      </template>
+      <p v-if="post.excerpt" class="ury-excerpt">{{ post.excerpt }}</p>
+      <NuxtLink
+        v-if="featured"
+        class="ury-read-more"
+        :to="`/posts/${encodeURIComponent(post.slug)}`"
+        >{{ t('继续阅读') }} <span aria-hidden="true">→</span></NuxtLink
+      >
     </div>
   </article>
 </template>

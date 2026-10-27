@@ -57,7 +57,7 @@ onBeforeUnmount(() => observer?.disconnect());
         <button
           v-if="nextCursor && !pending && !error"
           type="button"
-          class="button-normal"
+          class="timeline-more"
           @click="loadMore()"
         >
           {{ t('加载更多') }}

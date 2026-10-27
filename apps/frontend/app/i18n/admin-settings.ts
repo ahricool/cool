@@ -3,15 +3,8 @@ export const adminSettingsMessages: Record<string, string> = {
     'Reading-first sidebar layout, editorial type and generous space.',
   '以下设置属于 Sakura，切换主题不会清除。':
     'These settings belong to Sakura and remain saved when switching themes.',
-  'Ury 独立保存以下设置，不使用 Sakura 的背景、图案或首页横幅。':
-    'Ury saves its own settings and does not use Sakura backgrounds, patterns or homepage banners.',
-  默认配色: 'Default palette',
-  浅色: 'Light',
-  暖纸色: 'Sepia',
-  深色: 'Dark',
-  正文字体: 'Body font',
-  衬线: 'Serif',
-  无衬线: 'Sans serif',
+  'Ury 独立保存以下设置，始终使用衬线字体并跟随设备的浅色或深色，不使用 Sakura 的背景、图案或首页横幅。':
+    'Ury saves its own settings, always uses serif type and follows the device’s light or dark mode; it does not use Sakura backgrounds, patterns or homepage banners.',
   阅读宽度: 'Reading width',
   舒适: 'Comfortable',
   宽幅: 'Wide',

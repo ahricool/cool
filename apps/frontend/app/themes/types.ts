@@ -2,14 +2,16 @@ import type { Component } from 'vue';
 import type { SiteAppearance } from '@cool/content';
 
 export interface ThemeAppearanceDefinition {
-  readonly readerCookie: string;
+  /** Cookie for a reader's own light/dark choice; omitted when the theme follows the device. */
+  readonly readerCookie?: string;
   readonly resolve: (
     saved: SiteAppearance,
     preference: string | null,
   ) => {
     font: string;
     fontSize: number;
-    palette: 'light' | 'sepia' | 'dark';
+    /** `system` leaves light/dark to the theme's `prefers-color-scheme` styles. */
+    palette: 'light' | 'dark' | 'system';
     attributes?: Readonly<Record<`data-${string}`, string>>;
   };
 }

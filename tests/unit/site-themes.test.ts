@@ -50,7 +50,13 @@ test('every theme declares independent entries, errors, assets and all public pa
       );
     }
   }
-  assert.notEqual(siteThemes[0].assets.icon, siteThemes[1].assets.icon);
+  // Ury draws no logo of its own and uses the site mark; every icon is a public SVG.
+  for (const theme of siteThemes)
+    assert.match(theme.assets.icon, /^\/[\w/-]+\.svg$/);
+  assert.doesNotMatch(
+    siteThemes.map((theme) => theme.assets.icon).join(' '),
+    /mark\.svg/,
+  );
 });
 
 test('both themes own their visual trees without importing another theme or Admin visuals', async () => {
@@ -96,8 +102,6 @@ test('themes resolve only their owned settings without mutating saved profiles',
   saved.font = 'bubble-candy';
   saved.fontSize = 150;
   saved.ury = {
-    palette: 'sepia',
-    font: 'serif',
     fontSize: 80,
     readingWidth: 'wide',
     showAvatar: true,
@@ -113,20 +117,29 @@ test('themes resolve only their owned settings without mutating saved profiles',
     resolveSiteTheme('minimal').appearance.resolve(saved, 'dark'),
     { font: 'bubble-candy', fontSize: 150, palette: 'dark' },
   );
+  // Ury is always serif and leaves light/dark to the device; no reader choice.
   const ury = resolveSiteTheme('ury').appearance;
-  assert.deepEqual(ury.resolve(saved, null), {
+  const resolved = {
     font: 'serif',
     fontSize: 80,
-    palette: 'sepia',
-    attributes: { 'data-ury-palette': 'sepia', 'data-ury-width': 'wide' },
-  });
-  for (const palette of ['light', 'sepia', 'dark'])
-    assert.equal(ury.resolve(saved, palette).palette, palette);
-  assert.equal(ury.resolve(saved, 'invalid').palette, 'sepia');
-  assert.notEqual(
-    ury.readerCookie,
-    resolveSiteTheme('sakura').appearance.readerCookie,
+    palette: 'system',
+    attributes: { 'data-ury-width': 'wide' },
+  };
+  assert.deepEqual(ury.resolve(saved, null), resolved);
+  for (const preference of ['light', 'dark', 'sepia'])
+    assert.deepEqual(ury.resolve(saved, preference), resolved);
+  // Retired palette/font values in old JSON are ignored.
+  assert.deepEqual(
+    ury.resolve(
+      {
+        ...saved,
+        ury: { ...saved.ury, palette: 'dark', font: 'sans' } as never,
+      },
+      null,
+    ),
+    resolved,
   );
+  assert.equal(ury.readerCookie, undefined);
   assert.deepEqual(saved, before);
 });
 

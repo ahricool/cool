@@ -35,14 +35,6 @@ class SiteTranslationDto extends LocaleDto {
   @ApiProperty() @IsString() @MaxLength(500) authorBio!: string;
 }
 class UryAppearanceDto {
-  @ApiPropertyOptional({ enum: ['light', 'sepia', 'dark'] })
-  @ValidateIf((_o, value) => value !== undefined)
-  @IsIn(['light', 'sepia', 'dark'])
-  palette?: 'light' | 'sepia' | 'dark';
-  @ApiPropertyOptional({ enum: ['serif', 'sans'] })
-  @ValidateIf((_o, value) => value !== undefined)
-  @IsIn(['serif', 'sans'])
-  font?: 'serif' | 'sans';
   @ApiPropertyOptional({ minimum: 80, maximum: 150 })
   @ValidateIf((_o, value) => value !== undefined)
   @IsInt()
@@ -207,12 +199,22 @@ export async function readSettings(db: Database) {
     translations: savedSite.translations,
   };
   const fontSize = site.appearance?.fontSize;
+  // Ury's retired palette and font choices stay in old JSON; never echo them back.
+  const ury = site.appearance?.ury;
+  const uryAppearance =
+    ury &&
+    (Object.fromEntries(
+      Object.entries(ury).filter(
+        ([key]) => key !== 'palette' && key !== 'font',
+      ),
+    ) as UryAppearanceDto);
   return {
     site: {
       ...site,
       appearance: {
         ...defaultSettings.site.appearance,
         ...site.appearance,
+        ...(ury ? { ury: uryAppearance } : {}),
         fontSize:
           typeof fontSize === 'number' &&
           Number.isInteger(fontSize) &&

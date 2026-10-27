@@ -1,22 +1,15 @@
 import { normalizeUryAppearance } from '@cool/content';
 import type { ThemeAppearanceDefinition } from '../types';
 
+/** Always serif; light or dark comes from the device, with no reader choice. */
 export const uryAppearance: ThemeAppearanceDefinition = {
-  readerCookie: 'cool_ury_palette',
-  resolve: (saved, preference) => {
+  resolve: (saved) => {
     const settings = normalizeUryAppearance(saved.ury);
-    const palette =
-      preference === 'light' || preference === 'sepia' || preference === 'dark'
-        ? preference
-        : settings.palette;
     return {
-      font: settings.font,
+      font: 'serif',
       fontSize: settings.fontSize,
-      palette,
-      attributes: {
-        'data-ury-palette': palette,
-        'data-ury-width': settings.readingWidth,
-      },
+      palette: 'system',
+      attributes: { 'data-ury-width': settings.readingWidth },
     };
   },
 };

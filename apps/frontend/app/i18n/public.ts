@@ -1,8 +1,7 @@
 /** Public interface copy only. Authored content is localized by the API. */
 export const publicMessages: Record<string, string> = {
-  配色: 'Palette',
-  网站默认: 'Site default',
   继续阅读: 'Continue reading',
+  菜单: 'Menu',
 
   关于我: 'About me',
   加载更多: 'Load more',

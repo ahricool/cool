@@ -49,4 +49,20 @@ const component = computed(() =>
   box-sizing: border-box;
   font-family: system-ui, sans-serif;
 }
+.admin-resource-error button {
+  min-height: 44px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 10px;
+  background: #c7366b;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.admin-resource-error button:hover {
+  background: #b62d60;
+}
+.admin-resource-error a {
+  color: #b52e63;
+}
 </style>
