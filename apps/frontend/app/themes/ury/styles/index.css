@@ -58,6 +58,9 @@ a {
   color: inherit;
   text-underline-offset: 0.22em;
   text-decoration-thickness: 1px;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
 }
 a:hover {
   text-decoration-thickness: 2px;
@@ -195,12 +198,15 @@ h2 {
 }
 .ury-nav a {
   padding: 5px 0;
-  text-decoration: none;
+  /* The underline fades in rather than snapping on. */
+  text-decoration: underline;
+  text-decoration-color: transparent;
   font-size: 0.86em;
   letter-spacing: 0.08em;
 }
+.ury-nav a:hover,
 .ury-nav a.router-link-exact-active {
-  text-decoration: underline;
+  text-decoration-color: currentColor;
 }
 /* The column sits centred in the space beside the sidebar. */
 .ury-content-column {
@@ -215,6 +221,17 @@ h2 {
 .ury-main {
   min-height: 65svh;
 }
+/* New pages and newly loaded feed entries settle in with a short fade. */
+.ury-main > :not(.ury-feed),
+.ury-feed > :is(.ury-story, .ury-note) {
+  animation: ury-fade-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes ury-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
 
 /* Feed */
 .ury-story {
@@ -226,10 +243,11 @@ h2 {
   font-size: 1.35em;
 }
 .ury-story h2 a {
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-color: transparent;
 }
 .ury-story h2 a:hover {
-  text-decoration: underline;
+  text-decoration-color: currentColor;
 }
 .ury-byline {
   color: var(--ury-muted);
@@ -508,6 +526,14 @@ h2 {
 .ury-tag-index a:hover > span:first-child,
 .ury-tag-index [aria-current='page'] > span:first-child {
   text-decoration: underline;
+}
+/* Arrows lean a few pixels towards where they lead. */
+:is(.ury-tag-index a > span:last-child, .ury-read-more > span) {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+:is(.ury-tag-index a:hover > span:last-child, .ury-read-more:hover > span) {
+  transform: translateX(3px);
 }
 
 /* Search and pagination */
