@@ -32,10 +32,7 @@ useHead(() => ({ title: store.site.title }));
         aria-controls="ury-menu"
         @click="menuOpen = !menuOpen"
       >
-        {{ store.site.title
-        }}<span class="ury-brand-mark" aria-hidden="true">{{
-          menuOpen ? '−' : '+'
-        }}</span>
+        {{ store.site.title }}
       </button>
     </div>
     <div id="ury-menu" class="ury-menu">

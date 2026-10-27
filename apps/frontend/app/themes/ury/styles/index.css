@@ -127,12 +127,7 @@ h2 {
   font-size: 1.65em;
 }
 /* Quiet text buttons: underline on hover, no box. */
-:is(
-  .ury-brand-toggle,
-  .ury-languages button,
-  .ury-share button,
-  .ury-error button
-) {
+:is(.ury-languages button, .ury-share button, .ury-error button) {
   min-height: 44px;
   padding: 0;
   border: 0;
@@ -140,12 +135,9 @@ h2 {
   color: inherit;
   text-underline-offset: 0.22em;
 }
-:is(
-    .ury-brand-toggle,
-    .ury-languages button,
-    .ury-share button,
-    .ury-error button
-  ):hover:not(:disabled) {
+:is(.ury-languages button, .ury-share button, .ury-error button):hover:not(
+    :disabled
+  ) {
   /* Stay boxless: outranks the outlined hover of ordinary buttons. */
   border-color: transparent;
   background: none;
@@ -178,14 +170,17 @@ h2 {
 }
 .ury-brand-toggle {
   display: none;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
 }
-.ury-brand-mark {
-  /* Inline-block keeps the hover underline on the title only. */
-  display: inline-block;
-  margin-left: 12px;
-  color: var(--ury-muted);
-  font-size: 0.7em;
-  vertical-align: 0.15em;
+/* Like Sakura's logo: the title opens the menu with no visible affordance. */
+.ury-brand-toggle:hover:not(:disabled) {
+  border-color: transparent;
+  background: none;
+  text-decoration: none;
 }
 .ury-tagline {
   margin: 20px 0 38px;
