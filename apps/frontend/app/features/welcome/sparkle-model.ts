@@ -143,9 +143,9 @@ export async function loadSparkleModel(
     source.dispose();
     part.material = material;
     part.frustumCulled = false;
-    // A contact blob under her feet; putting the skinned body in the sun
-    // shadow map would force a full depth pass every frame she moves.
-    part.castShadow = false;
+    // She casts into the sun's shadow map; world.ts refreshes it only while
+    // she moves, a dozen times a second at most.
+    part.castShadow = true;
     part.receiveShadow = true;
     if (unlined.has(material.name)) continue;
     const outline = new THREE.SkinnedMesh(part.geometry, ink);

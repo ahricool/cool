@@ -235,8 +235,9 @@ export function createSparkle(mobile: boolean) {
       height += (ground - height) * Math.min(1, dt * 10);
       blob.position.set(position.x, height + 0.004, position.y);
       blob.scale.set(1.15, 1, 0.85);
+      // A faint contact shade grounding her feet under the real shadow.
       (blob.material as THREE.MeshBasicMaterial).opacity =
-        0.22 + light.day * 0.1;
+        0.16 + light.day * 0.04;
 
       // Turn to travel, then settle facing the viewer with idle glances.
       toCamera.set(

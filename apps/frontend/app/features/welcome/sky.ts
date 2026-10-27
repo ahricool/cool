@@ -2,8 +2,28 @@ import * as THREE from 'three';
 import type { Daylight } from './daylight';
 import { seeded, ToonBuilder, type SharedUniforms } from './toon';
 
-/** Where the moon hangs: low over the back-left ridges, behind the hall. */
-const moonDirection = new THREE.Vector3(-0.6, 0.32, -0.73).normalize();
+/**
+ * The sun and moon cross the backdrop the default camera looks at: up from
+ * behind the left ridges, low over the hall, down behind the right ridges,
+ * moving left to right like the sunlight. `back` points away from the
+ * camera across the plinth and `right` along the screen.
+ */
+const back = new THREE.Vector3(-0.58, 0, -0.81);
+const right = new THREE.Vector3(0.81, 0, -0.58);
+/** Half the sweep either side of the hall, and the highest climb, in radians. */
+const SWEEP = 0.95;
+const CLIMB = 0.3;
+function skyPath(arc: number, target: THREE.Vector3) {
+  const across = (arc - 0.5) * SWEEP * 2;
+  const up = Math.sin(arc * Math.PI) * CLIMB;
+  return target
+    .copy(back)
+    .multiplyScalar(Math.cos(across))
+    .addScaledVector(right, Math.sin(across))
+    .multiplyScalar(Math.cos(up))
+    .setY(Math.sin(up))
+    .normalize();
+}
 const clearCloud = new THREE.Color(0xffffff);
 const rainCloud = new THREE.Color(0x9ea7b6);
 
@@ -20,7 +40,10 @@ export function createSky(
     horizon: { value: new THREE.Color() },
     mist: { value: new THREE.Color() },
     sun: { value: new THREE.Vector3(0, 1, 0) },
-    moon: { value: moonDirection.clone() },
+    moon: { value: new THREE.Vector3(0, 1, 0) },
+    /** How much of each disc shows: 0 below the horizon or behind rain. */
+    sunShown: { value: 0 },
+    moonShown: { value: 0 },
     haze: { value: 0 },
     night: { value: 0 },
     time: shared.time,
@@ -44,6 +67,8 @@ export function createSky(
         uniform vec3 mist;
         uniform vec3 sun;
         uniform vec3 moon;
+        uniform float sunShown;
+        uniform float moonShown;
         uniform float haze;
         uniform float night;
         uniform float time;
@@ -57,8 +82,17 @@ export function createSky(
           // Zenith blue to a warm cream horizon, then a pink mist on the ground.
           vec3 color = mix(horizon, top, smoothstep(0.06, 0.6, h));
           color = mix(mist, color, smoothstep(-0.03, 0.1, h));
-          float glow = pow(max(dot(d, sun), 0.0), 6.0);
+          // Warm sky round the sun, lingering a while after it sets.
+          float s = dot(d, sun);
+          float glow = pow(max(s, 0.0), 6.0) * smoothstep(-0.12, 0.04, sun.y);
           color += vec3(1.0, 0.72, 0.5) * glow * (0.12 + haze * 0.35);
+          // The sun's disc, a little larger than the moon's, warmer when low.
+          vec3 sunTint = mix(vec3(1.0, 0.66, 0.4), vec3(1.0, 0.93, 0.7),
+            smoothstep(0.03, 0.22, sun.y));
+          float sunDisc = smoothstep(0.99972, 0.9998, s);
+          float sunHalo = pow(max(s, 0.0), 900.0) * 0.35;
+          color = mix(color, sunTint, sunDisc * sunShown);
+          color += sunTint * sunHalo * sunShown;
           if (night > 0.001) {
             // Stars live on the dome itself, so ridges and clouds always hide them.
             vec3 p = d * 150.0;
@@ -67,15 +101,15 @@ export function createSky(
             vec3 star = cell + 0.25 + 0.5 * vec3(
               hash(cell + 1.3), hash(cell + 2.7), hash(cell + 4.1));
             float twinkle = 0.65 + 0.35 * sin(time * (1.5 + n * 2.0) + n * 80.0);
-            float s = step(0.94, n) * smoothstep(0.24, 0.02, length(p - star));
-            color += vec3(1.0, 0.96, 0.86) * s * twinkle * night
+            float lit = step(0.94, n) * smoothstep(0.24, 0.02, length(p - star));
+            color += vec3(1.0, 0.96, 0.86) * lit * twinkle * night
               * smoothstep(0.0, 0.1, h);
             // A pale full moon with a soft halo.
             float m = dot(d, moon);
             float disc = smoothstep(0.99978, 0.99986, m);
             float halo = pow(max(m, 0.0), 1500.0) * 0.18 + pow(max(m, 0.0), 120.0) * 0.05;
-            color = mix(color, vec3(0.86, 0.82, 0.7), disc * night);
-            color += vec3(0.75, 0.8, 1.0) * halo * night;
+            color = mix(color, vec3(0.86, 0.82, 0.7), disc * moonShown);
+            color += vec3(0.75, 0.8, 1.0) * halo * moonShown;
           }
           gl_FragColor = vec4(color, 1.0);
           #include <colorspace_fragment>
@@ -147,7 +181,13 @@ export function createSky(
       uniforms.top.value.copy(state.skyTop);
       uniforms.horizon.value.copy(state.skyHorizon);
       uniforms.mist.value.copy(state.skyMist);
-      uniforms.sun.value.copy(state.sunPosition).normalize();
+      skyPath(state.sunArc, uniforms.sun.value);
+      skyPath(state.moonArc, uniforms.moon.value);
+      // Each disc rises out from behind the ridges and sinks back into them.
+      const shown = (direction: THREE.Vector3) =>
+        THREE.MathUtils.smoothstep(direction.y, 0, 0.03) * state.clearSky;
+      uniforms.sunShown.value = shown(uniforms.sun.value);
+      uniforms.moonShown.value = shown(uniforms.moon.value);
       uniforms.haze.value = state.haze;
       uniforms.night.value = state.stars;
     },

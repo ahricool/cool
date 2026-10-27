@@ -3,6 +3,8 @@ import { cats, groundAt, type CatPose } from './layout';
 import type { Tone, ToonBuilder } from './toon';
 
 type V3 = THREE.Vector3Tuple;
+/** Eyes, noses and paws are a few pixels across: the plainest sphere will do. */
+const detail = (r: number) => (r < 0.03 ? 0 : 1);
 /** A little larger than life so they read at the default camera distance. */
 const SIZE = 1.2;
 
@@ -68,10 +70,13 @@ function catFrame(b: ToonBuilder, base: THREE.Matrix4, phase: number) {
       scale: V3 = [1, 1, 1],
       options: { rotation?: V3; outline?: boolean } = {},
     ) =>
-      put(new THREE.IcosahedronGeometry(r, 1), tone, at, { scale, ...options }),
+      put(new THREE.IcosahedronGeometry(r, detail(r)), tone, at, {
+        scale,
+        ...options,
+      }),
     /** Pale fur markings; their ink would show as seams across the coat. */
     mark: (r: number, tone: Tone, at: V3, scale: V3 = [1, 1, 1]) =>
-      put(new THREE.IcosahedronGeometry(r, 1), tone, at, {
+      put(new THREE.IcosahedronGeometry(r, detail(r)), tone, at, {
         scale,
         outline: false,
       }),
@@ -96,7 +101,7 @@ function catFrame(b: ToonBuilder, base: THREE.Matrix4, phase: number) {
         const t0 = 1 - ((i - 1) / points.length) * 0.35,
           t1 = 1 - (i / points.length) * 0.35;
         frame.limb(points[i - 1]!, points[i]!, r * t0, tone, swing, r * t1);
-        put(new THREE.IcosahedronGeometry(r * t1, 1), tone, points[i]!, {
+        put(new THREE.IcosahedronGeometry(r * t1, 0), tone, points[i]!, {
           swing,
         });
       }
