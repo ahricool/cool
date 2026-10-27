@@ -72,7 +72,12 @@ h3 {
   top: 12px;
 }
 .api-state {
-  padding: 64px 20px;
+  max-width: 520px;
+  margin: 24px auto;
+  padding: 48px 24px;
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--sakura-surface) 82%, transparent);
+  box-shadow: var(--sakura-shadow);
   text-align: center;
   color: var(--sakura-muted);
 }
@@ -104,8 +109,25 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: 16px;
   margin: 48px 0;
+  color: var(--sakura-muted);
+  font-size: calc(13px * var(--sakura-font-scale));
+  letter-spacing: 0.08em;
+}
+.pagination a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: var(--sakura-surface);
+  box-shadow: var(--sakura-tag-shadow);
+  color: var(--sakura-accent-strong);
+  letter-spacing: normal;
+}
+.pagination a:hover {
+  box-shadow: var(--sakura-button-hover-shadow);
 }
 @media (prefers-reduced-motion: reduce) {
   html {

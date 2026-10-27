@@ -36,8 +36,12 @@ const { contentLang } = useCoolI18n();
 }
 .footer-wish {
   margin: 12px 0;
+  line-height: 2;
+  letter-spacing: 0.08em;
 }
+/* CJK has no italic face; keep the wish upright and soft instead. */
 .footer-wish em {
-  font-style: italic;
+  font-style: normal;
+  opacity: 0.85;
 }
 </style>

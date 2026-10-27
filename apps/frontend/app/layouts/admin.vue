@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import '~/assets/admin/index.css';
 import ThemeToggle from '~/features/admin/visuals/ThemeToggle.vue';
+import SakuraPattern from '~/features/admin/visuals/SakuraPattern.vue';
 import { useCoolI18n } from '~/composables/useCoolI18n';
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -71,5 +72,7 @@ useHead(() => ({
       <main class="workspace"><slot /></main>
       <ThemeToggle floating :dark="dark" @toggle-theme="dark = !dark" />
     </div>
+    <!-- A faint band of the blog's pattern, beneath the workspace, keeps the brand. -->
+    <SakuraPattern class="admin-pattern" shape="dot" seed="admin" />
   </div>
 </template>

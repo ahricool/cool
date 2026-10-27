@@ -26,11 +26,16 @@
   align-items: center;
   flex-shrink: 0;
 }
+.page-pattern {
+  --sakura-pattern-opacity: var(--sakura-page-pattern-opacity);
+}
 .page-content {
   max-width: 1040px;
   margin: 0 auto;
   padding: 48px 40px;
   min-height: 30vh;
+  /* A quiet column under the reading content; the pattern stays at the sides. */
+  background: color-mix(in srgb, var(--sakura-page) 88%, transparent);
 }
 .page-content.post,
 .page-content.page {
@@ -38,9 +43,6 @@
 }
 .page-content.page {
   background: var(--sakura-page);
-}
-.page-content.post {
-  background: transparent;
 }
 .reading-banner {
   position: relative;
@@ -58,6 +60,10 @@
 }
 .reading-banner--home .banner-artwork {
   min-height: 100svh;
+}
+/* Without the wave, the home artwork still fades into the page instead of a hard edge. */
+.reading-banner--home:not(:has(.banner-wave)) .banner-artwork {
+  mask-image: linear-gradient(#000 calc(100% - 110px), transparent);
 }
 .banner-image {
   position: absolute;
@@ -93,6 +99,9 @@
   margin: 0;
   max-width: 540px;
   line-height: 1.9;
+  font-size: calc(clamp(17px, 1.6vw, 20px) * var(--sakura-font-scale));
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 10px #0009;
 }
 .hero-description p > span:not(.desc) {
   display: none;
@@ -209,9 +218,9 @@
   font-weight: 700;
   margin-bottom: 28px;
   --wordmark-width: clamp(148px, 16vw, 220px);
-  --wordmark-shadow-offset: 3px;
-  --wordmark-shadow-blur: 8px;
-  --wordmark-shadow-color: #0009;
+  --wordmark-shadow-offset: 2px;
+  --wordmark-shadow-blur: 14px;
+  --wordmark-shadow-color: #2a0f1fcc;
 }
 .over-banner:not(.header-solid) {
   --wordmark-shadow-color: #0009;
