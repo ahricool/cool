@@ -278,7 +278,7 @@ export function mountWelcomeWorld(
       renderer.setPixelRatio(1);
       composer?.setPixelRatio(1);
       renderer.shadowMap.enabled = false;
-      life.setMotes(daylight.state.motes, 1);
+      life.setGlow(daylight.state, 1);
       slowFrames = 0;
       // Resizing clears the drawing buffer. Redraw now, including on-demand reduced-motion frames.
       present();
@@ -375,7 +375,7 @@ export function mountWelcomeWorld(
     sky.setDaylight(daylight.state);
     bloomStrength = welcomeBloom(daylight.state.lampIntensity, mobile);
     landscape.setDaylight(daylight.state);
-    life.setMotes(daylight.state.motes, renderer.getPixelRatio());
+    life.setGlow(daylight.state, renderer.getPixelRatio());
   }
   try {
     sky = createSky(shared, ramp, mobile);
