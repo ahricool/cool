@@ -194,9 +194,9 @@ export async function loadSparkleModel(
     rotate(name, delta.setFromEuler(euler.set(x, y, z)));
 
   // Long sleeve tails hang from the underside of each upper arm, close to
-  // the armpit. Near the arm each one flares outward (and back, behind the
-  // forearm), then droops to hang almost straight down, close beside her hips. The
-  // two never cross and stay clear of arms, skirt and legs.
+  // the armpit. Near the arm each one flares a little outward and back, then
+  // droops to hang straight down beside her thighs, as on the official model.
+  // The two never cross and stay clear of arms, skirt and legs.
   const sleeves = (
     [
       ['zx_', '左肩C', 1],
@@ -210,8 +210,8 @@ export async function loadSparkleModel(
           Number(a.slice(prefix.length).split('_')[0]) -
           Number(b.slice(prefix.length).split('_')[0]),
       );
-    const upper = new THREE.Vector3(side * 0.68, -1, -0.62).normalize();
-    const lower = new THREE.Vector3(side * 0.04, -1, -0.32).normalize();
+    const upper = new THREE.Vector3(side * 0.45, -1, -0.16).normalize();
+    const lower = new THREE.Vector3(side * 0.06, -1, 0.04).normalize();
     const a = bones.get(chain[0]!)?.bone,
       b = bones.get(chain[chain.length - 1]!)?.bone;
     if (!a || !b) return [];
@@ -249,26 +249,55 @@ export async function loadSparkleModel(
     ['小指', 1.15],
   ] as const;
 
-  // Twin tails: each bone chain bends a little more towards its tip, driven
-  // by damped springs so the hair lags, overshoots and settles.
+  // Twin tails: the PMX rest pose splays them out and back as if windswept.
+  // Each segment is aimed along a calm hang instead (out just past the
+  // shoulders, then almost straight down beside the arms, as on the official
+  // model), and damped springs bend the chain on top so the hair lags,
+  // overshoots and settles.
   const tails = (
     [
       ['zb_', 1],
       ['yb__', -1],
     ] as const
-  ).map(([prefix, side]) => ({
-    side,
-    chain: [...bones.keys()]
+  ).map(([prefix, side]) => {
+    const chain = [...bones.keys()]
       .filter((name) => name.startsWith(prefix))
       .sort(
         (a, b) =>
           Number(a.slice(prefix.length).split('_')[0]) -
           Number(b.slice(prefix.length).split('_')[0]),
+      );
+    const points = chain.map((name) =>
+      figure.worldToLocal(
+        bones.get(name)!.bone.getWorldPosition(new THREE.Vector3()),
       ),
-    trail: new Spring(26, 3.2),
-    lift: new Spring(22, 3),
-    twist: new Spring(18, 3),
-  }));
+    );
+    const top = new THREE.Vector3(side * 0.3, -1, -0.32).normalize();
+    const hang = new THREE.Vector3(side * 0.1, -1, -0.03).normalize();
+    // Rotations stack down the chain, so each bone takes only the change
+    // from its parent's aim: Q(i-1)⁻¹·Q(i).
+    let above = new THREE.Quaternion();
+    const aims = points.map((_, i) => {
+      const j = Math.min(i, points.length - 2);
+      const rest = points[j + 1]!.clone().sub(points[j]!).normalize();
+      const target = top
+        .clone()
+        .lerp(hang, THREE.MathUtils.smoothstep(j, 1, 6))
+        .normalize();
+      const aim = new THREE.Quaternion().setFromUnitVectors(rest, target);
+      const local = above.clone().invert().multiply(aim);
+      above = aim;
+      return local;
+    });
+    return {
+      side,
+      chain,
+      aims,
+      trail: new Spring(26, 3.2),
+      lift: new Spring(22, 3),
+      twist: new Spring(18, 3),
+    };
+  });
   let lastTime = 0,
     lastYaw = 0;
 
@@ -335,8 +364,8 @@ export async function loadSparkleModel(
       turn('上半身', 0.04 * p.walk, twist, -shift * 0.02);
       turn('上半身2', breath * 0.012, twist * 0.5, 0);
       turn('首', 0, p.look * 0.25, 0);
-      // A slight, curious tilt of the head.
-      turn('頭', -0.04, p.look * 0.25, 0.07 + shift * 0.03);
+      // Head held level, as on the official model, with a hint of tilt.
+      turn('頭', -0.02, p.look * 0.25, 0.02 + shift * 0.03);
       // Eyes lead the head: they reach the glance first and dart about.
       const eyeYaw = THREE.MathUtils.clamp(p.look * 0.45 + p.gaze, -0.3, 0.3);
       turn('左目', 0, eyeYaw, 0);
@@ -361,10 +390,12 @@ export async function loadSparkleModel(
       rotate('左肩C', shoulders.左肩C);
       rotate('右肩C', shoulders.右肩C);
       // Cancel the shoulder turn above each long sleeve tail, then hang it
-      // straight down, trailing slightly with the walk.
+      // straight down, trailing back with the walk to clear her legs.
       for (const sleeve of sleeves) {
         parent.copy(shoulders[sleeve.shoulder]);
-        trail.setFromEuler(euler.set(-Math.abs(swing) * 0.15, 0, 0));
+        trail.setFromEuler(
+          euler.set(p.walk * 0.12 + Math.abs(swing) * 0.15, 0, 0),
+        );
         rotate(
           sleeve.root,
           parent.invert().multiply(trail).multiply(sleeve.aim),
@@ -433,16 +464,13 @@ export async function loadSparkleModel(
         const breeze =
           Math.sin(p.time * 1.5 + phase) * 0.22 +
           Math.sin(p.time * 2.9 + phase * 2) * 0.08;
-        // Biased back and outward so the larger swing clears her body.
+        // Walking trails them back and each step bounces them.
         const trail = tail.trail.step(
-          0.06 +
-            p.walk * 0.45 +
-            Math.cos(p.stride * 2) * p.walk * 0.2 +
-            breeze * 0.45,
+          p.walk * 0.45 + Math.cos(p.stride * 2) * p.walk * 0.2 + breeze * 0.3,
           dt,
         );
         const lift = tail.lift.step(
-          0.2 + breeze + Math.abs(swing) * 0.2 - yawRate * tail.side * 0.12,
+          breeze * 0.5 + Math.abs(swing) * 0.2 - yawRate * tail.side * 0.12,
           dt,
         );
         const twist = tail.twist.step(
@@ -456,12 +484,12 @@ export async function loadSparkleModel(
           // A gentle wave travels down the tail so the hair never hangs rigid.
           const wave =
             Math.sin(p.time * 2.4 - i * 0.45 + phase) * (0.09 + p.walk * 0.08);
-          turn(
-            name,
+          euler.set(
             (trail + wave * 0.6) * weight,
             twist * weight,
             (lift + wave) * tail.side * weight,
           );
+          rotate(name, delta.setFromEuler(euler).multiply(tail.aims[i]!));
         });
       }
     },

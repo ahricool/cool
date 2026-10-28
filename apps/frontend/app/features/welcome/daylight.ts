@@ -68,6 +68,8 @@ export function daylightAt(hour: number, wet = 0) {
     stars: (1 - THREE.MathUtils.smoothstep(altitude, -0.3, 0.02)) * (1 - wet),
     ink: 0.55 + day * 0.45,
     motes: 0.35 + (1 - day) * 0.65,
+    /** Fireflies come out only in full dark and shelter from the rain. */
+    fireflies: (1 - THREE.MathUtils.smoothstep(day, 0.02, 0.35)) * (1 - wet),
   };
 }
 export type Daylight = ReturnType<typeof daylightAt>;

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createBasinWater } from './basin';
+import type { Daylight } from './daylight';
 import {
   bellRope,
   canopy,
@@ -14,6 +15,7 @@ import {
   torii,
 } from './layout';
 import { palette, seeded, ToonBuilder, type SharedUniforms } from './toon';
+import { canStand } from './walk';
 
 /** Hanging paper, prayer plaques, the bell rope and festival lanterns. */
 function buildDangling(shared: SharedUniforms, ramp: THREE.Texture) {
@@ -408,6 +410,81 @@ function buildMotes(shared: SharedUniforms, count: number) {
   return { motes, uniforms };
 }
 
+/**
+ * A few fireflies over the court at night: each wanders slowly near the
+ * ground and flashes yellow-green every few seconds, a soft glow between.
+ */
+function buildFireflies(shared: SharedUniforms, count: number) {
+  const random = seeded(77);
+  const positions = new Float32Array(count * 3);
+  const seeds = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    // Over open ground, never inside a building or tree, and low above it.
+    let x: number, z: number;
+    do {
+      x = (random() - 0.5) * 11;
+      z = -5.5 + random() * 11;
+    } while (!canStand(x, z));
+    positions[i * 3] = x;
+    positions[i * 3 + 1] = groundAt(x, z) + 0.3 + random() * 0.8;
+    positions[i * 3 + 2] = z;
+    seeds[i] = random() * 100;
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('seed', new THREE.BufferAttribute(seeds, 1));
+  const uniforms = {
+    time: shared.time,
+    strength: { value: 0 },
+    scale: { value: 1 },
+  };
+  const fireflies = new THREE.Points(
+    geometry,
+    new THREE.ShaderMaterial({
+      name: 'fireflies',
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms,
+      vertexShader: /* glsl */ `
+        attribute float seed;
+        uniform float time;
+        uniform float scale;
+        varying float glow;
+        void main() {
+          vec3 p = position;
+          // Lazy loops with a little wobble on top.
+          p.x += sin(time * 0.23 + seed) * 0.7 + sin(time * 1.1 + seed * 2.3) * 0.08;
+          p.z += cos(time * 0.19 + seed * 1.3) * 0.7 + cos(time * 0.9 + seed) * 0.08;
+          p.y += sin(time * 0.37 + seed * 0.7) * 0.25;
+          // A short flash every three to five seconds, a soft glow between.
+          float period = 3.0 + fract(seed * 0.37) * 2.0;
+          float phase = fract(time / period + fract(seed * 0.61));
+          float flash = (phase - 0.2) * 5.0;
+          glow = 0.35 + 0.65 * exp(-flash * flash);
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          // Never shrinks below a few pixels, so they still read from afar.
+          gl_PointSize = scale * max(120.0 + glow * 160.0, (6.0 + glow * 6.0) * -mv.z) / -mv.z;
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader: /* glsl */ `
+        uniform float strength;
+        varying float glow;
+        void main() {
+          float d = length(gl_PointCoord - 0.5);
+          // Bright core, soft halo.
+          float a = smoothstep(0.5, 0.0, d);
+          float core = smoothstep(0.12, 0.0, d);
+          vec3 light = vec3(0.8, 1.0, 0.42) * (a * a * 0.5 + a * 0.35 + core * 1.5);
+          gl_FragColor = vec4(light * glow * strength, 1.0);
+        }`,
+    }),
+  );
+  fireflies.name = 'fireflies';
+  fireflies.frustumCulled = false;
+  return { fireflies, uniforms };
+}
+
 export function createGardenLife(
   shared: SharedUniforms,
   ramp: THREE.Texture,
@@ -417,19 +494,25 @@ export function createGardenLife(
   root.name = 'welcome-life';
   const falling = buildPetals(mobile ? 18 : 36);
   const { motes, uniforms } = buildMotes(shared, mobile ? 26 : 48);
+  const night = buildFireflies(shared, mobile ? 6 : 10);
   const basin = createBasinWater(shared, ramp);
   root.add(
     buildDangling(shared, ramp),
     buildGrass(shared, ramp, mobile ? 260 : 520),
     falling.petals,
     motes,
+    night.fireflies,
     basin.root,
   );
   return {
     root,
-    setMotes(strength: number, pixelRatio: number) {
-      uniforms.strength.value = strength;
+    /** Spirit motes and fireflies, sized for the pixel ratio. */
+    setGlow(light: Pick<Daylight, 'motes' | 'fireflies'>, pixelRatio: number) {
+      uniforms.strength.value = light.motes;
       uniforms.scale.value = pixelRatio;
+      night.uniforms.strength.value = light.fireflies;
+      night.uniforms.scale.value = pixelRatio;
+      night.fireflies.visible = light.fireflies > 0.01;
     },
     update(time: number) {
       falling.update(time);
