@@ -66,6 +66,18 @@ export interface ModelPose {
   mood: Mood;
 }
 
+/**
+ * Twin tails' calm hang, keyed along each tail (0 at the ribbon, 1 at the
+ * tip): how far a segment leans out and back per unit of drop, and how far
+ * the hair ribbon rolls about its length (radians, sign mirrored per side).
+ */
+const TAIL_KEYS = [
+  [0, 0.3, -0.3, 0],
+  [0.3, 0.2, -0.33, -0.6],
+  [0.65, 0.12, -0.25, -1.2],
+  [1, 0.2, -0.16, -1.3],
+] as const;
+
 export async function loadSparkleModel(
   shared: SharedUniforms,
   ramp: THREE.Texture,
@@ -250,10 +262,9 @@ export async function loadSparkleModel(
   ] as const;
 
   // Twin tails: the PMX rest pose splays them out and back as if windswept.
-  // Each segment is aimed along a calm hang instead (out just past the
-  // shoulders, then almost straight down beside the arms, as on the official
-  // model), and damped springs bend the chain on top so the hair lags,
-  // overshoots and settles.
+  // The chain is laid along a calm hang instead (out past the shoulders and
+  // falling well behind her back, as on the official model), and damped
+  // springs bend it on top so the hair lags, overshoots and settles.
   const tails = (
     [
       ['zb_', 1],
@@ -272,23 +283,62 @@ export async function loadSparkleModel(
         bones.get(name)!.bone.getWorldPosition(new THREE.Vector3()),
       ),
     );
-    const top = new THREE.Vector3(side * 0.3, -1, -0.32).normalize();
-    const hang = new THREE.Vector3(side * 0.1, -1, -0.03).normalize();
-    // Rotations stack down the chain, so each bone takes only the change
-    // from its parent's aim: Q(i-1)⁻¹·Q(i).
-    let above = new THREE.Quaternion();
-    const aims = points.map((_, i) => {
-      const j = Math.min(i, points.length - 2);
-      const rest = points[j + 1]!.clone().sub(points[j]!).normalize();
-      const target = top
-        .clone()
-        .lerp(hang, THREE.MathUtils.smoothstep(j, 1, 6))
-        .normalize();
-      const aim = new THREE.Quaternion().setFromUnitVectors(rest, target);
-      const local = above.clone().invert().multiply(aim);
-      above = aim;
-      return local;
+    const rests = points
+      .slice(1)
+      .map((point, i) => point.clone().sub(points[i]!));
+    const lengths = rests.map((rest) => rest.length());
+    rests.forEach((rest) => rest.normalize());
+    const total = lengths.reduce((sum, length) => sum + length, 0);
+    // The hang as a smooth curve through TAIL_KEYS: from the ribbon heading
+    // out and back much as at rest, easing towards vertical (still well behind
+    // her back) past the shoulders, the tips flicking out a little, and the
+    // ribbon turning its broad side outwards as on the official model.
+    let along = 0;
+    const shape = lengths.map((length) => {
+      const s = (along + length / 2) / total;
+      along += length;
+      const k = TAIL_KEYS.findIndex(([at]) => at >= s);
+      const [a, b] = [TAIL_KEYS[Math.max(0, k - 1)]!, TAIL_KEYS[k]!];
+      const f =
+        b[0] > a[0]
+          ? (1 - Math.cos((Math.PI * (s - a[0])) / (b[0] - a[0]))) / 2
+          : 0;
+      const mix = (n: 1 | 2 | 3) => THREE.MathUtils.lerp(a[n], b[n], f);
+      return {
+        target: new THREE.Vector3(side * mix(1), -1, mix(2)).normalize(),
+        roll: side * mix(3),
+      };
     });
+    // Each segment bends from its parent as the curve does, carrying the
+    // parent's roll along so the ribbon never kinks or twists at a joint,
+    // then turns by its keyed roll. The rotations stack down the chain, so
+    // each bone takes only F(i-1)⁻¹·F(i).
+    const bend = new THREE.Quaternion(),
+      unbend = new THREE.Quaternion();
+    const carried: THREE.Quaternion[] = [];
+    rests.forEach((rest, i) => {
+      carried.push(
+        i === 0
+          ? new THREE.Quaternion().setFromUnitVectors(rest, shape[0]!.target)
+          : bend
+              .setFromUnitVectors(shape[i - 1]!.target, shape[i]!.target)
+              .clone()
+              .multiply(carried[i - 1]!)
+              .multiply(
+                unbend.setFromUnitVectors(rests[i - 1]!, rest).invert(),
+              ),
+      );
+    });
+    const frames = carried.map((frame, i) =>
+      new THREE.Quaternion()
+        .setFromAxisAngle(shape[i]!.target, shape[i]!.roll)
+        .multiply(frame),
+    );
+    // The tip bone has no segment of its own and simply follows.
+    frames.push(frames[frames.length - 1]!.clone());
+    const aims = frames.map((frame, i) =>
+      i === 0 ? frame : frames[i - 1]!.clone().invert().multiply(frame),
+    );
     return {
       side,
       chain,
@@ -466,7 +516,7 @@ export async function loadSparkleModel(
           Math.sin(p.time * 2.9 + phase * 2) * 0.08;
         // Walking trails them back and each step bounces them.
         const trail = tail.trail.step(
-          p.walk * 0.45 + Math.cos(p.stride * 2) * p.walk * 0.2 + breeze * 0.3,
+          p.walk * 0.3 + Math.cos(p.stride * 2) * p.walk * 0.2 + breeze * 0.3,
           dt,
         );
         const lift = tail.lift.step(
