@@ -365,9 +365,9 @@ const poses: Record<CatPose, (f: CatFrame, coat: Coat) => void> = {
   },
 };
 
-/** Carved dark-stone food bowl heaped with kibble in front of the white cat. */
+/** Carved dark-stone food bowl with a whole fish inside, in front of the white cat. */
 function foodBowl(f: CatFrame, [bx, by, bz]: V3) {
-  // Chiseled 8-sided dark grey-black stone dish with a heavier stone rim.
+  // Chiseled 8-sided dark grey-black stone dish with a recessed interior.
   f.put(
     new THREE.CylinderGeometry(0.06, 0.074, 0.036, 8),
     'roof',
@@ -380,26 +380,35 @@ function foodBowl(f: CatFrame, [bx, by, bz]: V3) {
     { outline: false },
   );
   f.put(
-    new THREE.CylinderGeometry(0.052, 0.046, 0.012, 8),
+    new THREE.CylinderGeometry(0.056, 0.05, 0.01, 8),
     'stoneDark',
     [bx, by + 0.032, bz],
     { outline: false },
   );
-  // Rounded heap of crunchy kibble inside the dish.
-  f.ball(0.042, 'wood', [bx, by + 0.034, bz], [1, 0.42, 1], {
+  f.put(
+    new THREE.CylinderGeometry(0.044, 0.04, 0.008, 8),
+    'roofEdge',
+    [bx, by + 0.034, bz],
+    { outline: false },
+  );
+
+  // A plump little fish lying across the stone bowl with its forked tail over the rim.
+  const fish = f.child([bx, by + 0.043, bz], [0, 0.38, 0.08]);
+  fish.ball(0.026, 'water', [-0.006, 0, 0], [1.95, 0.48, 0.92]);
+  fish.mark(0.021, 'white', [-0.004, 0.006, 0.007], [1.65, 0.36, 0.7]);
+  for (const side of [-1, 1])
+    fish.put(
+      new THREE.BoxGeometry(0.028, 0.007, 0.015),
+      'water',
+      [0.05, 0.002, side * 0.011],
+      { rotation: [0, -side * 0.48, 0.08] },
+    );
+  fish.ball(0.009, 'white', [-0.032, 0.009, -0.005], [1, 0.5, 1], {
     outline: false,
   });
-  for (const [dx, dy, dz, tone] of [
-    [-0.016, 0.046, 0.008, 'woodDark'],
-    [0.015, 0.047, 0.01, 'woodLight'],
-    [0.003, 0.05, -0.006, 'woodDark'],
-    [-0.012, 0.046, -0.015, 'woodLight'],
-    [0.018, 0.045, -0.012, 'woodDark'],
-    [0, 0.052, 0.004, 'gold'],
-  ] as const)
-    f.ball(0.011, tone, [bx + dx, by + dy, bz + dz], [1.2, 0.65, 1], {
-      outline: false,
-    });
+  fish.ball(0.0055, 'roofEdge', [-0.032, 0.011, -0.005], [1, 0.6, 1], {
+    outline: false,
+  });
 }
 
 /** Shrine cats dozing, sitting and stretching about the courtyard. */
