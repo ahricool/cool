@@ -412,6 +412,132 @@ function sakura(
   }
 }
 
+/** Early-winter Japanese maple (momiji): forked limbs and tiered red-gold clouds. */
+function maple(
+  b: ToonBuilder,
+  random: Random,
+  x: number,
+  y: number,
+  z: number,
+  s: number,
+) {
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2 + 0.3;
+    b.beam(
+      [x, y + 0.18 * s, z],
+      [x + Math.cos(a) * 0.28 * s, y - 0.02, z + Math.sin(a) * 0.28 * s],
+      0.08 * s,
+      'bark',
+      0.035 * s,
+      {},
+      5,
+    );
+  }
+  const crook: THREE.Vector3Tuple = [x + 0.14 * s, y + 0.72 * s, z + 0.08 * s];
+  const fork: THREE.Vector3Tuple = [x + 0.22 * s, y + 1.28 * s, z + 0.14 * s];
+  b.beam([x, y - 0.03, z], crook, 0.16 * s, 'bark', 0.12 * s, {}, 7);
+  b.beam(crook, fork, 0.12 * s, 'bark', 0.085 * s, {}, 6);
+
+  // Spreading limbs reaching toward the temizuya and arching into layered tiers.
+  const boughs = [
+    {
+      from: crook,
+      to: [x + 0.78 * s, y + 1.32 * s, z + 0.52 * s] as THREE.Vector3Tuple,
+      r: 0.065,
+      clusters: [
+        [0.0, 0.04, 0.0, 0.36, 'mapleRed'],
+        [0.24, -0.04, 0.18, 0.3, 'mapleDeep'],
+        [-0.18, 0.08, 0.2, 0.28, 'mapleOrange'],
+        [0.14, 0.12, -0.14, 0.26, 'mapleGold'],
+      ] as const,
+    },
+    {
+      from: crook,
+      to: [x - 0.26 * s, y + 1.52 * s, z - 0.42 * s] as THREE.Vector3Tuple,
+      r: 0.06,
+      clusters: [
+        [0.0, 0.04, 0.0, 0.35, 'mapleDeep'],
+        [0.22, 0.08, -0.18, 0.3, 'mapleRed'],
+        [-0.14, 0.12, 0.16, 0.28, 'mapleOrange'],
+      ] as const,
+    },
+    {
+      from: fork,
+      to: [x + 0.64 * s, y + 1.78 * s, z - 0.22 * s] as THREE.Vector3Tuple,
+      r: 0.06,
+      clusters: [
+        [0.0, 0.05, 0.0, 0.36, 'mapleOrange'],
+        [0.24, -0.02, 0.16, 0.3, 'mapleRed'],
+        [-0.16, 0.12, -0.14, 0.28, 'mapleGold'],
+        [0.12, 0.15, 0.06, 0.25, 'mapleGold'],
+      ] as const,
+    },
+    {
+      from: fork,
+      to: [x - 0.18 * s, y + 1.88 * s, z + 0.48 * s] as THREE.Vector3Tuple,
+      r: 0.06,
+      clusters: [
+        [0.0, 0.04, 0.0, 0.35, 'mapleRed'],
+        [0.18, 0.09, 0.2, 0.3, 'mapleOrange'],
+        [-0.14, -0.03, 0.14, 0.27, 'mapleDeep'],
+        [0.06, 0.15, -0.08, 0.26, 'mapleGold'],
+      ] as const,
+    },
+    {
+      from: fork,
+      to: [x + 0.26 * s, y + 2.15 * s, z + 0.08 * s] as THREE.Vector3Tuple,
+      r: 0.055,
+      clusters: [
+        [0.0, 0.06, 0.0, 0.38, 'mapleOrange'],
+        [-0.22, 0.02, -0.12, 0.31, 'mapleRed'],
+        [0.22, 0.04, 0.14, 0.3, 'mapleGold'],
+        [0.04, 0.16, -0.04, 0.28, 'mapleGold'],
+      ] as const,
+    },
+  ];
+  for (const bough of boughs) {
+    b.beam(bough.from, bough.to, bough.r * s, 'bark', 0.028 * s, {}, 5);
+    const [bx, by, bz] = bough.to;
+    for (const [dx, dy, dz, radius, tone] of bough.clusters) {
+      b.ball(
+        radius * s,
+        tone,
+        bx + (dx + (random() - 0.5) * 0.05) * s,
+        by + dy * s,
+        bz + (dz + (random() - 0.5) * 0.05) * s,
+        [1.38, 0.46, 1.24],
+        {
+          rotation: [
+            (random() - 0.5) * 0.22,
+            random() * Math.PI,
+            (random() - 0.5) * 0.22,
+          ],
+        },
+        1,
+      );
+    }
+  }
+  // A handful of fallen red-gold maple leaves scattered around its roots.
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 + random() * 0.4;
+    const r = (0.25 + random() * 0.85) * s;
+    const lx = THREE.MathUtils.clamp(x + 0.2 * s + Math.cos(a) * r, -5.9, 5.9);
+    const lz = THREE.MathUtils.clamp(z + 0.15 * s + Math.sin(a) * r, -5.9, 5.9);
+    b.part(
+      new THREE.CircleGeometry(0.032 + random() * 0.018, 5),
+      pick(random, ['mapleRed', 'mapleOrange', 'mapleGold', 'mapleDeep'] as const),
+      lx,
+      groundAt(lx, lz) + 0.004,
+      lz,
+      {
+        rotation: [-Math.PI / 2, 0, random() * 6],
+        scale: [1.35, 1, 1],
+        outline: false,
+      },
+    );
+  }
+}
+
 function broadleaf(
   b: ToonBuilder,
   random: Random,
@@ -742,7 +868,7 @@ export function createWelcomeGarden(
   cedar(b, -3.05, terrace.top, -5.55, 1.15);
   cedar(b, 3.0, terrace.top, -5.6, 1.05);
   cedar(b, -1.75, terrace.top, -5.85, 0.9);
-  broadleaf(b, random, -5.55, 0, 0.85, 0.85);
+  maple(b, random, -5.55, 0, 0.85, 0.92);
   broadleaf(b, random, 2.15, terrace.top, -5.9, 0.85);
   pine(b, -5.2, 0, 5.15, 0.9);
   bamboo(b, random, 5.55, 0, -5.55);

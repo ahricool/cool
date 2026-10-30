@@ -139,8 +139,6 @@ export function createSparkle(mobile: boolean) {
   /** Remaining legs of the current walk; the first is where she heads now. */
   let route: { x: number; z: number }[] = [];
   let height = surfaceAt(position.x, position.y);
-  const heading = new THREE.Vector3(1, 0, 0);
-  const toCamera = new THREE.Vector3();
   let model: SparkleModel | undefined;
   let phase: Phase = 'idle';
   let elapsed = 0,
@@ -156,6 +154,7 @@ export function createSparkle(mobile: boolean) {
     lookTimer = 0,
     // A visitor picked this spot: linger there before wandering on.
     summoned = false;
+  const heading = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
 
   /** Somewhere new anywhere she can reach, usually a short stroll away. */
   function chooseRoute() {
@@ -195,8 +194,10 @@ export function createSparkle(mobile: boolean) {
       root.add(next.root);
       blob.visible = true;
     },
-    update(dt: number, time: number, camera: THREE.Camera, light: Daylight) {
+    update(dt: number, time: number, light: Daylight) {
       elapsed += dt;
+      // Ease in and out of the stride rather than snapping between poses.
+      stepping += ((phase === 'walk' ? 1 : 0) - stepping) * Math.min(1, dt * 7);
       if (phase === 'idle') {
         if (elapsed > idleFor) {
           chooseRoute();
@@ -209,14 +210,15 @@ export function createSparkle(mobile: boolean) {
           dz = to.z - position.y,
           distance = Math.hypot(dx, dz);
         faceTowards(to.x, to.z);
-        const step = Math.min(distance, 0.55 * dt);
+        const pace = 0.58 * (0.35 + 0.65 * stepping);
+        const step = Math.min(distance, pace * dt);
         if (distance > 1e-4) {
           position.x += (dx / distance) * step;
           position.y += (dz / distance) * step;
         }
         const previous = Math.floor(stride);
-        // About 0.8 gait cycles a second, matching her walking pace.
-        stride += dt * 3.2;
+        // About 0.85 gait cycles a second, scaled with her eased pace.
+        stride += dt * 3.35 * (0.4 + 0.6 * stepping);
         // Each footfall nudges the petals under her feet.
         if (Math.floor(stride) !== previous && Math.floor(stride) % 2 === 0)
           litter.scatter(position.x, position.y, 0.32, 0.45);
@@ -225,8 +227,6 @@ export function createSparkle(mobile: boolean) {
           if (!route.length) enter('idle');
         }
       }
-      // Ease in and out of the stride rather than snapping between poses.
-      stepping += ((phase === 'walk' ? 1 : 0) - stepping) * Math.min(1, dt * 8);
       litter.update(dt);
       if (!model) return;
 
@@ -239,23 +239,25 @@ export function createSparkle(mobile: boolean) {
       (blob.material as THREE.MeshBasicMaterial).opacity =
         0.16 + light.day * 0.04;
 
-      // Turn to travel, then settle facing the viewer with idle glances.
-      toCamera.set(
-        camera.position.x - position.x,
-        0,
-        camera.position.z - position.y,
+      // Turn towards the direction of travel and keep that facing when stopping.
+      const target = Math.atan2(heading.x, heading.z);
+      const turnError = Math.atan2(
+        Math.sin(target - yaw),
+        Math.cos(target - yaw),
       );
-      const target =
-        phase === 'idle'
-          ? Math.atan2(toCamera.x, toCamera.z) + Math.sin(time * 0.3) * 0.3
-          : Math.atan2(heading.x, heading.z);
-      yaw +=
-        Math.atan2(Math.sin(target - yaw), Math.cos(target - yaw)) *
-        Math.min(1, dt * (phase === 'idle' ? 1.5 : 8));
+      yaw += turnError * Math.min(1, dt * 8);
       lookTimer -= dt;
-      if (lookTimer <= 0) {
-        lookTimer = 1.5 + random() * 2.5;
-        look = phase === 'idle' ? (random() - 0.5) * 0.7 : 0;
+      if (phase !== 'idle') {
+        // Lead softly into turns while walking, settling straight ahead on straightaways.
+        look = THREE.MathUtils.clamp(turnError * 0.45, -0.32, 0.32);
+        lookTimer = Math.min(lookTimer, 0.7 + random() * 0.8);
+      } else if (lookTimer <= 0) {
+        lookTimer = 1.8 + random() * 2.6;
+        // Alternate naturally between returning near center and glancing left/right.
+        look =
+          Math.abs(look) > 0.14 && random() < 0.55
+            ? (random() - 0.5) * 0.12
+            : (random() - 0.5) * 0.68;
       }
       // Quick eye darts between the slower glances.
       gazeIn -= dt;

@@ -203,7 +203,7 @@ export function mountWelcomeWorld(
             : 0.36) *
         flame;
     landscape.setLamps(state.lampIntensity * flame);
-    sparkle.update(dt, time, camera, state);
+    sparkle.update(dt, time, state);
     refreshSparkleShadow();
     if (wet !== wetTarget) {
       wet =

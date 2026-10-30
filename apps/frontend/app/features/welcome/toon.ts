@@ -32,14 +32,18 @@ export const palette = {
   leaf: 0x5cb85e,
   leafLight: 0x94d96c,
   leafDeep: 0x3f9a62,
+  mapleGold: 0xf5b841,
+  mapleOrange: 0xec6d3b,
+  mapleRed: 0xd43b36,
+  mapleDeep: 0x9e2a32,
   pine: 0x3d8f66,
   pineLight: 0x62b276,
   blossom: 0xffbfd5,
   blossomLight: 0xffdde9,
   blossomDeep: 0xf79abb,
   azalea: 0xff8fb4,
-  /** blossomLight for painted lettering: the same pink, but it never sways. */
-  blossomPaint: 0xffdde9,
+  /** Sakura pink for painted lettering: richer pink that never sways. */
+  blossomPaint: 0xff9ec2,
   water: 0x79d8e6,
   cloud: 0xffffff,
   glow: 0xffd98a,
@@ -71,6 +75,10 @@ const swaying = new Set<Tone>([
   'leaf',
   'leafLight',
   'leafDeep',
+  'mapleGold',
+  'mapleOrange',
+  'mapleRed',
+  'mapleDeep',
   'pine',
   'pineLight',
   'blossom',
@@ -82,7 +90,12 @@ const glowing = new Set<Tone>(['glow', 'lantern', 'shoji']);
 /** Warm lamplight behind paper rather than the paper's own white. */
 const emissiveFor: Partial<Record<Tone, number>> = { shoji: 0xffb866 };
 /** Blossoms share one material that keeps a faint pink of its own after dark. */
-const blossoms = new Set<Tone>(['blossom', 'blossomLight', 'blossomDeep']);
+const blossoms = new Set<Tone>([
+  'blossom',
+  'blossomLight',
+  'blossomDeep',
+  'blossomPaint',
+]);
 
 export interface SharedUniforms {
   time: { value: number };
@@ -121,14 +134,50 @@ const swayGlsl = /* glsl */ `
   swayed.z += cos(time * 1.05 + swayed.x * 0.4) * swayAmount * 0.6;
 `;
 
-// Hanging pieces (shide, ema, ropes, paper lanterns) swing about their own hook.
+// Hanging pieces (shide, ema, ropes, paper lanterns) and courtyard cats.
 const dangleGlsl = /* glsl */ `
   vec3 hang = swayed - dangle.xyz;
-  float swing = sin(time * (1.2 + fract(dangle.w * 7.31) * 0.8) + dangle.w) * 0.11;
-  float twist = cos(time * 0.85 + dangle.w * 1.7) * 0.07;
-  hang.xy = mat2(cos(swing), sin(swing), -sin(swing), cos(swing)) * hang.xy;
-  hang.yz = mat2(cos(twist), sin(twist), -sin(twist), cos(twist)) * hang.yz;
-  swayed = dangle.xyz + hang;
+  if (dangle.w >= 100.0) {
+    float mode = floor(dangle.w / 100.0);
+    float phase = dangle.w - mode * 100.0;
+    if (mode < 1.5) {
+      float reach = length(hang);
+      float wave = sin(time * 2.2 + phase - reach * 6.5) * (0.16 + reach * 0.95);
+      hang.xz = mat2(cos(wave), sin(wave), -sin(wave), cos(wave)) * hang.xz;
+      hang.y += sin(time * 1.6 + phase * 1.3 - reach * 4.5) * reach * 0.18;
+    } else if (mode < 2.5) {
+      float glance = sin(time * 0.75 + phase) + 0.45 * sin(time * 1.85 + phase * 2.1);
+      float yaw = clamp(glance * 0.28, -0.34, 0.34);
+      hang.xz = mat2(cos(yaw), sin(yaw), -sin(yaw), cos(yaw)) * hang.xz;
+      hang.y += (hang.x * sin(time * 1.1 + phase) + hang.z * cos(time * 1.3 + phase)) * 0.12
+        + sin(time * 1.8 + phase) * 0.006;
+      float earTip = smoothstep(0.055, 0.105, hang.y);
+      float flick = pow(max(0.0, sin(time * 1.9 + phase * 2.3 + (hang.x + hang.z) * 14.0)), 14.0) * earTip;
+      hang.xz *= 1.0 + flick * 0.28;
+      hang.y -= flick * 0.015;
+    } else if (mode < 3.5) {
+      hang.y += sin(time * 2.0 + phase) * 0.007;
+      float earTip = smoothstep(0.045, 0.095, hang.y);
+      float flick = pow(max(0.0, sin(time * 1.6 + phase * 2.7 + (hang.x - hang.z) * 16.0)), 16.0) * earTip;
+      hang.xz *= 1.0 + flick * 0.26;
+      hang.y -= flick * 0.012;
+    } else if (mode < 4.5) {
+      float breath = sin(time * 2.0 + phase);
+      hang.y *= 1.0 + breath * 0.048;
+      hang.xz *= 1.0 + breath * 0.024;
+    } else {
+      float stretch = sin(time * 1.15 + phase);
+      hang.xz *= 1.0 + stretch * 0.045;
+      hang.y *= 1.0 + stretch * 0.065;
+    }
+    swayed = dangle.xyz + hang;
+  } else {
+    float swing = sin(time * (1.2 + fract(dangle.w * 7.31) * 0.8) + dangle.w) * 0.11;
+    float twist = cos(time * 0.85 + dangle.w * 1.7) * 0.07;
+    hang.xy = mat2(cos(swing), sin(swing), -sin(swing), cos(swing)) * hang.xy;
+    hang.yz = mat2(cos(twist), sin(twist), -sin(twist), cos(twist)) * hang.yz;
+    swayed = dangle.xyz + hang;
+  }
 `;
 type Motion = 'still' | 'sway' | 'dangle';
 const motionGlsl = (motion: Motion) =>
@@ -259,6 +308,8 @@ export interface PartOptions {
   rotation?: [number, number, number];
   scale?: [number, number, number];
   outline?: boolean;
+  /** Keeps foliage or blossom tones fixed when resting on static surfaces. */
+  still?: boolean;
   /** World-space hook and phase for pieces that swing in the breeze. */
   dangle?: [number, number, number, number];
 }
@@ -284,6 +335,7 @@ export class ToonBuilder {
       rotation = [0, 0, 0],
       scale = [1, 1, 1],
       outline = true,
+      still = false,
       dangle,
     }: PartOptions = {},
   ) {
@@ -309,7 +361,7 @@ export class ToonBuilder {
       );
     const motion: Motion = dangle
       ? 'dangle'
-      : swaying.has(tone)
+      : !still && swaying.has(tone)
         ? 'sway'
         : 'still';
     const fill = glowing.has(tone)

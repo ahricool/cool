@@ -49,6 +49,80 @@ export const waterGlsl = /* glsl */ `
 `;
 
 /**
+ * A few small cel-shaded goldfish lazily looping in the wider pools of the
+ * brook: plump body, pectoral fins and a forked fan tail undulating beneath
+ * the surface streaks.
+ */
+const goldfishGlsl = /* glsl */ `
+  void addGoldfish(
+    inout vec3 col,
+    vec2 p,
+    float homeU,
+    float homeV,
+    float scale,
+    float speed,
+    float phase,
+    vec3 bodyTint,
+    vec3 spotTint
+  ) {
+    if (abs(p.x - homeU) > 1.8) return;
+    float t = flowTime * speed + phase;
+    vec2 center = vec2(
+      homeU + sin(t) * 0.82 + cos(t * 0.5) * 0.18,
+      homeV + sin(t * 2.0 + 0.7) * 0.22
+    );
+    vec2 vel = vec2(
+      cos(t) * 0.82 - sin(t * 0.5) * 0.09,
+      cos(t * 2.0 + 0.7) * 0.44
+    );
+    vec2 dir = normalize(vel);
+    vec2 rel = (p - center) / scale;
+    float lx = dot(rel, dir);
+    float ly = dot(rel, vec2(-dir.y, dir.x));
+    if (lx < -1.1 || lx > 0.65 || abs(ly) > 0.6) return;
+
+    float tailFlex = smoothstep(0.35, -0.95, lx);
+    float wiggle = sin(flowTime * 5.6 + phase * 3.7 + lx * 4.2) * 0.16 * tailFlex;
+    float wy = ly - wiggle;
+    float ay = abs(wy);
+
+    // Subtle riverbed shadow just below the swimming fish.
+    float sx = lx + 0.07;
+    float sy = abs(ly + 0.13 - wiggle * 0.7);
+    float sbt = clamp((sx + 0.38) / 0.9, 0.0, 1.0);
+    if (sx > -0.38 && sx < 0.52 && sy < 0.42 * pow(sbt, 0.55) * sqrt(max(0.0, 1.0 - sbt))) {
+      col *= 0.85;
+    }
+
+    // Rounded snout at lx = 0.52, plump belly around lx = 0.12, narrow tail stalk at lx = -0.38.
+    float bt = clamp((lx + 0.38) / 0.9, 0.0, 1.0);
+    float bodyHalf = 0.035 * (1.0 - bt) + 0.43 * pow(bt, 0.58) * sqrt(max(0.0, 1.0 - bt));
+    float inBody = step(ay, bodyHalf) * step(-0.38, lx) * step(lx, 0.52);
+
+    // Double fan tail: two rounded veil lobes spreading from the tail stalk.
+    float tt = clamp((-0.32 - lx) / 0.66, 0.0, 1.0);
+    float lobeCenter = 0.03 + tt * 0.17;
+    float lobeHalf = (0.045 + tt * 0.09) * sin(pow(tt, 0.45) * 3.14159);
+    float inTail = step(abs(ay - lobeCenter), lobeHalf) * step(-0.98, lx) * step(lx, -0.32);
+
+    // Swept pectoral fins beside the gills.
+    float finAlong = (ay - 0.14) / 0.2;
+    float finCenter = 0.12 - finAlong * 0.11;
+    float finHalf = 0.065 * sin(clamp(finAlong, 0.0, 1.0) * 3.14159);
+    float inFins = step(abs(lx - finCenter), finHalf) * step(0.14, ay) * step(ay, 0.34);
+
+    float fish = max(inBody, max(inTail, inFins));
+    if (fish > 0.5) {
+      vec3 ivory = vec3(0.98, 0.92, 0.78);
+      vec3 fishCol = inBody > 0.5
+        ? mix(bodyTint, spotTint, step(0.1, lx) * step(lx, 0.38) * step(ay, 0.11))
+        : mix(bodyTint, ivory, smoothstep(0.1, 0.55, tt + inFins * 0.55));
+      col = mix(col, fishCol, 0.88);
+    }
+  }
+`;
+
+/**
  * Cel material that fades into the horizon colour with distance, so the meadow
  * edge and far ridges melt into the sky dome like aerial perspective.
  */
@@ -73,7 +147,7 @@ function hazeMaterial(
         `#include <begin_vertex>
       vHazeWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;${flow ? '\n      vFlow = flow;' : ''}`,
       );
-    let fragment = `uniform vec3 haze;\n${crest ? 'uniform vec3 crest;\n' : ''}${flow ? 'uniform float flowTime;\nvarying vec3 vFlow;\n' : ''}varying vec3 vHazeWorld;
+    let fragment = `uniform vec3 haze;\n${crest ? 'uniform vec3 crest;\n' : ''}${flow ? `uniform float flowTime;\nvarying vec3 vFlow;\n${goldfishGlsl}\n` : ''}varying vec3 vHazeWorld;
       ${noiseGlsl}
       ${shader.fragmentShader}`;
     if (patches)
@@ -89,9 +163,13 @@ function hazeMaterial(
         '#include <color_fragment>',
         `#include <color_fragment>
         if (vFlow.z > 0.5) {
-          // Streaks drift downstream.
+          // Gentle current and a few easter-egg goldfish looping in the pools.
           float across = abs(vFlow.y * 2.0 - 1.0);
-          float streak = hazeNoise(vec2(vFlow.x * 0.32 - flowTime * 0.5, vFlow.y * 4.0));
+          float streak = hazeNoise(vec2(vFlow.x * 0.32 - flowTime * 0.16, vFlow.y * 4.0));
+          vec2 fishUv = vec2(vFlow.x, (vFlow.y - 0.5) * 2.2);
+          addGoldfish(diffuseColor.rgb, fishUv, 91.2, -0.06, 0.155, 0.22, 1.9, vec3(0.86, 0.045, 0.02), vec3(0.98, 0.92, 0.78));
+          addGoldfish(diffuseColor.rgb, fishUv, 99.0, -0.08, 0.145, 0.2, 3.2, vec3(0.94, 0.22, 0.02), vec3(0.82, 0.04, 0.02));
+          addGoldfish(diffuseColor.rgb, fishUv, 105.2, 0.1, 0.15, 0.23, 4.8, vec3(0.84, 0.05, 0.02), vec3(0.98, 0.92, 0.78));
           ${waterGlsl}
         }`,
       );

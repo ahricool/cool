@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { PartOptions, Tone, ToonBuilder } from './toon';
+import { seeded, type PartOptions, type Tone, type ToonBuilder } from './toon';
 import {
   bellRope,
   canopy,
@@ -26,7 +26,7 @@ function frame(b: ToonBuilder, ox: number, oy: number, oz: number, ry = 0) {
     x: number,
     y: number,
     z: number,
-    { rotation = [0, 0, 0], scale = [1, 1, 1], outline }: PartOptions = {},
+    { rotation = [0, 0, 0], scale = [1, 1, 1], outline, still }: PartOptions = {},
   ) => {
     geometry.applyMatrix4(
       matrix.compose(
@@ -35,7 +35,11 @@ function frame(b: ToonBuilder, ox: number, oy: number, oz: number, ry = 0) {
         new THREE.Vector3(...scale),
       ),
     );
-    b.part(geometry, tone, ox, oy, oz, { rotation: [0, ry, 0], outline });
+    b.part(geometry, tone, ox, oy, oz, {
+      rotation: [0, ry, 0],
+      outline,
+      still,
+    });
   };
   return {
     put,
@@ -238,6 +242,232 @@ export function curvedRoof(b: ToonBuilder, spec: RoofSpec) {
       -0.2 * k,
       0,
     );
+  }
+
+  // Fallen sakura petals and autumn leaves resting in the tile valleys.
+  scatterRoofFoliage(local, spec, top, courses);
+}
+
+function roofSakuraPetal(size: number) {
+  const pts: [number, number][] = [
+    [0, -0.9],
+    [0.56, -0.22],
+    [0.64, 0.48],
+    [0.24, 0.92],
+    [0, 0.64],
+    [-0.24, 0.92],
+    [-0.64, 0.48],
+    [-0.56, -0.22],
+  ];
+  return new THREE.ShapeGeometry(
+    new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x * size, y * size))),
+  );
+}
+
+function roofMapleLeaf(size: number) {
+  const pts: [number, number][] = [
+    [0, -0.76],
+    [0.18, -0.44],
+    [0.78, -0.34],
+    [0.42, -0.04],
+    [0.92, 0.36],
+    [0.32, 0.38],
+    [0, 0.98],
+    [-0.32, 0.38],
+    [-0.92, 0.36],
+    [-0.42, -0.04],
+    [-0.78, -0.34],
+    [-0.18, -0.44],
+  ];
+  return new THREE.ShapeGeometry(
+    new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x * size, y * size))),
+  );
+}
+
+function roofPointedLeaf(size: number) {
+  const pts: [number, number][] = [
+    [0, -0.95],
+    [0.48, -0.28],
+    [0.52, 0.24],
+    [0, 0.95],
+    [-0.52, 0.24],
+    [-0.48, -0.28],
+  ];
+  return new THREE.ShapeGeometry(
+    new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x * size, y * size))),
+  );
+}
+
+function scatterRoofFoliage(
+  local: ReturnType<typeof frame>,
+  spec: RoofSpec,
+  top: [number, number][],
+  courses: number,
+) {
+  const seed =
+    Math.round((spec.x + 20) * 1973) ^
+    Math.round((spec.z + 20) * 3571) ^
+    Math.round(spec.width * 997);
+  const rand = seeded(seed);
+  const cosR = Math.cos(spec.ry ?? 0);
+  const sinR = Math.sin(spec.ry ?? 0);
+
+  // Tree canopies that drop petals or leaves onto nearby roof slopes; roof
+  // sections outside these radii stay clean.
+  const sources: readonly {
+    x: number;
+    z: number;
+    reach: number;
+    kind: 'sakura' | 'maple' | 'bamboo';
+  }[] = [
+    { x: -4.55, z: -4.4, reach: 6.2, kind: 'sakura' },
+    { x: 4.95, z: 4.65, reach: 4.2, kind: 'sakura' },
+    { x: -5.55, z: 0.85, reach: 4.8, kind: 'maple' },
+    { x: 5.55, z: -5.55, reach: 4.6, kind: 'bamboo' },
+    { x: 2.55, z: -5.75, reach: 4.4, kind: 'bamboo' },
+  ];
+  const petalTones: readonly Tone[] = [
+    'blossom',
+    'blossom',
+    'blossomLight',
+    'blossomDeep',
+  ];
+  const mapleTones: readonly Tone[] = [
+    'mapleRed',
+    'mapleRed',
+    'mapleOrange',
+    'mapleOrange',
+    'mapleGold',
+    'shrubAmber',
+  ];
+  const bambooTones: readonly Tone[] = [
+    'leafLight',
+    'shrubOlive',
+    'shrubAmber',
+    'mapleGold',
+  ];
+
+  // Valid slope segment indices avoiding the central ridge cap and extreme eave tips,
+  // strongly favouring the courtyard-facing slope so foliage is visible from the front.
+  const mid = Math.floor(top.length / 2);
+  const courtyardNegativeU = Math.abs(spec.ry ?? 0) > 1;
+  const segments: { seg: number; slopeWeight: number }[] = [];
+  for (let s = 1; s < top.length - 2; s++) {
+    if (Math.abs(s - mid) <= 1 || s === mid - 2) continue;
+    const onFront = courtyardNegativeU ? s < mid : s > mid;
+    const nearEave = s <= 5 || s >= top.length - 6;
+    segments.push({
+      seg: s,
+      slopeWeight: (onFront ? 5.5 : 0.45) * (nearEave ? 1.35 : 1.0),
+    });
+  }
+  if (!segments.length || courses < 2) return;
+
+  // Score every (valley, segment) cell by how close that section of the roof
+  // is to an overhanging tree, so tree-side valleys get clusters while far
+  // valleys stay bare.
+  const cells: {
+    valley: number;
+    seg: number;
+    weight: number;
+    kind: 'sakura' | 'maple' | 'bamboo';
+  }[] = [];
+  let totalWeight = 0;
+  const vStart = courses > 3 ? 1 : 0;
+  const vEnd = courses > 3 ? courses - 1 : courses;
+  for (let valley = vStart; valley < vEnd; valley++) {
+    const cx = -spec.width / 2 + ((valley + 0.5) * spec.width) / courses;
+    for (const { seg, slopeWeight } of segments) {
+      const [u0] = top[seg]!,
+        [u1] = top[seg + 1]!;
+      const cu = (u0 + u1) * 0.2;
+      const wx = spec.x + cx * cosR + cu * sinR;
+      const wz = spec.z - cx * sinR + cu * cosR;
+      let bestKind: 'sakura' | 'maple' | 'bamboo' = 'sakura';
+      let bestW = 0;
+      for (const src of sources) {
+        const dist = Math.hypot(wx - src.x, wz - src.z);
+        if (dist >= src.reach) continue;
+        const w = Math.pow(1 - dist / src.reach, 1.55);
+        if (w > bestW) {
+          bestW = w;
+          bestKind = src.kind;
+        }
+      }
+      if (bestW > 0.1) {
+        const weight = Math.pow(bestW, 1.35) * slopeWeight;
+        cells.push({ valley, seg, weight, kind: bestKind });
+        totalWeight += weight;
+      }
+    }
+  }
+  if (!cells.length || totalWeight <= 0) return;
+
+  const area = spec.width * (spec.front + spec.back);
+  // About half the original count (~55-65 pieces total across all roofs),
+  // concentrated on the tree-facing valleys of each roof.
+  const targetDrifts = Math.max(4, Math.round(area * 0.68 + 3.5));
+
+  let order = 0;
+  for (let d = 0; d < targetDrifts; d++) {
+    let pick = rand() * totalWeight;
+    let chosen = cells[0]!;
+    for (const cell of cells) {
+      pick -= cell.weight;
+      if (pick <= 0) {
+        chosen = cell;
+        break;
+      }
+    }
+    const [u0, v0] = top[chosen.seg]!,
+      [u1, v1] = top[chosen.seg + 1]!;
+    const baseT = 0.22 + rand() * 0.56;
+    const baseValleyOffset = 0.28 + rand() * 0.44;
+    const theta = Math.atan2(v1 - v0, u1 - u0);
+    const cluster = chosen.weight > 0.38 && rand() < 0.55 ? 2 : 1;
+
+    for (let m = 0; m < cluster; m++) {
+      order++;
+      const t = THREE.MathUtils.clamp(
+        baseT + (m === 0 ? 0 : (rand() - 0.5) * 0.36),
+        0.15,
+        0.85,
+      );
+      const u = u0 + (u1 - u0) * t;
+      const v = v0 + (v1 - v0) * t;
+      const valleyOffset = THREE.MathUtils.clamp(
+        baseValleyOffset + (m === 0 ? 0 : (rand() - 0.5) * 0.24),
+        0.22,
+        0.78,
+      );
+      const x =
+        -spec.width / 2 + ((chosen.valley + valleyOffset) * spec.width) / courses;
+      const lift = 0.008 + (order % 6) * 0.001;
+      const y = v + Math.cos(theta) * lift;
+      const z = u - Math.sin(theta) * lift;
+
+      const isSakura =
+        chosen.kind === 'sakura' ? rand() < 0.86 : rand() < 0.22;
+      const tone = isSakura
+        ? petalTones[Math.floor(rand() * petalTones.length)]!
+        : chosen.kind === 'maple'
+          ? mapleTones[Math.floor(rand() * mapleTones.length)]!
+          : bambooTones[Math.floor(rand() * bambooTones.length)]!;
+      const geometry = isSakura
+        ? roofSakuraPetal(0.03 + rand() * 0.012)
+        : chosen.kind === 'maple' && rand() < 0.72
+          ? roofMapleLeaf(0.036 + rand() * 0.014)
+          : roofPointedLeaf(0.034 + rand() * 0.013);
+
+      local.put(geometry, tone, x, y, z, {
+        rotation: [-Math.PI / 2 - theta, 0, rand() * Math.PI * 2],
+        scale: isSakura
+          ? [1.15 + rand() * 0.22, 0.92 + rand() * 0.16, 1]
+          : [0.95 + rand() * 0.2, 0.95 + rand() * 0.2, 1],
+        outline: false,
+        still: true,
+      });
+    }
   }
 }
 
@@ -806,8 +1036,7 @@ export function buildTorii(b: ToonBuilder) {
     new THREE.Vector3(half - 0.12, H - 0.8, z + 0.08),
   ]);
   b.part(new THREE.TubeGeometry(rope, 16, 0.035, 6), 'straw', 0, 0, 0);
-  // Gaku: a vertical name plaque between the nuki and the shimaki, framed in
-  // gold and hand-lettered 梦桜.
+  // Gaku: a vertical name plaque between the nuki and the shimaki, hand-lettered 梦桜.
   const plaque = { y: H - 0.43, w: 0.36, h: 0.66, front: z + 0.14 };
   b.box(
     plaque.w,
@@ -818,28 +1047,6 @@ export function buildTorii(b: ToonBuilder) {
     plaque.y,
     plaque.front - 0.025,
   );
-  for (const side of [-1, 1]) {
-    b.box(
-      0.035,
-      plaque.h + 0.03,
-      0.06,
-      'gold',
-      (side * plaque.w) / 2,
-      plaque.y,
-      plaque.front - 0.025,
-      { outline: false },
-    );
-    b.box(
-      plaque.w + 0.03,
-      0.035,
-      0.06,
-      'gold',
-      0,
-      plaque.y + (side * plaque.h) / 2,
-      plaque.front - 0.025,
-      { outline: false },
-    );
-  }
   letterVertically(
     b,
     '梦桜',
