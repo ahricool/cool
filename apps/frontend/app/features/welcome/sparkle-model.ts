@@ -72,10 +72,10 @@ export interface ModelPose {
  * the hair ribbon rolls about its length (radians, sign mirrored per side).
  */
 const TAIL_KEYS = [
-  [0, 0.3, -0.3, 0],
-  [0.3, 0.2, -0.33, -0.6],
-  [0.65, 0.12, -0.25, -1.2],
-  [1, 0.2, -0.16, -1.3],
+  [0, 0.26, -0.24, -0.15],
+  [0.32, 0.17, -0.32, -0.32],
+  [0.68, 0.05, -0.14, -0.42],
+  [1, -0.16, 0.14, -0.3],
 ] as const;
 
 export async function loadSparkleModel(
@@ -205,10 +205,97 @@ export async function loadSparkleModel(
   const turn = (name: string, x: number, y: number, z: number) =>
     rotate(name, delta.setFromEuler(euler.set(x, y, z)));
 
+  // Short upper-arm sleeve cuffs (zxx_/yxx__) flare into a wide cone in the
+  // PMX A-pose; relax each chain partway towards the upper arm axis so the
+  // ruffled bell drapes naturally around the bicep once the arms come down.
+  for (const [shoulder, prefix, side] of [
+    ['左肩C', 'zxx_', 1],
+    ['右肩C', 'yxx__', -1],
+  ] as const) {
+    const parentBone = bones.get(shoulder)?.bone;
+    if (!parentBone) continue;
+    for (const rootBone of parentBone.children) {
+      if (!rootBone.name.startsWith(prefix)) continue;
+      let tipBone = rootBone;
+      while (tipBone.children[0]) tipBone = tipBone.children[0];
+      const from = figure.worldToLocal(
+        rootBone.getWorldPosition(new THREE.Vector3()),
+      );
+      const to = figure.worldToLocal(
+        tipBone.getWorldPosition(new THREE.Vector3()),
+      );
+      const rest = to.sub(from).normalize();
+      const cuffAxis = new THREE.Vector3(
+        side * 0.64,
+        -0.77,
+        rest.z * 0.75,
+      ).normalize();
+      const relax = new THREE.Quaternion().slerp(
+        new THREE.Quaternion().setFromUnitVectors(rest, cuffAxis),
+        0.72,
+      );
+      rotate(rootBone.name, relax);
+    }
+  }
+
+  // Back obi bow tails (ybs__/zbs_) flare sideways at rest; droop them down
+  // beneath the rope bow so their gold hex pattern frames the center pleats.
+  for (const [rootName, tipName, side] of [
+    ['ybs__1', 'ybs__5', 1],
+    ['zbs_0_1', 'zbs_4_1', -1],
+  ] as const) {
+    const a = bones.get(rootName)?.bone,
+      b = bones.get(tipName)?.bone;
+    if (!a || !b) continue;
+    const from = figure.worldToLocal(a.getWorldPosition(new THREE.Vector3()));
+    const to = figure.worldToLocal(b.getWorldPosition(new THREE.Vector3()));
+    const rest = to.sub(from).normalize();
+    const target = new THREE.Vector3(side * 0.85, -1, -0.42).normalize();
+    rotate(rootName, new THREE.Quaternion().setFromUnitVectors(rest, target));
+  }
+
+  // Back skirt and long pink gradient tails (wh_*) splay out in a wide backward
+  // cone at rest; bend them down past the hips so they drape vertically along
+  // the backs of her thighs and sit cleanly inside the floral sleeve panels.
+  const backSkirt = (bones.get('下半身')?.bone.children ?? [])
+    .filter((bone) => bone.name.startsWith('wh_'))
+    .map((rootBone) => {
+      const chain: string[] = [];
+      for (
+        let cur: THREE.Object3D | undefined = rootBone;
+        cur;
+        cur = cur.children[0]
+      )
+        chain.push(cur.name);
+      const tipBone = bones.get(chain[chain.length - 1]!)!.bone;
+      const from = figure.worldToLocal(
+        rootBone.getWorldPosition(new THREE.Vector3()),
+      );
+      const to = figure.worldToLocal(
+        tipBone.getWorldPosition(new THREE.Vector3()),
+      );
+      const rest = to.sub(from).normalize();
+      const upper = new THREE.Vector3(
+        rest.x * 0.38,
+        -1,
+        rest.z * 0.72,
+      ).normalize();
+      const lower = new THREE.Vector3(rest.x * 0.28, -1, 0.02).normalize();
+      const aim = new THREE.Quaternion().setFromUnitVectors(rest, upper);
+      const bends = chain.slice(2, Math.min(6, chain.length));
+      const step = new THREE.Quaternion().slerp(
+        new THREE.Quaternion().setFromUnitVectors(upper, lower),
+        1 / Math.max(1, bends.length),
+      );
+      const droop = aim.clone().invert().multiply(step).multiply(aim);
+      for (const name of bends) rotate(name, droop);
+      return { root: rootBone.name, aim };
+    });
+
   // Long sleeve tails hang from the underside of each upper arm, close to
-  // the armpit. Near the arm each one flares a little outward and back, then
-  // droops to hang straight down beside her thighs, as on the official model.
-  // The two never cross and stay clear of arms, skirt and legs.
+  // the armpit. Near the arm each one angles back behind the obi bow and
+  // slightly inward with its floral face turned backward, then droops to
+  // flare gently behind her outer thighs as on the official model.
   const sleeves = (
     [
       ['zx_', '左肩C', 1],
@@ -222,25 +309,27 @@ export async function loadSparkleModel(
           Number(a.slice(prefix.length).split('_')[0]) -
           Number(b.slice(prefix.length).split('_')[0]),
       );
-    const upper = new THREE.Vector3(side * 0.45, -1, -0.16).normalize();
-    const lower = new THREE.Vector3(side * 0.06, -1, 0.04).normalize();
+    const upper = new THREE.Vector3(-side * 0.06, -1, -0.38).normalize();
+    const lower = new THREE.Vector3(side * 0.12, -1, 0.01).normalize();
     const a = bones.get(chain[0]!)?.bone,
       b = bones.get(chain[chain.length - 1]!)?.bone;
     if (!a || !b) return [];
     const from = figure.worldToLocal(a.getWorldPosition(new THREE.Vector3()));
     const to = figure.worldToLocal(b.getWorldPosition(new THREE.Vector3()));
     const rest = to.sub(from).normalize();
-    const aim = new THREE.Quaternion().setFromUnitVectors(rest, upper);
-    // Spread the droop from `upper` to `lower` over three bones a quarter to
+    const aim = new THREE.Quaternion()
+      .setFromAxisAngle(upper, side * 0.14)
+      .multiply(new THREE.Quaternion().setFromUnitVectors(rest, upper));
+    // Spread the droop from `upper` to `lower` over four bones a fifth to
     // half way down, expressed in the aimed chain's frame: aim⁻¹·step·aim.
-    const step = new THREE.Quaternion().slerp(
-      new THREE.Quaternion().setFromUnitVectors(upper, lower),
-      1 / 3,
-    );
-    const droop = aim.clone().invert().multiply(step).multiply(aim);
-    const bends = [0.22, 0.34, 0.46].map(
+    const bends = [0.18, 0.28, 0.38, 0.48].map(
       (t) => chain[Math.round(t * (chain.length - 1))]!,
     );
+    const step = new THREE.Quaternion().slerp(
+      new THREE.Quaternion().setFromUnitVectors(upper, lower),
+      1 / bends.length,
+    );
+    const droop = aim.clone().invert().multiply(step).multiply(aim);
     return [{ root: chain[0]!, shoulder, aim, droop, bends }];
   });
   const parent = new THREE.Quaternion();
@@ -349,7 +438,15 @@ export async function loadSparkleModel(
     };
   });
   let lastTime = 0,
-    lastYaw = 0;
+    lastYaw = 0,
+    initialized = false;
+  // Cascaded springs give head turns and tilts a jerk-free S-curve: eyes dart
+  // first, the neck initiates the turn, and the head follows with soft lag.
+  const neckLookSpring = new Spring(14, 7.2);
+  const headLookSpring = new Spring(11, 6.4);
+  const headTiltSpring = new Spring(9, 5.8);
+  const headPitchSpring = new Spring(10, 6.1);
+  const eyeGazeSpring = new Spring(42, 12.8);
 
   return {
     root,
@@ -398,53 +495,168 @@ export async function loadSparkleModel(
       const breath = Math.sin(p.time * 2.1);
       // One gait cycle per 2π: the left leg leads while sin(stride) > 0.
       const swing = Math.sin(p.stride) * p.walk;
-      // Weight drifts gently from foot to foot while she stands.
-      const shift = Math.sin(p.time * 0.32 * Math.PI * 2) * (1 - p.walk);
-      // Hips and shoulders counter-twist with each stride.
-      const twist = -swing * 0.1;
-      // Hips ride highest as the legs pass each other, twice per cycle.
-      const bob = (Math.cos(p.stride * 2) - 1) * p.walk * 0.008;
+      const strideCos = Math.cos(p.stride) * p.walk;
+      // Weight rests with a soft contrapposto bias and drifts gently while she stands.
+      const shift =
+        (0.28 + Math.sin(p.time * 0.32 * Math.PI * 2) * 0.82) * (1 - p.walk);
+      // In model space (+x left, +y up, +z forward), +y rotation brings the
+      // right (-x) side forward (+z) and the left (+x) side back (-z).
+      // When the left leg steps forward (swing > 0), the pelvis turns -y to
+      // advance the left hip, while the chest counter-rotates +y with the right arm.
+      const hipYaw = -swing * 0.1 - shift * 0.03;
+      const hipRoll = strideCos * 0.055 + shift * 0.038;
+      const chestYaw = swing * 0.115 + shift * 0.025;
+      // Light, buoyant bounce per step and gentle hip sway over the supporting foot.
+      const bob = (Math.cos(p.stride * 2 - 0.22) - 0.85) * p.walk * 0.013;
+      const swayX = -strideCos * 0.02 + shift * 0.012;
       if (center)
         center.position.set(
-          centerRest.x,
+          centerRest.x + swayX * unit,
           centerRest.y + bob * unit,
           centerRest.z,
         );
-      turn('下半身', 0, swing * 0.12, shift * 0.025);
-      turn('上半身', 0.04 * p.walk, twist, -shift * 0.02);
-      turn('上半身2', breath * 0.012, twist * 0.5, 0);
-      turn('首', 0, p.look * 0.25, 0);
-      // Head held level, as on the official model, with a hint of tilt.
-      turn('頭', -0.02, p.look * 0.25, 0.02 + shift * 0.03);
-      // Eyes lead the head: they reach the glance first and dart about.
-      const eyeYaw = THREE.MathUtils.clamp(p.look * 0.45 + p.gaze, -0.3, 0.3);
-      turn('左目', 0, eyeYaw, 0);
-      turn('右目', 0, eyeYaw, 0);
+      // Slight lumbar arch and lifted chest give a poised, girlish S-curve silhouette.
+      turn(
+        '下半身',
+        -0.028 * (1 - p.walk) - 0.018 * p.walk,
+        hipYaw,
+        hipRoll,
+      );
+      turn(
+        '上半身',
+        -0.022 * (1 - p.walk) + 0.032 * p.walk,
+        chestYaw * 0.65,
+        -hipRoll * 0.65,
+      );
 
-      // Arms down from the rest A-pose at the shoulder (so the frills on 肩C
-      // follow), held a little forward of the hips and swung with the walk.
-      const down = 0.72 + breath * 0.01;
-      const forward = 0.08;
-      const shoulders = {
-        左肩C: new THREE.Quaternion()
-          .setFromEuler(euler.set(swing * 0.32 - forward, 0, 0))
-          .multiply(delta.setFromEuler(euler.set(0, 0, -down))),
-        右肩C: new THREE.Quaternion()
-          .setFromEuler(euler.set(-swing * 0.32 - forward, 0, 0))
-          .multiply(delta.setFromEuler(euler.set(0, 0, down))),
+      if (!initialized) {
+        initialized = true;
+        neckLookSpring.value = p.look;
+        headLookSpring.value = p.look;
+        eyeGazeSpring.value = p.gaze;
+      }
+      const neckLook = neckLookSpring.step(p.look, dt);
+      const headLook = headLookSpring.step(neckLook, dt);
+      const eyeGaze = eyeGazeSpring.step(p.gaze, dt);
+      // Chin dips slightly along a natural arc while the head swings between glances.
+      const turnArcDip = Math.min(0.045, Math.abs(neckLookSpring.velocity) * 0.045);
+      const pitchTarget =
+        -0.02 +
+        turnArcDip +
+        Math.abs(headLook) * 0.022 -
+        Math.cos(p.time * 2.1) * 0.01 * (1 - p.walk);
+      const headPitch = headPitchSpring.step(pitchTarget, dt);
+      // Soft curious head tilt coupled to the glance, idle weight shift and a
+      // playful per-step cadence, shared across both neck and head.
+      const idleTiltWave =
+        (Math.sin(p.time * 0.68 + 0.5) * 0.038 +
+          Math.sin(p.time * 1.22) * 0.016) *
+        (1 - p.walk);
+      const walkTiltWave = -strideCos * 0.032 * p.walk;
+      const tiltTarget =
+        0.016 -
+        neckLook * 0.14 +
+        idleTiltWave +
+        walkTiltWave +
+        shift * 0.03 +
+        hipRoll * 0.4;
+      const headTilt = headTiltSpring.step(tiltTarget, dt);
+
+      turn(
+        '上半身2',
+        0.018 + breath * 0.014 + 0.015 * p.walk,
+        chestYaw * 0.55 + neckLook * 0.06,
+        -hipRoll * 0.38 + headTilt * 0.1,
+      );
+      // Neck and head counter-stabilise the torso's yaw and roll, with a gentle nod per step.
+      const nod = Math.sin(p.stride * 2 - 0.4) * p.walk * 0.018;
+      turn(
+        '首',
+        headPitch * 0.45 + nod * 0.45,
+        neckLook * 0.22 - chestYaw * 0.45,
+        headTilt * 0.38,
+      );
+      turn(
+        '頭',
+        headPitch * 0.55 + nod * 0.55,
+        headLook * 0.3 - chestYaw * 0.35,
+        headTilt * 0.62,
+      );
+      // Eyes lead the head: they reach the glance target first and settle as the head arrives.
+      const headYawTotal = neckLook * 0.22 + headLook * 0.3;
+      const eyeLead = p.look * 0.52 - headYawTotal;
+      const eyeYaw = THREE.MathUtils.clamp(
+        headYawTotal * 0.45 + eyeLead * 0.65 + eyeGaze,
+        -0.3,
+        0.3,
+      );
+      turn('左目', -headPitch * 0.2, eyeYaw, 0);
+      turn('右目', -headPitch * 0.2, eyeYaw, 0);
+
+      // Collarbones subtly follow the arm swing and breathing lift.
+      turn('左肩', 0, -swing * 0.045, -0.015 * (1 + breath * 0.3));
+      turn('右肩', 0, -swing * 0.045, 0.015 * (1 + breath * 0.3));
+
+      // Arms hang close to the waist from the A-pose at the shoulder, tucking
+      // gently inward as they swing with softly bent elbows for a dainty silhouette.
+      const down = 0.64 + breath * 0.008;
+      const armPose = (phase: number, sign: 1 | -1) => {
+        const s = Math.sin(p.stride + phase - 0.16) * p.walk;
+        // s < 0 swings the downward arm forward (+z); s > 0 swings it back (-z).
+        const pitch =
+          (s < 0 ? s * 0.28 : s * 0.19) - 0.025 * (1 - p.walk) - 0.02 * p.walk;
+        // Internal humeral rotation (-sign) aims the bent forearm slightly inward
+        // across the front of the waist, increasing on the forward swing (s < 0).
+        const yaw =
+          -sign *
+          (0.11 +
+            (0.05 + Math.max(0, -s) * 0.14 - Math.max(0, s) * 0.04) * p.walk);
+        // Adduct inward during the walk (especially on the forward swing) so
+        // the upper arms never flare out to the sides.
+        const walkInward = (0.045 + Math.max(0, -s) * 0.065) * p.walk;
+        const roll = -sign * (down + walkInward);
+        const shoulder = new THREE.Quaternion()
+          .setFromEuler(euler.set(pitch, yaw, 0))
+          .multiply(delta.setFromEuler(euler.set(0, 0, roll)));
+        // Forearm stays softly flexed at rest and through the stride, angling
+        // gently inward towards the front of the waist.
+        const foreAngle = p.stride + phase - 0.42;
+        const foreWave = Math.sin(foreAngle);
+        const elbowBend =
+          0.18 * (1 - p.walk) +
+          (0.27 - foreWave * 0.12 - Math.cos(foreAngle * 2) * 0.025) * p.walk;
+        const elbowInward =
+          0.11 * (1 - p.walk) +
+          (0.16 + Math.max(0, -s) * 0.08) * p.walk;
+        const wristFlex =
+          -0.04 * (1 - p.walk) +
+          Math.sin(p.stride + phase - 0.75) * 0.07 * p.walk;
+        return { shoulder, elbowBend, elbowInward, wristFlex, swing: s };
       };
-      // Elbows fold a little more at the ends of each swing; fingers rest
-      // half curled and close a touch while walking.
-      const bend = 0.22 + Math.abs(swing) * 0.15;
-      const curl = 0.35 + p.walk * 0.1;
+      const leftArm = armPose(0, 1);
+      const rightArm = armPose(Math.PI, -1);
+      const shoulders = {
+        左肩C: leftArm.shoulder,
+        右肩C: rightArm.shoulder,
+      };
+      const curl = 0.32 + p.walk * 0.06;
       rotate('左肩C', shoulders.左肩C);
       rotate('右肩C', shoulders.右肩C);
+      for (const hem of backSkirt) {
+        trail.setFromEuler(euler.set(p.walk * 0.08, 0, 0));
+        rotate(hem.root, trail.multiply(hem.aim));
+      }
       // Cancel the shoulder turn above each long sleeve tail, then hang it
-      // straight down, trailing back with the walk to clear her legs.
+      // straight down, trailing smoothly with its arm and the breeze.
       for (const sleeve of sleeves) {
+        const arm = sleeve.shoulder === '左肩C' ? leftArm : rightArm;
         parent.copy(shoulders[sleeve.shoulder]);
         trail.setFromEuler(
-          euler.set(p.walk * 0.12 + Math.abs(swing) * 0.15, 0, 0),
+          euler.set(
+            p.walk * 0.15 + Math.max(0, -arm.swing) * 0.1 - arm.swing * 0.06,
+            0,
+            0,
+          ),
         );
         rotate(
           sleeve.root,
@@ -452,22 +664,32 @@ export async function loadSparkleModel(
         );
         for (const name of sleeve.bends) rotate(name, sleeve.droop);
       }
-      // Elbows bend forward in model space, after the shoulder.
-      for (const [side, sign, shoulder] of [
-        ['左', 1, shoulders.左肩C],
-        ['右', -1, shoulders.右肩C],
+      // Elbows bend forward and gently inward (z-axis adduction on the downward
+      // forearm), with softly cocked wrists and delicately fanned fingers.
+      for (const [side, sign, arm] of [
+        ['左', 1, leftArm],
+        ['右', -1, rightArm],
       ] as const) {
         rotate(
           `${side}ひじ`,
           parent
-            .copy(shoulder)
+            .copy(arm.shoulder)
             .invert()
-            .multiply(delta.setFromEuler(euler.set(-bend, 0, 0)))
-            .multiply(shoulder),
+            .multiply(
+              delta.setFromEuler(
+                euler.set(
+                  -arm.elbowBend,
+                  -sign * 0.04,
+                  -sign * arm.elbowInward,
+                ),
+              ),
+            )
+            .multiply(arm.shoulder),
         );
-        // Fingers fold towards the palm, the middle joint most.
+        turn(`${side}手首`, arm.wristFlex, -sign * 0.05, -sign * 0.06);
+        // Fingers fold towards the palm, fanning from index to pinky.
         for (const [finger, scale] of fingers)
-          [0.5, 0.95, 0.7].forEach((share, i) =>
+          [0.45, 0.9, 0.68].forEach((share, i) =>
             turn(
               `${side}${finger}${'１２３'[i]}`,
               0,
@@ -475,27 +697,42 @@ export async function loadSparkleModel(
               -sign * curl * share * scale,
             ),
           );
-        turn(`${side}親指１`, 0, sign * curl * 0.3, -sign * curl * 0.2);
-        turn(`${side}親指２`, 0, sign * curl * 0.4, 0);
+        turn(`${side}親指１`, 0, sign * curl * 0.28, -sign * curl * 0.18);
+        turn(`${side}親指２`, 0, sign * curl * 0.36, 0);
       }
 
       // Legs: the skin follows the MMD "D" bones (their link to 足/ひざ/足首
-      // is an MMD-only constraint), so drive those directly. Each knee folds
-      // while its leg swings forward and the ankle keeps the sole level.
-      // Standing, the toes turn in a touch and the knee off her
-      // weight bends softly.
+      // is an MMD-only constraint), so drive those directly. Gently adducted
+      // thighs and a slight inward knee turn create a feminine, youthful line
+      // both in contrapposto standing and along a narrow walking track.
       for (const [side, phase, sign] of [
         ['左', 0, 1],
         ['右', Math.PI, -1],
       ] as const) {
-        const hip = -Math.sin(p.stride + phase) * 0.28 * p.walk;
-        const rest = Math.max(0, -sign * shift) * 0.12;
+        const s = p.stride + phase;
+        const sin1 = Math.sin(s);
+        // Slightly fuller forward reach than back extension, with smooth C∞ velocity.
+        const hip = (-sin1 * 0.29 + Math.cos(s * 2) * 0.03 - 0.02) * p.walk;
+        // Relaxed contrapposto knee bend on the unweighted leg while standing.
+        const rest = Math.max(0, -sign * shift) * 0.15;
+        // Smooth raised wave peaking in mid-swing (s ≈ 0.15) plus stance cushion.
+        const swingBell = 0.5 + 0.5 * Math.cos(s - 0.18);
         const knee =
-          (Math.max(0, Math.cos(p.stride + phase)) * 0.55 + 0.04) * p.walk +
-          rest;
-        turn(`${side}足D`, hip - rest * 0.5, -sign * 0.06 * (1 - p.walk), 0);
+          (swingBell * swingBell * 0.58 + 0.035) * p.walk + rest;
+        // Push down at toe-off (s ≈ -1.1), lift toes during swing (s ≈ +0.9).
+        const ankle =
+          -(hip + knee) * 0.72 + Math.sin(s - 0.9) * 0.12 * p.walk;
+        // Feminine inward thigh adduction and subtle inward knee rotation.
+        const adduction = -sign * (0.036 + 0.026 * p.walk);
+        const inwardTurn = -sign * (0.072 * (1 - p.walk) + 0.042 * p.walk);
+        turn(
+          `${side}足D`,
+          hip - rest * 0.58,
+          inwardTurn,
+          adduction,
+        );
         turn(`${side}ひざD`, knee, 0, 0);
-        turn(`${side}足首D`, -(hip + knee) * 0.7, 0, 0);
+        turn(`${side}足首D`, ankle, -inwardTurn * 0.35, -adduction * 0.65);
       }
       // Ease the face towards the mood rather than snapping between them.
       const ease = Math.min(1, dt * 6);
@@ -519,12 +756,16 @@ export async function loadSparkleModel(
           p.walk * 0.3 + Math.cos(p.stride * 2) * p.walk * 0.2 + breeze * 0.3,
           dt,
         );
+        const headTurnRate = yawRate + neckLookSpring.velocity * 0.45;
         const lift = tail.lift.step(
-          breeze * 0.5 + Math.abs(swing) * 0.2 - yawRate * tail.side * 0.12,
+          breeze * 0.5 +
+            Math.abs(swing) * 0.2 -
+            headTurnRate * tail.side * 0.12 -
+            headTilt * tail.side * 0.18,
           dt,
         );
         const twist = tail.twist.step(
-          THREE.MathUtils.clamp(-yawRate * 0.3, -0.6, 0.6),
+          THREE.MathUtils.clamp(-headTurnRate * 0.3, -0.6, 0.6),
           dt,
         );
         const count = tail.chain.length;
@@ -548,12 +789,13 @@ export async function loadSparkleModel(
 /** Damped spring for hair follow-through, sub-stepped for stability. */
 class Spring {
   value = 0;
-  private velocity = 0;
+  velocity = 0;
   constructor(
     private readonly stiffness: number,
     private readonly damping: number,
   ) {}
   step(target: number, dt: number) {
+    if (dt <= 0) return this.value;
     const steps = Math.max(1, Math.ceil(dt / 0.016));
     const h = dt / steps;
     for (let i = 0; i < steps; i++) {

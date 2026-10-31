@@ -22,6 +22,8 @@ import {
 import {
   createWelcomeCamera,
   createWelcomeGarden,
+  panWelcomeCamera,
+  welcomeFocus,
   welcomePixelRatio,
 } from '../../apps/frontend/app/features/welcome/world';
 
@@ -285,4 +287,25 @@ test('the brook bends around the plinth clear of its contact shadow and stays on
   } finally {
     geometry.dispose();
   }
+});
+
+test('WASD camera pan translates camera and orbit target along horizontal heading within bounds', () => {
+  const camera = createWelcomeCamera(16 / 9);
+  const target = welcomeFocus.clone();
+  const initialOffset = camera.position.clone().sub(target);
+
+  // W moves forward toward the initial focus (-X, -Z from initial camera position).
+  assert.equal(panWelcomeCamera(camera, target, 1, 0, 0.1), true);
+  assert.ok(target.x < welcomeFocus.x && target.z < welcomeFocus.z);
+  // Camera-to-target offset is preserved so orbit distance and angle do not jump.
+  assert.ok(camera.position.clone().sub(target).distanceTo(initialOffset) < 1e-6);
+
+  // D strafes right relative to the viewing direction (+X, -Z).
+  const beforeRight = target.clone();
+  assert.equal(panWelcomeCamera(camera, target, 0, 1, 0.1), true);
+  assert.ok(target.x > beforeRight.x && target.z < beforeRight.z);
+
+  // Repeated movement stays clamped within the meadow bounds.
+  for (let i = 0; i < 100; i++) panWelcomeCamera(camera, target, 1, 1, 0.1);
+  assert.ok(Math.abs(target.x) <= 28 && Math.abs(target.z) <= 28);
 });

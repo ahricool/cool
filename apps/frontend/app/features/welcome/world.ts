@@ -21,12 +21,72 @@ export { createWelcomeGarden } from './garden';
 export const welcomeFocus = new THREE.Vector3(0, 0.75, -0.2);
 /** From straight overhead down to just above the focus's height. */
 export const welcomeCameraLimits = {
-  minDistance: 9,
+  minDistance: 4,
   maxDistance: 34,
   minPolarAngle: 0,
   maxPolarAngle: Math.PI * 0.47,
 };
 const focus = welcomeFocus;
+const PAN_BOUNDS = 28;
+const panForward = new THREE.Vector3();
+const panRight = new THREE.Vector3();
+const panDelta = new THREE.Vector3();
+
+/**
+ * Translates both camera and orbit target across the horizontal plane along the
+ * camera's current heading so WASD moves through the scene without twisting the
+ * orbit pivot.
+ */
+export function panWelcomeCamera(
+  camera: THREE.PerspectiveCamera,
+  target: THREE.Vector3,
+  forwardInput: number,
+  rightInput: number,
+  dt: number,
+): boolean {
+  if ((!forwardInput && !rightInput) || dt <= 0) return false;
+  panForward.subVectors(target, camera.position);
+  panForward.y = 0;
+  if (panForward.lengthSq() < 1e-6) {
+    // Straight overhead: camera local +Y points toward the top of the screen.
+    panForward.set(0, 1, 0).applyQuaternion(camera.quaternion);
+    panForward.y = 0;
+  }
+  if (panForward.lengthSq() < 1e-6) panForward.set(0, 0, -1);
+  panForward.normalize();
+  // Right-handed XZ perpendicular: forward × +Y = (-fz, 0, fx).
+  panRight.set(-panForward.z, 0, panForward.x);
+
+  const length = Math.hypot(forwardInput, rightInput);
+  const f = forwardInput / length;
+  const r = rightInput / length;
+  const distance = camera.position.distanceTo(target);
+  const speed = THREE.MathUtils.clamp(distance * 0.48, 4.5, 16);
+
+  panDelta
+    .copy(panForward)
+    .multiplyScalar(f * speed * dt)
+    .addScaledVector(panRight, r * speed * dt);
+
+  const nextX = THREE.MathUtils.clamp(
+    target.x + panDelta.x,
+    -PAN_BOUNDS,
+    PAN_BOUNDS,
+  );
+  const nextZ = THREE.MathUtils.clamp(
+    target.z + panDelta.z,
+    -PAN_BOUNDS,
+    PAN_BOUNDS,
+  );
+  const dx = nextX - target.x;
+  const dz = nextZ - target.z;
+  if (Math.abs(dx) < 1e-6 && Math.abs(dz) < 1e-6) return false;
+  target.x = nextX;
+  target.z = nextZ;
+  camera.position.x += dx;
+  camera.position.z += dz;
+  return true;
+}
 
 /**
  * Bloom only after dusk and only on larger screens: a high threshold so just
@@ -121,6 +181,9 @@ export function mountWelcomeWorld(
     }
     cancelAnimationFrame(frame);
     observer.disconnect();
+    window.removeEventListener('keydown', keyDown);
+    window.removeEventListener('keyup', keyUp);
+    window.removeEventListener('blur', clearKeys);
     document.removeEventListener('visibilitychange', visibility);
     reducedMotion.removeEventListener('change', motion);
     renderer.domElement.removeEventListener('webglcontextlost', contextLost);
@@ -203,7 +266,7 @@ export function mountWelcomeWorld(
             : 0.36) *
         flame;
     landscape.setLamps(state.lampIntensity * flame);
-    sparkle.update(dt, time, camera, state);
+    sparkle.update(dt, time, state);
     refreshSparkleShadow();
     if (wet !== wetTarget) {
       wet =
@@ -258,15 +321,78 @@ export function mountWelcomeWorld(
     renderer.render(menu.scene, menu.camera);
     renderer.autoClear = true;
   }
+  let menuReady = false;
+  const pressedKeys = new Set<'w' | 'a' | 's' | 'd'>();
+  function keyForEvent(
+    event: KeyboardEvent,
+  ): 'w' | 'a' | 's' | 'd' | undefined {
+    switch (event.code) {
+      case 'KeyW':
+        return 'w';
+      case 'KeyA':
+        return 'a';
+      case 'KeyS':
+        return 's';
+      case 'KeyD':
+        return 'd';
+    }
+    const key = event.key.toLowerCase();
+    if (key === 'w' || key === 'a' || key === 's' || key === 'd') return key;
+    return undefined;
+  }
+  function keyDown(event: KeyboardEvent) {
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    const target = event.target;
+    if (
+      target instanceof HTMLElement &&
+      (target.isContentEditable ||
+        target.tagName === 'TEXTAREA' ||
+        (target.tagName === 'INPUT' &&
+          (target as HTMLInputElement).type !== 'range'))
+    )
+      return;
+    const key = keyForEvent(event);
+    if (!key) return;
+    pressedKeys.add(key);
+    requestRender();
+  }
+  function keyUp(event: KeyboardEvent) {
+    const key = keyForEvent(event);
+    if (key) pressedKeys.delete(key);
+  }
+  function clearKeys() {
+    pressedKeys.clear();
+  }
   function draw(now = 0) {
     frame = 0;
     if (disposed || lost || document.hidden) return;
+    if (!menuReady) {
+      menuReady = true;
+      menu?.layout();
+    }
     if (now - last < 33 && !reducedMotion.matches) {
       frame = requestAnimationFrame(draw);
       return;
     }
-    const dt = reducedMotion.matches ? 0 : Math.min((now - last) / 1000, 0.1);
+    const rawDt = last > 0 ? Math.min((now - last) / 1000, 0.1) : 1 / 60;
+    const dt = reducedMotion.matches ? 0 : rawDt;
     last = now;
+    if (pressedKeys.size > 0) {
+      const forwardInput =
+        (pressedKeys.has('w') ? 1 : 0) - (pressedKeys.has('s') ? 1 : 0);
+      const rightInput =
+        (pressedKeys.has('d') ? 1 : 0) - (pressedKeys.has('a') ? 1 : 0);
+      if (
+        panWelcomeCamera(
+          camera,
+          controls.target,
+          forwardInput,
+          rightInput,
+          rawDt,
+        )
+      )
+        controls.update();
+    }
     time += dt;
     animate(dt);
     const start = performance.now();
@@ -283,7 +409,8 @@ export function mountWelcomeWorld(
       // Resizing clears the drawing buffer. Redraw now, including on-demand reduced-motion frames.
       present();
     }
-    if (!reducedMotion.matches) frame = requestAnimationFrame(draw);
+    if (!reducedMotion.matches || pressedKeys.size > 0)
+      frame = requestAnimationFrame(draw);
   }
   function requestRender() {
     if (!disposed && !lost && !frame && !document.hidden)
@@ -308,6 +435,7 @@ export function mountWelcomeWorld(
     requestRender();
   }
   function visibility() {
+    if (document.hidden) pressedKeys.clear();
     cancelAnimationFrame(frame);
     frame = 0;
     last = performance.now();
@@ -419,6 +547,9 @@ export function mountWelcomeWorld(
     if (menuElement) observer.observe(menuElement);
     if (enterElement) observer.observe(enterElement);
     controls.addEventListener('change', requestRender);
+    window.addEventListener('keydown', keyDown);
+    window.addEventListener('keyup', keyUp);
+    window.addEventListener('blur', clearKeys);
     document.addEventListener('visibilitychange', visibility);
     reducedMotion.addEventListener('change', motion);
     renderer.domElement.addEventListener('webglcontextlost', contextLost);
