@@ -1,7 +1,7 @@
 /* Sakura owns its palette and font stack. */
 :root {
   --sakura-font-scale: var(--site-font-scale, 1);
-  --sakura-default-font:
+  --sakura-fallback-font:
     Ubuntu, 'Noto Sans SC', 'Noto Sans CJK SC', 'PingFang SC',
     'Microsoft YaHei', sans-serif;
   --sakura-font: 'PingFang SC', 'Microsoft YaHei', sans-serif;
@@ -111,9 +111,9 @@
   font-display: swap;
 }
 :root[data-font='bubble-candy'] {
-  --sakura-font: 'Bubble Candy', var(--sakura-default-font);
+  --sakura-font: 'Bubble Candy', var(--sakura-fallback-font);
 }
 
 :root[data-font='default'] {
-  --sakura-font: var(--sakura-default-font);
+  --sakura-font: 'Sakura LXGW WenKai Mono', var(--sakura-fallback-font);
 }
