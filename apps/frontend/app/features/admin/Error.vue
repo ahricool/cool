@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import '~/assets/admin/index.css';
+import '~/assets/fonts/bubble-candy/bubble-candy.css';
 import SakuraFlower from '~/features/admin/visuals/SakuraFlower.vue';
 const { t, routePath } = useCoolI18n();
 import type { NuxtError } from '#app';

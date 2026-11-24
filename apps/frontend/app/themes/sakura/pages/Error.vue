@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import '~/assets/fonts/bubble-candy/bubble-candy.css';
 import '~/assets/fonts/wenkai/wenkai.css';
 import '~/themes/sakura/styles/index.css';
 import SakuraFlower from '~/themes/sakura/components/SakuraFlower.vue';

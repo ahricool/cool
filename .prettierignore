@@ -15,6 +15,7 @@ deployment/
 apps/frontend/app/assets/blog/sakura.css
 
 # Generated webfont subset map.
+apps/frontend/app/assets/fonts/bubble-candy/bubble-candy.css
 apps/frontend/app/assets/fonts/wenkai/wenkai.css
 
 # Preserve the exact user-requested public FA vector.
