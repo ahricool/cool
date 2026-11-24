@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import '~/assets/admin/index.css';
+import '~/assets/fonts/bubble-candy/bubble-candy.css';
 import ThemeToggle from '~/features/admin/visuals/ThemeToggle.vue';
 import SakuraPattern from '~/features/admin/visuals/SakuraPattern.vue';
 import { useCoolI18n } from '~/composables/useCoolI18n';

@@ -92,18 +92,21 @@ Sakura 原页面主要是移动并补上显式本地组件 import，没有重新
 
 Sakura 保留导航、搜索、关于我、Footer、文章列表/详情、时间线瞬间、明暗、响应式、品牌/图案、字号、双语与媒体展示。Ury 极简文艺：阅读侧栏（手机折叠为站名加菜单）、全衬线、居中正文列、宽屏右侧目录，Footer 放祝福语、语言切换与署名；配色跟随设备，提供 80–150% 字号、comfortable/wide 阅读宽度及头像/封面开关。首页支持自动加载和手动重试，不继承 Sakura hero。
 
-### Sakura 默认网页字体
+### Sakura 网页字体
 
 Sakura 的默认选项使用霞鹜文楷等宽 Regular v1.530。浏览器按内容匹配 `unicode-range`，再下载对应的 WOFF2。拉丁字母和常用标点有独立分片，界面用字和高频汉字集中在常用分片。后台外观页仅在 Sakura 的默认字体预览中使用该字体。
 
-分片和 CSS 保存在 `app/assets/fonts/wenkai/`，构建时使用带内容哈希的静态 URL。字体来自 [LXGW WenKai v1.530](https://github.com/lxgw/LxgwWenKai/releases/tag/v1.530)，随站点分发的许可证在 [`public/fonts/lxgw-wenkai-mono-OFL.txt`](public/fonts/lxgw-wenkai-mono-OFL.txt)。
+Sakura 和后台使用同一套梦幻泡泡糖果分片。完整的 WOFF2 源文件保存在 [`scripts/fonts/bubble-candy.woff2`](../../scripts/fonts/bubble-candy.woff2)，供重新生成分片使用。
 
-需要重新生成分片时，在仓库根目录运行 `npm ci`，将 FontTools 和 Brotli 安装进 Python 3.11 或更高版本的虚拟环境，并传入官方 TTF。脚本会校验源文件的 SHA-256、全部字符映射和标点变体映射。
+分片和 CSS 保存在 `app/assets/fonts/`，构建时使用带内容哈希的静态 URL。霞鹜文楷来自 [LXGW WenKai v1.530](https://github.com/lxgw/LxgwWenKai/releases/tag/v1.530)，随站点分发的许可证在 [`public/fonts/lxgw-wenkai-mono-OFL.txt`](public/fonts/lxgw-wenkai-mono-OFL.txt)。
+
+需要重新生成分片时，在仓库根目录运行 `npm ci`，并将 FontTools 和 Brotli 安装进 Python 3.11 或更高版本的虚拟环境。脚本会校验源文件的 SHA-256、全部字符映射和标点变体映射。
 
 ```bash
 python3 -m venv /tmp/cool-wenkai-venv
 /tmp/cool-wenkai-venv/bin/pip install fonttools==4.68.0 brotli==1.2.1
-/tmp/cool-wenkai-venv/bin/python scripts/build-wenkai-webfont.py /path/to/LXGWWenKaiMono-Regular.ttf
+/tmp/cool-wenkai-venv/bin/python scripts/build-webfonts.py wenkai /path/to/LXGWWenKaiMono-Regular.ttf
+/tmp/cool-wenkai-venv/bin/python scripts/build-webfonts.py bubble-candy
 ```
 
 ## 新增完整主题
