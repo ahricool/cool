@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import '~/assets/fonts/wenkai/wenkai.css';
 import PatternSurface from '~/features/admin/visuals/PatternSurface.vue';
 import PatternAvatar from '~/features/admin/visuals/PatternAvatar.vue';
 import {
@@ -91,7 +92,7 @@ const fields = [
             fontFamily:
               model.font === 'bubble-candy'
                 ? 'Bubble Candy, var(--sakura-default-font)'
-                : 'var(--sakura-default-font)',
+                : 'Sakura LXGW WenKai Mono, var(--sakura-default-font)',
           }"
         >
           {{ t('春天的故事，慢慢写。') }} Sakura 2026

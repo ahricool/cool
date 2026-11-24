@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import '~/assets/fonts/wenkai/wenkai.css';
 import './styles/index.css';
 import Shell from './layouts/Shell.vue';
 import SakuraPattern from './components/SakuraPattern.vue';
